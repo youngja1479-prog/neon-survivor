@@ -217,7 +217,7 @@ const WEAPONS={
   bolt:{name:'마법 화살',color:'#4df3ff',desc:'가장 가까운 적에게 마법 화살을 자동으로 발사합니다.',
     lv:[{dmg:10,n:1,cd:0.8,pierce:0},{dmg:13,n:1,cd:0.8,pierce:1},{dmg:13,n:2,cd:0.8,pierce:1},{dmg:17,n:2,cd:0.72,pierce:2},{dmg:22,n:3,cd:0.62,pierce:3}]},
   orbit:{name:'회전 칼날',color:'#b9f',desc:'몸 주위를 도는 칼날이 닿는 적을 베어냅니다.',
-    lv:[{dmg:8,n:2,rad:72},{dmg:9,n:3,rad:78},{dmg:11,n:3,rad:88},{dmg:13,n:4,rad:96},{dmg:16,n:5,rad:108}]},
+    lv:[{dmg:8,n:2,rad:72,size:1.0},{dmg:9,n:3,rad:78,size:1.15},{dmg:11,n:3,rad:88,size:1.3},{dmg:13,n:4,rad:96,size:1.45},{dmg:16,n:5,rad:108,size:1.6}]},
   pulse:{name:'충격파',color:'#8ff6ff',desc:'주기적으로 주변에 충격파를 일으켜 적을 밀쳐냅니다.',
     lv:[{dmg:15,cd:3.2,rad:115},{dmg:19,cd:2.9,rad:128},{dmg:24,cd:2.6,rad:142},{dmg:29,cd:2.3,rad:158},{dmg:36,cd:1.9,rad:180}]},
   chain:{name:'연쇄 번개',color:'#fff27a',desc:'적에게 번개를 떨어뜨리고, 번개가 주변 적에게 튀어갑니다.',
@@ -717,7 +717,7 @@ function updateWeapons(dt){
   }
   // 회전 칼날
   const os=wstat('orbit');if(os){const R=os.rad*am;for(let i=0;i<os.n;i++){const a=G.t*3.4+i/os.n*TAU;const bx=P.x+Math.cos(a)*R,by=P.y+Math.sin(a)*R;
-    query(bx,by,13,(e)=>{if(G.t-e.orbT>0.4){e.orbT=G.t;hurtEnemy(e,os.dmg,e.x-P.x,e.y-P.y,140)}})}}
+    query(bx,by,13*(os.size||1),(e)=>{if(G.t-e.orbT>0.4){e.orbT=G.t;hurtEnemy(e,os.dmg,e.x-P.x,e.y-P.y,140)}})}}
   // 불꽃 오라
   const as=wstat('aura');if(as){G.auraT-=dt;if(G.auraT<=0){G.auraT=0.45;query(P.x,P.y,as.rad*am,(e)=>{hurtEnemy(e,as.dmg,e.x-P.x,e.y-P.y,25);if(Math.random()<0.5)burst(e.x,e.y,'#ff7a3c',2,60,0.4,2.5)})}}
 }
@@ -899,7 +899,7 @@ function render(){
   for(const p of projs){if(p.k==='bolt'||p.k==='seek'){const s=SPR[p.k];ctx.drawImage(s.c,p.x-s.size/2,p.y-s.size/2,s.size,s.size)}
     else{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);drawIcon(ctx,'boom',p.r*2.4);ctx.restore()}}
   // 회전 칼날
-  const os=wstat('orbit');if(os){const R=os.rad*areaMul();for(let i=0;i<os.n;i++){const a=G.t*3.4+i/os.n*TAU;ctx.save();ctx.translate(P.x+Math.cos(a)*R,P.y+Math.sin(a)*R);ctx.rotate(a+G.t*10);
+  const os=wstat('orbit');if(os){const R=os.rad*areaMul();for(let i=0;i<os.n;i++){const a=G.t*3.4+i/os.n*TAU;ctx.save();ctx.translate(P.x+Math.cos(a)*R,P.y+Math.sin(a)*R);ctx.rotate(a+G.t*10);const sz=os.size||1;ctx.scale(sz,sz);
     ctx.fillStyle='#d9b8ff';ctx.shadowColor='#b9f';ctx.shadowBlur=14;ctx.beginPath();ctx.moveTo(-15,0);ctx.lineTo(0,-5);ctx.lineTo(15,0);ctx.lineTo(0,5);ctx.closePath();ctx.fill();ctx.restore()}ctx.shadowBlur=0}
   // 파동
   for(const r of rings){const k=r.t/r.dur;ctx.strokeStyle=r.c;ctx.globalAlpha=1-k;ctx.lineWidth=10*(1-k)+2;ctx.beginPath();ctx.arc(r.x,r.y,r.max*(0.2+0.8*Math.sqrt(k)),0,TAU);ctx.stroke()}ctx.globalAlpha=1;
