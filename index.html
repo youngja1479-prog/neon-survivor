@@ -411,7 +411,7 @@ function newGame(){
 }
 function xpNeed(L){return Math.floor(3+(L-1)*2.6+Math.pow(L-1,1.9)*0.35)}
 const CRAZY_LV0=100; // 크레이지: 캐릭터 Lv100 시작(상한 없음), 필요 경험치는 (레벨-99) 기준 곡선
-const lvNeed=L=>xpNeed(isCrazy()?Math.max(1,L-(CRAZY_LV0-1)):L);
+const lvNeed=L=>xpNeed(L); // 크레이지도 일반 모드 곡선 (Lv100→101부터)
 const pl=k=>P.passives[k]||0;
 const spdMul=()=>1+0.08*pl('speed'), cdMul=()=>Math.pow(0.93,pl('haste')), dmgMul=()=>1+0.1*pl('power'), areaMul=()=>1+0.1*pl('area'), pickR=()=>110*(1+0.3*pl('magnet'))*(G&&G.ev&&G.ev.k==='magnet'?3:1);
 function wstat(id){const l=P.weapons[id];return l?WEAPONS[id].lv[l-1]:null}
