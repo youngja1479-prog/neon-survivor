@@ -928,7 +928,7 @@ function render(){
   if(hurtFlash>0){const gr=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.7);gr.addColorStop(0,'rgba(255,0,40,0)');gr.addColorStop(1,`rgba(255,0,40,${hurtFlash*0.9})`);ctx.fillStyle=gr;ctx.fillRect(0,0,W,H)}
   if(P.hp/P.maxHp<0.3&&state==='play'){const a=0.18+Math.sin(G.t*6)*0.1;const gr=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.max(W,H)*0.75);gr.addColorStop(0,'rgba(255,0,40,0)');gr.addColorStop(1,`rgba(255,0,40,${a})`);ctx.fillStyle=gr;ctx.fillRect(0,0,W,H)}
   drawHUD();drawTip();
-  if(joy&&state==='play'){ctx.globalAlpha=0.5;ctx.strokeStyle='#8fa0ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(joy.ox,joy.oy,55,0,TAU);ctx.stroke();
+  if(joy&&(state==='play'||state==='raid')){ctx.globalAlpha=0.5;ctx.strokeStyle='#8fa0ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(joy.ox,joy.oy,55,0,TAU);ctx.stroke();
     const dx=joy.x-joy.ox,dy=joy.y-joy.oy,l=Math.hypot(dx,dy),k=l>55?55/l:1;ctx.fillStyle='#4df3ff';ctx.beginPath();ctx.arc(joy.ox+dx*k,joy.oy+dy*k,24,0,TAU);ctx.fill();ctx.globalAlpha=1}
 }
 function drawEventWorld(){const ev=G.ev;
@@ -1343,7 +1343,7 @@ function sendChat(m){m=String(m||'').slice(0,60).trim();if(!m)return;
   else{const me=lobby.players.find(p=>p.id===myId)||{name:'P1',col:COLS[0]};addChat(me.name,me.col,m);bcast({t:'chat',n:me.name,c:me.col,m})}}
 let chatOpen=false;
 setInterval(()=>{if(state==='raid'&&chatLog.length)renderChat()},250);
-function openChat(){chatOpen=true;$('rChatBar').classList.add('show');for(const k in keys)keys[k]=false;const i=$('rChatIn2');i.value='';setTimeout(()=>i.focus(),0);renderChat()}
+function openChat(){chatOpen=true;rjoy=null;joy=null;$('rChatBar').classList.add('show');for(const k in keys)keys[k]=false;const i=$('rChatIn2');i.value='';setTimeout(()=>i.focus(),0);renderChat()}
 function closeChat(){chatOpen=false;$('rChatBar').classList.remove('show');$('rChatIn2').blur();renderChat()}
 for(const id of ['rChatIn','rChatIn2']){const el=$(id);
   const stop=e=>{e.stopPropagation()};el.addEventListener('keyup',stop);
@@ -1417,7 +1417,7 @@ function setRaidUI(on){$('rChatBtn').style.display=on?'flex':'none';if(!on){clos
 // ---------- 엔진 시작/종료 ----------
 function beginEngine(diff){window.__raidMd=diff==='hard'?{name:'레이드 · 하드',col:'#ff4d6d'}:{name:'레이드 · 노멀',col:'#ff8c3a'};savedMode=gameMode;gameMode=diff==='hard'?'hard':'normal';startWeapon='bolt';newGame();banner=null;G.tip=null;G.tipQ=[];G.tipFlags={loop:1,loop2:1,elite:1};G.evs=[];G.nextEvEndless=1e9;
   window.__raidDrawPlayers=drawRaidWorld}
-function endRaid(){window.__raidDrawPlayers=null;QM=58;if(R)gameMode=savedMode;R=null;RP=[];state='raidlobby';setRaidUI(false);$('raidLvl').classList.remove('show')}
+function endRaid(){rjoy=null;joy=null;window.__raidDrawPlayers=null;QM=58;if(R)gameMode=savedMode;R=null;RP=[];state='raidlobby';setRaidUI(false);$('raidLvl').classList.remove('show')}
 function mkPlayer(lp,i){const hp0=isHard()?80:100;return {id:lp.id,name:lp.name,col:lp.col,x:Math.cos(i*TAU/4)*70,y:Math.sin(i*TAU/4)*70,r:14,hp:hp0,maxHp:hp0,baseSpd:isHard()?198:210,inv:0,fx:1,fy:0,
   weapons:{[WEAPONS[lp.w]?lp.w:'bolt']:1},passives:{},wOrder:[WEAPONS[lp.w]?lp.w:'bolt'],pOrder:[],hurtT:0,moving:false,walk:0,mx:0,my:0,dead:false,
   level:1,xp:0,need:xpNeed(1),pendingLv:0,timers:{},auraT:0,opts:null,chooseT:0,dmgDone:0}}
@@ -1616,7 +1616,7 @@ function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;G.kills=R.kills
   R.boss=d.BS?{kind:d.BS[0],name:d.BS[1],x:d.BS[2],y:d.BS[3],r:d.BS[4],hp:d.BS[5],maxHp:d.BS[6],mode:d.BS[7],face:d.BS[8],flash:d.BS[9]?0.1:0,enr:!!d.BS[10],z:d.BS[11]}:null}
 // ---------- 입력 ----------
 let rjoy=null;
-cv.addEventListener('pointerdown',e=>{if(state!=='raid')return;rjoy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY};joy=rjoy});
+cv.addEventListener('pointerdown',e=>{if(state!=='raid')return;initAudio();if(rjoy)return;rjoy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY};joy=rjoy;try{cv.setPointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener('pointermove',e=>{if(rjoy&&e.pointerId===rjoy.id){rjoy.x=e.clientX;rjoy.y=e.clientY}});
 const ej=e=>{if(rjoy&&e.pointerId===rjoy.id){rjoy=null;if(state==='raid')joy=null}};cv.addEventListener('pointerup',ej);cv.addEventListener('pointercancel',ej);
 function myInput(){if(chatOpen)return {x:0,y:0};let x=0,y=0;if(keys.KeyA||keys.ArrowLeft)x--;if(keys.KeyD||keys.ArrowRight)x++;if(keys.KeyW||keys.ArrowUp)y--;if(keys.KeyS||keys.ArrowDown)y++;
