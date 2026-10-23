@@ -1437,14 +1437,14 @@ function onClientData(d){
   if(d.t==='hello'){myId=d.id;enterRoom(net.code);const pw=prefW();if(pw!=='bolt')hostConn.send({t:'wpick',w:pw});msg('호스트가 시작하기를 기다리는 중…');return}
   if(d.t==='lobby'){lobby.players=d.players;lobby.diff=d.diff;renderLobby();return}
   if(d.t==='chat'){addChat(d.n,d.c,d.m);return}
-  if(d.t==='start'){showOv(null);beginEngine(d.diff);R={host:false,t:0,phase:'wave1',diff:d.diff,boss:null,tele:[],waves:[],banner:null,votes:{},kills:0};RP=[];state='raid';setRaidUI(true);return}
-  if(d.t==='s'&&R){applySnap(d)}
+  if(d.t==='start'){showOv(null);beginEngine(d.diff);R={host:false,t:0,phase:'wave1',diff:d.diff,boss:null,tele:[],waves:[],banner:null,votes:{},kills:0};RP=[];guestReset();state='raid';setRaidUI(true);return}
+  if(d.t==='s'&&R){onSnap(d)}
 }
 function onHostData(c,d){
   if(d.t==='wpick'){const lp=lobby.players.find(p=>p.id===c.pid);if(lp&&WEAPONS[d.w]&&!R){lp.w=d.w;syncLobby()}return}
   if(d.t==='chat'){const lp=lobby.players.find(p=>p.id===c.pid);if(!lp)return;const m=String(d.m||'').slice(0,60);addChat(lp.name,lp.col,m);bcast({t:'chat',n:lp.name,c:lp.col,m});return}
   if(!R)return;const p=RP.find(p=>p.id===c.pid);if(!p)return;
-  if(d.t==='in'){p.mx=clamp(+d.mx||0,-1,1);p.my=clamp(+d.my||0,-1,1)}
+  if(d.t==='in'){p.mx=clamp(+d.mx||0,-1,1);p.my=clamp(+d.my||0,-1,1);if(d.sq)p.ack=d.sq|0;if(d.vw)p.vw=clamp(d.vw|0,200,1500);if(d.vh)p.vh=clamp(d.vh|0,150,1100)}
   else if(d.t==='pick')applyPick(p,d.i);
   else if(d.t==='cont')vote(p)}
 function setRaidUI(on){$('rChatBtn').style.display=on?'flex':'none';if(!on){closeChat();$('rChatOv').innerHTML=''}}
@@ -1664,43 +1664,91 @@ const r1=v=>Math.round(v),r2=v=>Math.round(v*100)/100;
 const ET=Object.keys(ETYPES),PK=['bolt','boom','seek'],EBK=['ebullet','bossbullet'],ROTT=new Set(['charger','elite','boss']);
 let snapN=0;const pKey={};
 function nearAny(x,y,ps,m){for(const p of ps)if(Math.abs(p.x-x)<m&&Math.abs(p.y-y)<m*0.8)return true;return false}
-function snap(){snapN++;const full=snapN%20===1;const E=[];const ps=RP.filter(p=>!p.dead);if(!ps.length)ps.push(...RP);
-  // 적: 평탄 정수 배열 [타입,x,y,플래그(flash|st<<1),hp%] (+회전형만 rot*100,dx*100,dy*100), 플레이어 화면 근처만, 최대 360
-  let ne=0;for(const e of enemies){if(e.dead||e.type==='raidboss')continue;if(ne>=360)break;if(!nearAny(e.x,e.y,ps,1150))continue;ne++;
-    const ti=ET.indexOf(e.type);E.push(ti,r1(e.x),r1(e.y),(e.flash>0?1:0)|((e.st|0)<<1),Math.round(100*Math.max(0,e.hp)/e.maxHp));if(ROTT.has(e.type))E.push(Math.round((e.rot||0)*100),Math.round((e.dx||0)*100),Math.round((e.dy||0)*100))}
-  const EB=[];for(const b of ebullets){if(EB.length>=900)break;if(!nearAny(b.x,b.y,ps,1100))continue;EB.push(r1(b.x),r1(b.y),EBK.indexOf(b.k))}
-  // 플레이어: 위치/HP는 매번, 무기·패시브·이름 등 무거운 정보는 바뀔 때(+1초마다)만
+let nidC=0;const nid=o=>o._n||(o._n=(nidC=(nidC+1)&4095)||(nidC=1));
+// 64진 문자열 패킹 (JSON 숫자 배열보다 ~3배 작음)
+const B64='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_',B64D=new Int8Array(128);for(let i=0;i<64;i++)B64D[B64.charCodeAt(i)]=i;
+const e1=v=>B64[clamp(v|0,0,63)],e2=v=>{v=clamp(Math.round(v)+2048,0,4095);return B64[v>>6]+B64[v&63]},e3=v=>{v=clamp(Math.round(v)+131072,0,262143);return B64[v>>12]+B64[(v>>6)&63]+B64[v&63]};
+const d1=(S,i)=>B64D[S.charCodeAt(i)],d2=(S,i)=>(B64D[S.charCodeAt(i)]<<6|B64D[S.charCodeAt(i+1)])-2048,d3=(S,i)=>(B64D[S.charCodeAt(i)]<<12|B64D[S.charCodeAt(i+1)]<<6|B64D[S.charCodeAt(i+2)])-131072;
+const wrapA=a=>{a=a%TAU;if(a>Math.PI)a-=TAU;if(a<-Math.PI)a+=TAU;return a};
+const HPT=new Set(['elite','brute','boss']);
+const STK=['diff','k','b2','v','bn','gb','TR','RV','LF','CL','EV','PU','MN','MT','RG','ZP','BM','TL','W','BS','GM'];
+// 게스트별 스냅샷: 게스트 화면(+여유) 밖 엔티티 제외, 좌표 정수/상대좌표, 변하지 않은 필드는 생략(신뢰성 있는 순서 채널), 느린 데이터는 ~5Hz
+function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||sn%3===1;const pk=c._pk=c._pk||{},last=c._ls=c._ls||{};
+  const me=RP.find(p=>p.id===c.pid);const fp=(me&&!me.dead?me:(RP.find(p=>!p.dead)||me||RP[0]));
+  const ox=r1(fp.x),oy=r1(fp.y),vw=Math.min(1500,(me&&me.vw)||760)+220,vh=Math.min(1100,(me&&me.vh)||480)+220;
+  const inV=(x,y,m)=>Math.abs(x-ox)<vw+m&&Math.abs(y-oy)<vh+m;
+  // 적: id2 타입1 플래그1 x2 y2 (+hp1) (+rot2 dx1 dy1)
+  let E='',ne=0;for(const e of enemies){if(e.dead||e.type==='raidboss')continue;if(!inV(e.x,e.y,e.r||0))continue;if(++ne>320)break;const n=nid(e);
+    E+=B64[n>>6]+B64[n&63]+e1(ET.indexOf(e.type))+e1((e.flash>0?1:0)|((e.st|0)<<1))+e2(e.x-ox)+e2(e.y-oy);if(HPT.has(e.type))E+=e1(Math.round(63*Math.max(0,e.hp)/e.maxHp));
+    if(ROTT.has(e.type))E+=e2(wrapA(e.rot||0)*600)+e1(Math.round((e.dx||0)*31)+32)+e1(Math.round((e.dy||0)*31)+32)}
+  // 적 탄: x2 y2 종류1 vx2 vy2 (게스트가 속도로 외삽)
+  let EB='',nb=0;for(const b of ebullets){if(nb>=700)break;if(!inV(b.x,b.y,40))continue;nb++;EB+=e2(b.x-ox)+e2(b.y-oy)+e1(EBK.indexOf(b.k))+e2((b.vx||0)/2)+e2((b.vy||0)/2)}
+  // 발사체: id2 종류1 x2 y2 rot2 r1
+  let PJ='',np=0;for(const p of projs){if(np>=300)break;if(!inV(p.x,p.y,40))continue;np++;const n=nid(p);PJ+=B64[n>>6]+B64[n&63]+e1(PK.indexOf(p.k))+e2(p.x-ox)+e2(p.y-oy)+e2(wrapA(p.rot||0)*600)+e1(r1(p.r))}
   const PL=RP.map(p=>{const fast=[p.id,r1(p.x),r1(p.y),r1(p.hp),r2(p.fx),r2(p.fy),p.moving?1:0,r2(p.walk),r2(p.inv),p.dead?1:0,p.level,r1(p.xp),r2(Math.max(0,p.chooseT))];
-    const heavy=[p.name,p.col,p.maxHp,p.weapons,p.passives,p.wOrder,p.pOrder,p.need,p.opts];const hk=JSON.stringify(heavy);if(full||pKey[p.id]!==hk){pKey[p.id]=hk;fast.push(heavy)}return fast});
-  const slow=full||snapN%4===1;
-  return {t:'s',T:r2(R.t),ph:R.phase,diff:R.diff,k:G.kills,sh:r1(shake),b2:R.boss2At,v:R.votes,bn:R.banner,gb:banner&&banner.t>0.05?[banner.txt,banner.col,r2(banner.t)]:null,
-  P:PL,TR:RP.map(p=>[trailSnap(p),p.combo|0]),RV:RP.map(p=>p.dead&&!p.left&&p.reviveT>0?r1(p.reviveT):0),BT:Math.round(G.beatPh*1000)/1000,LF:G.loopFx.map(f=>[f.perfect?1:0,r2(f.t),f.poly.filter((q,i)=>i%2===0||i===f.poly.length-1).flatMap(q=>[r1(q.x),r1(q.y)])]),CL:G.calls.map(c=>[r1(c.x),r1(c.y),c.txt,c.c,r2(c.life),c.s]),E,PJ:projs.slice(0,400).map(p=>[PK.indexOf(p.k),r1(p.x),r1(p.y),r2(p.rot||0),r1(p.r)]),EB,
-  GM:slow?gems.slice(0,450).flatMap(g=>[r1(g.x),r1(g.y),g.v]):null,EV:evSnap(),PU:pickups.map(i=>[i.type,r1(i.x),r1(i.y),r2(i.t)]),MN:mines.map(m=>[r1(m.x),r1(m.y),r2(m.t)]),
-  MT:meteors.map(m=>[r1(m.x),r1(m.y),r2(m.t),m.warn,r1(m.rad)]),RG:rings.map(r=>[r1(r.x),r1(r.y),r1(r.max),r2(r.t),r.dur,r.c]),
-  ZP:zaps.map(z=>[z.pts.map(q=>[r1(q.x),r1(q.y)]),r2(z.t)]),BM:beams.map(b=>[r1(b.x1),r1(b.y1),r1(b.x2),r1(b.y2),r2(b.t),b.dur,r2(b.w)]),
+    const heavy=[p.name,p.col,p.maxHp,p.weapons,p.passives,p.wOrder,p.pOrder,p.need,p.opts];const hk=JSON.stringify(heavy);if(full||pk[p.id]!==hk){pk[p.id]=hk;fast.push(heavy)}return fast});
+  const o={t:'s',T:r2(R.t),ph:R.phase,diff:R.diff,k:G.kills,sh:r1(shake),b2:R.boss2At,v:R.votes,bn:R.banner,gb:banner&&banner.t>0.05?[banner.txt,banner.col,r2(banner.t)]:null,
+  O:[ox,oy],AQ:me?me.ack|0:0,P:PL,TR:RP.map(p=>{const t=trailSnap(p);let S='';if(t)for(let j=0;j<t.length;j+=3)S+=e3(t[j])+e3(t[j+1])+e1(t[j+2]);return [S,p.combo|0]}),RV:RP.map(p=>p.dead&&!p.left&&p.reviveT>0?r1(p.reviveT):0),BT:Math.round(G.beatPh*1000)/1000,LF:G.loopFx.map(f=>[f.perfect?1:0,r2(f.t),f.poly.filter((q,i)=>i%2===0||i===f.poly.length-1).flatMap(q=>[r1(q.x),r1(q.y)])]),CL:G.calls.map(c=>[r1(c.x),r1(c.y),c.txt,c.c,r2(c.life),c.s]),E,PJ,EB,
+  EV:evSnap(),MT:meteors.map(m=>[r1(m.x),r1(m.y),r2(m.t),m.warn,r1(m.rad)]),RG:rings.map(r=>[r1(r.x),r1(r.y),r1(r.max),r2(r.t),r.dur,r.c]),
+  ZP:zaps.filter(z=>z.pts.length&&inV(z.pts[0].x,z.pts[0].y,300)).map(z=>[z.pts.map(q=>[r1(q.x),r1(q.y)]),r2(z.t)]),BM:beams.map(b=>[r1(b.x1),r1(b.y1),r1(b.x2),r1(b.y2),r2(b.t),b.dur,r2(b.w)]),
   TL:R.tele.map(t=>[t.k,r1(t.x),r1(t.y),r1(t.r||0),r1(t.x2||0),r1(t.y2||0),r1(t.w||0),r2(t.t),r2(t.warn),t.col]),W:R.waves.map(w=>[r1(w.x),r1(w.y),r1(w.r)]),
-  BS:R.boss?[R.boss.kind,0,r1(R.boss.x),r1(R.boss.y),R.boss.r,r1(R.boss.hp),r1(R.boss.maxHp),R.boss.mode,R.boss.face,R.boss.flash>0?1:0,R.boss.enr?1:0,r1(R.boss.z)]:null}}
+  BS:R.boss?[R.boss.kind,0,r1(R.boss.x),r1(R.boss.y),R.boss.r,r1(R.boss.hp),r1(R.boss.maxHp),R.boss.mode,R.boss.face,R.boss.flash>0?1:0,R.boss.enr?1:0,r1(R.boss.z)]:null};
+  if(slow){const GM=[];for(const g of gems){if(GM.length>=1500)break;if(inV(g.x,g.y,150))GM.push(r1(g.x),r1(g.y),g.v)}o.GM=GM;
+    o.PU=pickups.filter(i=>inV(i.x,i.y,150)).map(i=>[i.type,r1(i.x),r1(i.y),r2(i.t)]);o.MN=mines.filter(m=>inV(m.x,m.y,150)).map(m=>[r1(m.x),r1(m.y),r2(m.t)])}
+  for(const k of STK){if(!(k in o))continue;const js=JSON.stringify(o[k]);if(!full&&last[k]===js)delete o[k];else last[k]=js}
+  return o}
+function sendSnaps(){for(const c of conns)if(c.open&&!(c.metadata&&c.metadata.probe))try{c.send(snapFor(c))}catch(e){}}
 let lastMyHp=null;
 function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;G.kills=R.kills=d.k;shake=Math.max(shake,d.sh);R.boss2At=d.b2;R.votes=d.v||{};R.banner=d.bn;
   if(d.gb&&(!banner||banner.txt!==d.gb[0]))banner={txt:d.gb[0],col:d.gb[1],t:d.gb[2]};
-  const old={};for(const p of RP)old[p.id]=p;
+  const old={};for(const p of RP)old[p.id]=p;const OX=d.O?d.O[0]:0,OY=d.O?d.O[1]:0;
   RP=d.P.map(a=>{const p=old[a[0]]||{r:14,baseSpd:210,hurtT:0,name:'?',col:'#fff',maxHp:100,weapons:{},passives:{},wOrder:[],pOrder:[],need:1,opts:null};Object.assign(p,{id:a[0],x:a[1],y:a[2],hp:a[3],fx:a[4],fy:a[5],moving:!!a[6],walk:a[7],inv:a[8],dead:!!a[9],level:a[10],xp:a[11],chooseT:a[12]});
     const h=a[13];if(h)Object.assign(p,{name:h[0],col:h[1],maxHp:h[2],weapons:h[3],passives:h[4],wOrder:h[5],pOrder:h[6],need:h[7],opts:h[8]});return p});
   if(d.RV)RP.forEach((p,i)=>{p.reviveT=d.RV[i]||0});
-  if(d.TR)RP.forEach((p,i)=>{const t=d.TR[i];if(!t)return;const A=t[0]||[],o=[];for(let j=0;j<A.length;j+=3)o.push({x:A[j],y:A[j+1],a:A[j+2]/20});p.trail=o;p.combo=t[1]});
+  if(d.TR)RP.forEach((p,i)=>{const t=d.TR[i];if(!t)return;const A=t[0]||'',o=[];if(typeof A==='string'){for(let j=0;j+6<A.length;j+=7)o.push({x:d3(A,j),y:d3(A,j+3),a:d1(A,j+6)/20})}else for(let j=0;j<A.length;j+=3)o.push({x:A[j],y:A[j+1],a:A[j+2]/20});p.trail=o;p.combo=t[1]});
   if(d.BT!=null&&Math.abs(G.beatPh-d.BT)>0.12)G.beatPh=d.BT;
   if(d.LF)G.loopFx=d.LF.map(a=>{const poly=[];for(let j=0;j<a[2].length;j+=2)poly.push({x:a[2][j],y:a[2][j+1]});return {perfect:!!a[0],t:a[1],poly}});
   if(d.CL)G.calls=d.CL.map(a=>({x:a[0],y:a[1],txt:a[2],c:a[3],life:a[4],s:a[5]}));
   const me=RP.find(p=>p.id===myId);if(me){if(lastMyHp!==null&&me.hp<lastMyHp){hurtFlash=0.35;S.hurt()}lastMyHp=me.hp}
-  {const A=d.E,out=[];let i=0;while(i<A.length){const ty=ET[A[i]];const e={type:ty,x:A[i+1],y:A[i+2],r:ETYPES[ty].r,flash:A[i+3]&1?0.1:0,st:A[i+3]>>1,hp:A[i+4]/100,maxHp:1,dead:false,rot:0,dx:0,dy:0};i+=5;
-    if(ROTT.has(ty)){e.rot=A[i]/100;e.dx=A[i+1]/100;e.dy=A[i+2]/100;i+=3}out.push(e)}enemies=out}
+  {const A=d.E,out=[];let i=0;while(i<A.length){const ty=ET[d1(A,i+2)],f=d1(A,i+3);const e={_n:d1(A,i)<<6|d1(A,i+1),type:ty,x:d2(A,i+4)+OX,y:d2(A,i+6)+OY,r:ETYPES[ty].r,flash:f&1?0.1:0,st:f>>1,hp:1,maxHp:1,dead:false,rot:0,dx:0,dy:0};i+=8;
+    if(HPT.has(ty))e.hp=d1(A,i++)/63;if(ROTT.has(ty)){e.rot=d2(A,i)/600;e.dx=(d1(A,i+2)-32)/31;e.dy=(d1(A,i+3)-32)/31;i+=4}e.x0=e.x;e.y0=e.y;out.push(e)}enemies=out}
   G.elite=enemies.find(e=>e.type==='elite')||null;
-  projs=d.PJ.map(a=>({k:PK[a[0]],x:a[1],y:a[2],rot:a[3],r:a[4]}));{const A=d.EB,o=[];for(let i=0;i<A.length;i+=3)o.push({x:A[i],y:A[i+1],k:EBK[A[i+2]]});ebullets=o}applyEv(d.EV);
+  {const A=d.PJ,o=[];for(let i=0;i<A.length;i+=10){const x=d2(A,i+3)+OX,y=d2(A,i+5)+OY;o.push({_n:d1(A,i)<<6|d1(A,i+1),k:PK[d1(A,i+2)],x,y,x0:x,y0:y,rot:d2(A,i+7)/600,r:d1(A,i+9)})}projs=o}
+  {const A=d.EB,o=[];for(let i=0;i<A.length;i+=9){const x=d2(A,i)+OX,y=d2(A,i+2)+OY;o.push({x,y,x0:x,y0:y,k:EBK[d1(A,i+4)],vx:d2(A,i+5)*2,vy:d2(A,i+7)*2})}ebullets=o}applyEv(d.EV);
   if(d.GM){const A=d.GM,o=[];for(let i=0;i<A.length;i+=3)o.push({x:A[i],y:A[i+1],v:A[i+2]});gems=o}pickups=d.PU.map(a=>({type:a[0],x:a[1],y:a[2],t:a[3]}));mines=d.MN.map(a=>({x:a[0],y:a[1],t:a[2]}));
   meteors=d.MT.map(a=>({x:a[0],y:a[1],t:a[2],warn:a[3],rad:a[4]}));rings=d.RG.map(a=>({x:a[0],y:a[1],max:a[2],t:a[3],dur:a[4],c:a[5]}));
   zaps=d.ZP.map(a=>({pts:a[0].map(q=>({x:q[0],y:q[1]})),t:a[1]}));beams=d.BM.map(a=>({x1:a[0],y1:a[1],x2:a[2],y2:a[3],t:a[4],dur:a[5],w:a[6]}));
   R.tele=d.TL.map(a=>({k:a[0],x:a[1],y:a[2],r:a[3],x2:a[4],y2:a[5],w:a[6],t:a[7],warn:a[8],col:a[9]}));R.waves=d.W.map(a=>({x:a[0],y:a[1],r:a[2]}));
   R.boss=d.BS?{kind:d.BS[0],name:d.BS[0]==='gozara'?'고자라':'차박후 강똥원 원비 강산',x:d.BS[2],y:d.BS[3],r:d.BS[4],hp:d.BS[5],maxHp:d.BS[6],mode:d.BS[7],face:d.BS[8],flash:d.BS[9]?0.1:0,enr:!!d.BS[10],z:d.BS[11]}:null}
+// ---------- 게스트: 스냅샷 버퍼(보간 ~100ms) + 내 캐릭터 로컬 예측 ----------
+const INTERP=100;let gBuf=[],gMerged=null,gCur=null,gNext=null,gNM=null,inSeq=0,lastIn=null,lastInAt=0;
+const pred={init:false,x:0,y:0,cx:0,cy:0,hist:[],walk:0};
+function guestReset(){gBuf=[];gMerged=null;gCur=null;gNext=null;gNM=null;pred.init=false;pred.hist=[];pred.cx=pred.cy=0}
+function onSnap(d){gMerged=gMerged?Object.assign({},gMerged,d):d;gBuf.push({d:gMerged,at:performance.now()});if(gBuf.length>40)gBuf.splice(0,gBuf.length-40);reconcile(gMerged)}
+function reconcile(d){const a=d.P&&d.P.find(q=>q[0]===myId);if(!a)return;const hx=a[1],hy=a[2];
+  if(a[9]||!pred.init){pred.init=true;pred.x=hx;pred.y=hy;pred.cx=pred.cy=0;pred.hist=[];return}
+  const aq=d.AQ|0;pred.hist=pred.hist.filter(h=>h.s>aq);let tx=hx,ty=hy;for(const h of pred.hist){tx+=h.dx;ty+=h.dy}tx=clamp(tx,-WH+14,WH-14);ty=clamp(ty,-WH+14,WH-14);
+  const ex=tx-pred.x,ey=ty-pred.y;if(Math.hypot(ex,ey)>240){pred.x=tx;pred.y=ty;pred.cx=pred.cy=0}else{pred.cx=ex;pred.cy=ey}}
+function nextMaps(d){const OX=d.O?d.O[0]:0,OY=d.O?d.O[1]:0,m={E:new Map(),PJ:new Map(),P:new Map(),B:null};
+  const A=d.E;let i=0;while(i<A.length){const ty=ET[d1(A,i+2)];m.E.set(d1(A,i)<<6|d1(A,i+1),[d2(A,i+4)+OX,d2(A,i+6)+OY]);i+=8+(HPT.has(ty)?1:0)+(ROTT.has(ty)?4:0)}
+  const J=d.PJ;for(let k=0;k<J.length;k+=10)m.PJ.set(d1(J,k)<<6|d1(J,k+1),[d2(J,k+3)+OX,d2(J,k+5)+OY]);for(const a of d.P)m.P.set(a[0],[a[1],a[2]]);if(d.BS)m.B=[d.BS[2],d.BS[3]];return m}
+function lerpTo(o,t,a){if(!t)return;const dx=t[0]-o.x0,dy=t[1]-o.y0;if(dx*dx+dy*dy>90000)return;o.x=o.x0+dx*a;o.y=o.y0+dy*a}
+function guestTick(dt,inp){const now=performance.now(),rt=now-INTERP;let i=-1;for(let j=0;j<gBuf.length;j++)if(gBuf[j].at<=rt)i=j;
+  if(i<0&&!gCur&&gBuf.length)i=0;if(i>0){gBuf.splice(0,i);i=0}
+  if(i===0){const c=gBuf[0];if(c!==gCur){gCur=c;applySnap(c.d);for(const p of RP){p.x0=p.x;p.y0=p.y}if(R.boss){R.boss.x0=R.boss.x;R.boss.y0=R.boss.y}gNext=null;gNM=null}}
+  if(gCur){const n=gBuf[1];if(n&&n!==gNext){gNext=n;gNM=nextMaps(n.d)}
+    const a=gNM?clamp((rt-gCur.at)/Math.max(1,gNext.at-gCur.at),0,1):0;
+    if(gNM){for(const e of enemies)lerpTo(e,gNM.E.get(e._n),a);for(const p of projs)lerpTo(p,gNM.PJ.get(p._n),a);for(const p of RP)if(p.id!==myId)lerpTo(p,gNM.P.get(p.id),a);if(R.boss)lerpTo(R.boss,gNM.B,a)}
+    const te=Math.min(0.3,Math.max(0,(rt-gCur.at)/1000));for(const b of ebullets){b.x=b.x0+b.vx*te;b.y=b.y0+b.vy*te}}
+  const me=RP.find(p=>p.id===myId);if(!me||!pred.init)return;
+  if(me.dead){pred.x=me.x;pred.y=me.y;pred.hist=[];return}
+  const ph=R.phase;if(ph!=='clear'&&ph!=='fail'&&ph!=='inter'&&ph!=='ending'){let mx=inp.x,my=inp.y;const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml}
+    const sv=P;P=me;const sp=(me.baseSpd||210)*spdMul();P=sv;const dx=mx*sp*dt,dy=my*sp*dt;pred.x=clamp(pred.x+dx,-WH+14,WH-14);pred.y=clamp(pred.y+dy,-WH+14,WH-14);pred.hist.push({s:inSeq,dx,dy});if(pred.hist.length>240)pred.hist.shift();
+    me.moving=ml>0.05;if(me.moving){me.fx=mx/(ml||1);me.fy=my/(ml||1);pred.walk+=dt*10}me.walk=pred.walk}
+  const k=1-Math.exp(-dt*7);pred.x+=pred.cx*k;pred.y+=pred.cy*k;pred.cx-=pred.cx*k;pred.cy-=pred.cy*k;me.x=pred.x;me.y=pred.y;
+  if(me.trail!==me._tl)me._tb=me.trail;const tb=me._tb;if(tb&&tb.length){me._tl=tb.concat([{x:me.x,y:me.y,a:tb[tb.length-1].a}]);me.trail=me._tl}}
+function guestSendInput(inp){if(!hostConn||!hostConn.open)return;const mx=Math.round(inp.x*100)/100,my=Math.round(inp.y*100)/100,now=performance.now(),ch=!lastIn||lastIn[0]!==mx||lastIn[1]!==my;
+  if(inT<=0||(ch&&now-lastInAt>30)){inT=0.05;lastInAt=now;lastIn=[mx,my];const v=viewHalf();hostConn.send({t:'in',mx,my,sq:++inSeq,vw:Math.round(v.w),vh:Math.round(v.h)})}}
 // ---------- 입력 ----------
 let rjoy=null;
 cv.addEventListener('pointerdown',e=>{if(state!=='raid')return;initAudio();if(rjoy)return;rjoy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY};joy=rjoy;try{cv.setPointerCapture(e.pointerId)}catch(_){}});
@@ -1825,10 +1873,10 @@ function raidRender(){const me=RP.find(p=>p.id===myId);camP=me&&!me.dead?me:RP.f
 // ---------- 프레임 ----------
 window.__raidFrame=function(dt){if(!R)return;const inp=myInput();
   if(R.host){const me=RP.find(p=>p.id===myId);if(me){me.mx=inp.x;me.my=inp.y}const r0=rings.length;hostUpdate(dt);
-    sendT-=dt;if(sendT<=0&&conns.length){sendT=0.05;bcast(snap())}}
-  else{updateBeat(dt);G.beatFlash=Math.max(0,G.beatFlash-dt*4);inT-=dt;if(inT<=0&&hostConn&&hostConn.open){inT=0.05;hostConn.send({t:'in',mx:inp.x,my:inp.y})}if(R.banner)R.banner.t-=dt}
+    sendT-=dt;if(sendT<=0&&conns.length){sendT+=1/15;if(sendT<0)sendT=1/15;sendSnaps()}}
+  else{updateBeat(dt);G.beatFlash=Math.max(0,G.beatFlash-dt*4);inT-=dt;guestSendInput(inp);guestTick(dt,inp);if(R.banner)R.banner.t-=dt}
   if(R.phase!=='inter')fxUpdate(dt);
-  if(parts.length>PART_CAP)parts.splice(0,parts.length-PART_CAP);if(texts.length>110)texts.splice(0,texts.length-110);
+  const pc=R.host?PART_CAP:320;if(parts.length>pc)parts.splice(0,parts.length-pc);if(texts.length>110)texts.splice(0,texts.length-110);
   updUI();raidRender()};
 // ---------- 버튼 ----------
 $('raidMenuBtn').onclick=()=>{initAudio();openLobby()};
