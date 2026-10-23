@@ -1262,7 +1262,7 @@ requestAnimationFrame(frame);
 #rCode{font-size:40px;font-weight:900;letter-spacing:8px;color:#ffd84d;text-shadow:0 0 14px #ffd84d}
 #rJoinCode{font:inherit;font-size:22px;width:160px;text-align:center;text-transform:uppercase;letter-spacing:6px;border-radius:10px;border:2px solid #4a3aa0;background:#120f2a;color:#fff;padding:6px}
 #rMsg{color:#cfd3ff;min-height:22px;margin-top:8px;font-size:14px}
-#raidLvl{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:8;display:none;gap:8px;background:rgba(10,8,30,.85);border:2px solid #4df3ff;border-radius:14px;padding:8px}
+#raidLvl{position:fixed;left:50%;top:60px;touch-action:none;max-width:96vw;transform:translateX(-50%);z-index:8;display:none;gap:8px;background:rgba(10,8,30,.85);border:2px solid #4df3ff;border-radius:14px;padding:8px}
 #raidLvl.show{display:flex}#raidLvl button{font:inherit;font-weight:800;font-size:14px;color:#fff;background:#28305a;border:2px solid #4a3aa0;border-radius:10px;padding:8px 10px;cursor:pointer;max-width:170px}
 #raidLvl button:hover{border-color:#4df3ff}
 #rWsub{font-size:13px;opacity:.8;margin-top:6px}#rWpick{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px auto;max-width:520px}
@@ -1280,6 +1280,8 @@ requestAnimationFrame(frame);
 #rChatBar{position:fixed;left:50%;top:120px;transform:translateX(-50%);z-index:9;display:none;gap:6px;width:min(480px,92vw);background:rgba(10,8,30,.9);border:2px solid #4df3ff;border-radius:12px;padding:6px}
 #rChatBar.show{display:flex}
 #raidLvl small{font-size:11px}#raidLvl .tag{margin-bottom:0}
+#raidLvl{gap:5px;padding:5px;border-radius:10px;background:rgba(10,8,30,.72)}#raidLvl button{font-size:12px;padding:4px 6px;max-width:130px;touch-action:none;user-select:none;-webkit-user-select:none}#raidLvl canvas{width:26px!important;height:26px!important}
+@media (max-width:760px){#raidLvl button{font-size:11px;max-width:31vw}}
 </style>
 <div class="ov" id="raidLobby">
   <div class="big" style="color:#ff4d9d;text-shadow:0 0 18px #ff4d9d">레이드</div>
@@ -1703,7 +1705,7 @@ function updUI(){const me=RP.find(p=>p.id===myId);const lv=$('raidLvl');
   const opts=me&&!me.dead&&R.phase!=='inter'&&R.phase!=='clear'&&R.phase!=='fail'?me.opts:null;const key=opts?JSON.stringify(opts)+me.level:'';
   if(key!==lvKey){lvKey=key;if(opts){const prev=P;P=me;lv.innerHTML='<div style="align-self:center;color:#ffd84d;font-weight:900;font-size:14px">LV UP!<br><small id="rLvInv"></small></div>';
       opts.forEach((o,i)=>{const d=describe(o);const b=document.createElement('button');const ic=makeCanvas(64,64);const g=ic.getContext('2d');g.translate(32,32);drawIcon(g,o.id,52);ic.style.cssText='width:34px;height:34px;position:static;display:block;margin:0 auto 2px';
-        b.appendChild(ic);b.insertAdjacentHTML('beforeend',`<span class="tag ${d.tag}">${d.tagT}</span><br>${i+1}. ${d.name}<br><small style="color:#ffd84d">${d.lv}</small>`);b.onclick=()=>pick(i);lv.appendChild(b)});
+        b.appendChild(ic);b.insertAdjacentHTML('beforeend',`<span class="tag ${d.tag}">${d.tagT}</span><br>${i+1}. ${d.name}<br><small style="color:#ffd84d">${d.lv}</small>`);b.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();if(rjoy&&e.pointerId===rjoy.id)return;pick(i)});b.addEventListener('click',e=>{if(e.detail===0)pick(i)});lv.appendChild(b)});
       P=prev;lv.classList.add('show')}else lv.classList.remove('show')}
   if(opts){const el=$('rLvInv');if(el)el.textContent=me.chooseT>0?`선택 중 무적 ${me.chooseT.toFixed(1)}초`:''}
   const ph=R.phase;let k=ph;if(ph==='inter')k='inter'+JSON.stringify(R.votes)+alive().length;
