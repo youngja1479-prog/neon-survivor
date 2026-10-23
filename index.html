@@ -1319,7 +1319,7 @@ requestAnimationFrame(frame);
 // ================== 레이드 (협동 모드) — 일반 모드 엔진(적/무기/레벨업/스프라이트) 재사용 ==================
 (function(){
 const PREFIX='neonraid-gkc7-',ALPH='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'}]};
+const ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun2.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:global.stun.twilio.com:3478'},{urls:'stun:openrelay.metered.ca:80'},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}]};
 const COLS=['#4df3ff','#ff4d9d','#ffd84d','#7dff6b'];
 const NUM={
   mobRateMul:1.8,           // 일반 모드 스폰 공식(하드는 원래 하드 배율 포함) x1.8
@@ -1334,6 +1334,7 @@ let R=null,RP=[];
 let peer=null,conns=[],hostConn=null,net={role:null,code:null},lobby={players:[],diff:'normal'},myId='p0',sendT=0,inT=0,savedMode='normal';
 const $=id=>document.getElementById(id);
 const msg=t=>{$('rMsg').textContent=t||''};
+function connFail(detail,retry){const m=$('rMsg');m.textContent='';const a=document.createElement('div');a.textContent='연결 실패, 다시 시도해 주세요'+(detail?' ('+detail+')':'');a.style.color='#ff6b8b';m.appendChild(a);const b=document.createElement('button');b.className='btn sec';b.id='rRetryBtn';b.textContent='다시 시도';b.style.marginTop='6px';b.onclick=()=>{msg('');retry()};m.appendChild(b)}
 function genCode(){let s='';for(let k=0;k<4;k++)s+=ALPH[Math.random()*ALPH.length|0];return s}
 function showOv(id){hideAll();for(const x of ['raidLobby','raidConfirm','raidEnd'])$(x).classList.remove('show');if(id)$(id).classList.add('show')}
 function cleanupNet(){for(const c of conns)try{c.close()}catch(e){}conns=[];try{hostConn&&hostConn.close()}catch(e){}hostConn=null;try{peer&&peer.destroy()}catch(e){}peer=null;net={role:null,code:null}}
@@ -1378,13 +1379,13 @@ function pickW(id){if(!WEAPONS[id]||R)return;try{localStorage.setItem('neonSurvi
 function prefW(){try{const w=localStorage.getItem('neonSurvivorStartW');if(w&&WEAPONS[w])return w}catch(e){}return 'bolt'}
 function syncLobby(){renderLobby();bcast({t:'lobby',players:lobby.players,diff:lobby.diff})}
 function enterRoom(code){$('rHome').style.display='none';$('rRoom').style.display='';$('rCode').textContent=code;renderLobby()}
-function offlineHost(why){cleanupNet();net={role:'offline',code:'SOLO'};myId='p0';lobby.players=[{id:'p0',name:'P1',col:COLS[0],w:prefW()}];enterRoom('SOLO');msg(why+' — 오프라인 솔로로 플레이할 수 있어요.')}
+function offlineHost(why,retry){cleanupNet();net={role:'offline',code:'SOLO'};myId='p0';lobby.players=[{id:'p0',name:'P1',col:COLS[0],w:prefW()}];enterRoom('SOLO');if(retry)connFail(why+' — 오프라인 솔로로는 플레이 가능',retry);else msg(why+' — 오프라인 솔로로 플레이할 수 있어요.')}
 let pubFull=false;
 function createRoom(tries,slot){tries=tries||0;stopProbe();cleanupNet();myId='p0';lobby.players=[{id:'p0',name:'P1',col:COLS[0],w:prefW()}];
   if(typeof Peer==='undefined'){offlineHost('PeerJS를 불러오지 못했어요');return}
   const pub=!!($('rPubChk')&&$('rPubChk').checked);slot=pub?(slot||1):0;
   const code=pub?'공개 #'+slot:genCode();net={role:'host',code,slot};const my=net;enterRoom(code);msg('서버 연결 중…');
-  let to=setTimeout(()=>{if(net===my&&!my.open)offlineHost('서버에 연결할 수 없어요')},7000);
+  const again=()=>{openLobby();createRoom()};let to=setTimeout(()=>{if(net===my&&!my.open)offlineHost('서버에 연결할 수 없어요',again)},12000);
   try{peer=new Peer(pub?PREFIX+'pub-'+slot:PREFIX+code,{debug:0,config:ICE})}catch(e){clearTimeout(to);offlineHost('연결 오류');return}
   peer.on('open',()=>{if(net!==my)return;my.open=true;clearTimeout(to);msg(pub?'공개방 #'+slot+' — 공개방 목록에서 누구나 참가할 수 있어요 (최대 4명)':(pubFull?'공개방 자리(10개)가 모두 차서 비공개 코드 방으로 만들었어요. ':'')+'친구에게 코드를 알려주세요 (최대 4명)');pubFull=false});
   peer.on('connection',c=>{if(net!==my)return;c.on('open',()=>{
@@ -1394,18 +1395,20 @@ function createRoom(tries,slot){tries=tries||0;stopProbe();cleanupNet();myId='p0
       lobby.players.push({id,name:'P'+(n+1),col:COLS[n],w:'bolt'});c.send({t:'hello',id});syncLobby()});
     c.on('data',d=>onHostData(c,d));
     c.on('close',()=>{if(!c.pid)return;conns=conns.filter(x=>x!==c);lobby.players=lobby.players.filter(p=>p.id!==c.pid);if(R){const p=RP.find(p=>p.id===c.pid);if(p){p.dead=true;p.left=true;p.hp=0}}else syncLobby()})});
-  peer.on('error',err=>{if(net!==my)return;if(err.type==='unavailable-id'){if(pub){if(slot<10){createRoom(0,slot+1);return}$('rPubChk').checked=false;pubFull=true;createRoom(0);return}if(tries<4){createRoom(tries+1);return}}if(!my.open){clearTimeout(to);offlineHost('서버 오류('+err.type+')')}});
+  peer.on('error',err=>{if(net!==my)return;if(err.type==='unavailable-id'){if(pub){if(slot<10){createRoom(0,slot+1);return}$('rPubChk').checked=false;pubFull=true;createRoom(0);return}if(tries<4){createRoom(tries+1);return}}if(!my.open){clearTimeout(to);offlineHost('서버 오류('+err.type+')',again)}});
+  peer.on('disconnected',()=>{if(net===my&&peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}});
 }
 function joinRoom(code,rawId){stopProbe();if(!rawId){code=(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(code.length!==4){msg('4자리 코드를 입력하세요');return}}
   cleanupNet();if(typeof Peer==='undefined'){msg('PeerJS를 불러오지 못했어요. 인터넷 연결을 확인하세요.');return}
   net={role:'client',code};const my=net;msg('접속 중…');
-  const to=setTimeout(()=>{if(net===my&&!my.ok){msg('접속 실패: 시간 초과');cleanupNet()}},10000);
+  const again=()=>joinRoom(code,rawId);const to=setTimeout(()=>{if(net===my&&!my.ok){cleanupNet();connFail('시간 초과',again)}},12000);
   peer=new Peer({debug:0,config:ICE});
   peer.on('open',()=>{if(net!==my)return;hostConn=peer.connect(rawId||PREFIX+code,{serialization:'json',reliable:true});
     hostConn.on('data',d=>{if(net!==my)return;onClientData(d)});
     hostConn.on('open',()=>{my.ok=true;clearTimeout(to)});
     hostConn.on('close',()=>{if(net!==my)return;cleanupNet();if(R&&R.phase!=='clear'&&R.phase!=='fail'){endRaid();openLobby();msg('호스트와 연결이 끊어졌어요.')}else if(!R){openLobby();msg('연결이 끊어졌어요.')}})});
-  peer.on('error',err=>{if(net!==my)return;clearTimeout(to);msg(err.type==='peer-unavailable'?'방을 찾을 수 없어요. 코드를 확인하세요.':'연결 오류: '+err.type);if(!my.ok)cleanupNet()});
+  peer.on('error',err=>{if(net!==my)return;if(my.ok)return;clearTimeout(to);cleanupNet();connFail(err.type==='peer-unavailable'?'방을 찾을 수 없어요':'오류: '+err.type,again)});
+  peer.on('disconnected',()=>{if(net===my&&peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}});
 }
 // ---------- 공개방 (PeerJS ID 슬롯 neonraid-gkc7-pub-1..10, 서버리스) ----------
 const PUB_N=10;let probe=null;
