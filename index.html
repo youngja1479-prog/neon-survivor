@@ -1325,7 +1325,7 @@ const NUM={
   mobRateMul:1.8,           // 일반 모드 스폰 공식(하드는 원래 하드 배율 포함) x1.8
   hard:{bossHp:1.6,bossDmg:1.3,bossSpd:1.15}, // 몹 하드 배율은 원본 엔진(isHard) 그대로
   scale:n=>1+0.75*(n-1),
-  gozara:{hp:6000,spd:95,contact:20,slam:35,wave:22,r:150,slamR:150,slamWave:400,roarWave:520,bodyR:0.58},
+  gozara:{hp:6000,spd:95,contact:20,slam:35,wave:22,r:150,slamR:150,slamWave:400,roarWave:520,bodyR:0.58,breathLen:450,breathDeg:40,breathWarn:1.0,breathDur:1.5,breathTick:0.55,breathDmg:10,breathDmgHard:16},
   kangsan:{hp:20000,spd:175,enrSpd:235,contact:26,dash:34,slam:40,bullet:16,r:130},
   boss2Delay:300, eliteEvery:150, eliteMinGap:90, chooseInv:3
 };
@@ -1477,18 +1477,24 @@ function bdm(){return H_()?NUM.hard.bossDmg:1}
 function bossAI(dt){const b=R.boss,N=NUM[b.kind],tg=nearestP(b.x,b.y);if(!tg)return;b.flash-=dt;
   const hs=H_()?NUM.hard.bossSpd:1;
   if(b.kind==='kangsan'&&!b.enr&&b.hp<=b.maxHp*0.5){b.enr=true;rbanner('강산 격노! 더 빠르고 강해진다!','#ff2e63',3);b.mode='rest';b.mt=1.2}
-  const enr=b.enr?1.3:1;b.mt-=dt;const dx=tg.x-b.x,dy=tg.y-b.y,dd=Math.hypot(dx,dy)||1;if(Math.abs(dx)>4)b.face=dx<0?-1:1;
+  const enr=b.enr?1.3:1;b.mt-=dt;const dx=tg.x-b.x,dy=tg.y-b.y,dd=Math.hypot(dx,dy)||1;if(Math.abs(dx)>4&&!(b.mode==='breathPrep'||b.mode==='breath'))b.face=dx<0?-1:1;
   if(b.mode==='chase'){const sp=(b.kind==='kangsan'?(b.enr?N.enrSpd:N.spd):N.spd)*hs;b.x+=dx/dd*sp*dt;b.y+=dy/dd*sp*dt;
-    if(b.mt<=0){const pool=b.kind==='gozara'?['slam','chase2','wave']:['dash','slam3','barrage','dash'];let m=pool[b.cyc++%pool.length];
+    if(b.mt<=0){const pool=b.kind==='gozara'?['slam','chase2','wave','breath']:['dash','slam3','barrage','dash'];let m=pool[b.cyc++%pool.length];
       if(m==='chase2'){b.mt=2;return}
       if(m==='slam'){b.mode='slamPrep';b.mt=1.3/(H_()?1.1:1);b.tx=tg.x;b.ty=tg.y;b.sx=b.x;b.sy=b.y;addTele({k:'circle',x:tg.x,y:tg.y,r:N.slamR,warn:b.mt,col:'#ff2e63'});addTele({k:'zone',x:tg.x,y:tg.y,r:N.slamWave,warn:b.mt+0.9,col:'#ffd84d'})}
       else if(m==='wave'){b.mode='roar';b.mt=1.1;addTele({k:'zone',x:b.x,y:b.y,r:N.roarWave,warn:2.4,col:'#ffd84d'})}
+      else if(m==='breath'){const hd=tg.x<b.x?-1:1,mx=b.x+hd*b.r*1.29,my=b.y-b.r*0.68,a=Math.atan2(tg.y-my,tg.x-mx),L=N.breathLen;b.mode='breathPrep';b.mt=N.breathWarn;b.bmx=mx;b.bmy=my;b.ba=a;b.face=-hd; // 스프라이트는 face*-1로 그려짐 → 머리(입)가 대상 쪽
+        addTele({k:'cone',x:mx,y:my,x2:mx+Math.cos(a)*L,y2:my+Math.sin(a)*L,w:N.breathDeg/2,warn:b.mt,col:'#39ff6a'})}
       else if(m==='dash'){b.mode='dashPrep';b.mt=0.85/enr;const a=Math.atan2(dy,dx);b.da=a;const L=1100;addTele({k:'line',x:b.x,y:b.y,x2:b.x+Math.cos(a)*L,y2:b.y+Math.sin(a)*L,w:b.r*1.5,warn:b.mt,col:'#ff8c3a'})}
       else if(m==='slam3'){b.mode='slamPrep3';b.mt=1.1/enr;const k=b.enr?5:3;for(let i=0;i<k;i++){const ps=alive();const p=ps[i%ps.length];const x=p.x+(i<ps.length?0:rand(-260,260)),y=p.y+(i<ps.length?0:rand(-260,260));addTele({k:'circle',x,y,r:170,warn:b.mt+i*0.18,col:'#ff2e63',hit:N.slam*bdm()*enr})}}
       else if(m==='barrage'){b.mode='barPrep';b.mt=0.7;b.bw=0;addTele({k:'ring',x:b.x,y:b.y,r:b.r+30,warn:0.7,col:'#ff8cff',nodmg:true})}}}
   else if(b.mode==='slamPrep'){const k=1-Math.max(0,b.mt)/1.3;b.z=Math.sin(Math.min(1,k)*Math.PI)*120;b.x=b.sx+(b.tx-b.sx)*Math.min(1,k*1.2);b.y=b.sy+(b.ty-b.sy)*Math.min(1,k*1.2);
     if(b.mt<=0){b.z=0;b.x=b.tx;b.y=b.ty;addShake(16);for(const p of alive())if(Math.hypot(p.x-b.x,p.y-b.y)<N.slamR)hurtP(p,N.slam*bdm());R.waves.push({x:b.x,y:b.y,r:60,max:N.slamWave,spd:430,dmg:N.wave*bdm(),hit:{}});b.mode='rest';b.mt=1.2}}
   else if(b.mode==='roar'){if(b.mt<=0){R.waves.push({x:b.x,y:b.y,r:b.r,max:N.roarWave,spd:380,dmg:N.wave*bdm(),hit:{}});R.waves.push({x:b.x,y:b.y,r:b.r-240,max:N.roarWave,spd:380,dmg:N.wave*bdm(),hit:{}});addShake(10);b.mode='rest';b.mt=1.4}}
+  else if(b.mode==='breathPrep'){if(b.mt<=0){const L=N.breathLen;b.mode='breath';b.mt=N.breathDur;b.bt=0;addShake(6);addTele({k:'breath',x:b.bmx,y:b.bmy,x2:b.bmx+Math.cos(b.ba)*L,y2:b.bmy+Math.sin(b.ba)*L,w:N.breathDeg/2,warn:N.breathDur,col:'#39ff6a'})}}
+  else if(b.mode==='breath'){b.bt-=dt;if(b.bt<=0&&b.mt>-1e-6){b.bt+=N.breathTick;const hd=N.breathDeg/2*Math.PI/180,dm=H_()?N.breathDmgHard:N.breathDmg;
+      for(const p of alive()){const ex=p.x-b.bmx,ey=p.y-b.bmy;if(Math.hypot(ex,ey)>N.breathLen)continue;let da=Math.atan2(ey,ex)-b.ba;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)<=hd)hurtP(p,dm)}} // 중심점만 판정(반경 미가산) → 그려진 부채꼴 이하
+    if(b.mt<=0){b.mode='rest';b.mt=1.2}}
   else if(b.mode==='dashPrep'){if(b.mt<=0){b.mode='dash';b.mt=1100/1150}}
   else if(b.mode==='dash'){const sp=1150*(b.enr?1.1:1);b.x+=Math.cos(b.da)*sp*dt;b.y+=Math.sin(b.da)*sp*dt;for(const p of alive())if(Math.hypot(p.x-b.x,p.y-b.y)<b.r*0.8+14)hurtP(p,N.dash*bdm()*enr);
     if(b.mt<=0){b.mode='rest';b.mt=b.enr?0.55:0.9}}
@@ -1773,6 +1779,13 @@ function drawTele(){for(const t of R.tele){const k=Math.min(1,t.t/t.warn);ctx.sa
       ctx.beginPath();ctx.moveTo(t.x-30,t.y);ctx.lineTo(t.x+30,t.y);ctx.moveTo(t.x,t.y-30);ctx.lineTo(t.x,t.y+30);ctx.stroke()}
     else if(t.k==='line'){const a=Math.atan2(t.y2-t.y,t.x2-t.x),L=Math.hypot(t.x2-t.x,t.y2-t.y);ctx.translate(t.x,t.y);ctx.rotate(a);ctx.globalAlpha=0.15+0.25*k;ctx.fillRect(0,-t.w/2,L,t.w);ctx.globalAlpha=1;ctx.setLineDash([20,12]);ctx.strokeRect(0,-t.w/2,L,t.w);ctx.setLineDash([]);ctx.fillRect(0,-3,L*k,6)}
     else if(t.k==='zone'){ctx.globalAlpha=0.08+0.12*k;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,TAU);ctx.fill();ctx.globalAlpha=0.9;ctx.setLineDash([14,10]);ctx.lineWidth=3;ctx.stroke();ctx.setLineDash([])}
+    else if(t.k==='cone'||t.k==='breath'){const a=Math.atan2(t.y2-t.y,t.x2-t.x),L=Math.hypot(t.x2-t.x,t.y2-t.y),h=t.w*Math.PI/180;ctx.translate(t.x,t.y);ctx.rotate(a);
+      const fan=r=>{ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,r,-h,h);ctx.closePath()};
+      if(t.k==='cone'){ctx.globalAlpha=0.12+0.22*k;fan(L);ctx.fill();ctx.globalAlpha=1;ctx.setLineDash([18,12]);fan(L);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=0.5;fan(L*k);ctx.fill()}
+      else if(t.t<t.warn){const fd=Math.min(1,(t.warn-t.t)/0.2,t.t/0.12);const g=ctx.createRadialGradient(0,0,10,0,0,L);g.addColorStop(0,'rgba(210,255,220,0.95)');g.addColorStop(0.5,'rgba(57,255,106,0.6)');g.addColorStop(1,'rgba(57,255,106,0.15)');
+        ctx.globalAlpha=fd*(0.75+0.15*Math.sin(t.t*40));ctx.fillStyle=g;fan(L);ctx.fill();ctx.save();fan(L);ctx.clip();ctx.fillStyle='#d8ffe0';ctx.globalAlpha=fd*0.5; // 절차적 불꽃(파티클 배열 없음, 최대 10개)
+        for(let i=0;i<10;i++){const q=((t.t*2.2+i*0.1)%1),rr=q*L,aa=Math.sin(i*2.7+t.t*9)*h*0.8;ctx.beginPath();ctx.arc(Math.cos(aa)*rr,Math.sin(aa)*rr,8+q*26,0,TAU);ctx.fill()}ctx.restore();
+        ctx.globalAlpha=fd;ctx.lineWidth=3;fan(L);ctx.stroke()}}
     else if(t.k==='ring'){ctx.globalAlpha=0.5+0.5*Math.sin(t.t*25);ctx.lineWidth=8;ctx.beginPath();ctx.arc(t.x,t.y,t.r+(1-k)*60,0,TAU);ctx.stroke()}ctx.restore()}
   ctx.strokeStyle='#ffd84d';for(const w of R.waves){if(w.r<=0)continue;ctx.globalAlpha=0.28;ctx.lineWidth=26;ctx.beginPath();ctx.arc(w.x,w.y,w.r,0,TAU);ctx.stroke();ctx.globalAlpha=1;ctx.lineWidth=10;ctx.stroke()}}
 function drawOtherWeapons(p){// 원본 render의 회전 칼날/불꽃 오라 그리기 (다른 플레이어용)
@@ -1827,7 +1840,7 @@ window.__raid={NUM,get R(){return R},get RP(){return RP},get myId(){return myId}
   killBoss(){if(R&&R.boss)R.boss.hp=0},startEv(k){if(!R||!R.host)return false;if(G.ev)endEvent();P=alive()[0]||P;const pv=G.ev;startEvent(k);evGuard(pv);return true},get G(){return G},
 hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false},
   giveXp(id,n){const p=RP.find(p=>p.id===(id||myId));if(p)p.xp+=n},
-  killAll(){if(R)for(const p of RP){p.hp=0;p.dead=true}},forceMode(m){if(R&&R.boss){R.boss.mode='chase';R.boss.mt=0;R.boss.cyc=({slam:0,wave:2,dash:0,slam3:1,barrage:2})[m]??0}}};
+  killAll(){if(R)for(const p of RP){p.hp=0;p.dead=true}},forceMode(m){if(R&&R.boss){R.boss.mode='chase';R.boss.mt=0;R.boss.cyc=({slam:0,wave:2,breath:3,dash:0,slam3:1,barrage:2})[m]??0}}};
 })();
 
 </script>
