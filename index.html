@@ -1325,7 +1325,7 @@ const NUM={
   mobRateMul:1.8,           // 일반 모드 스폰 공식(하드는 원래 하드 배율 포함) x1.8
   hard:{bossHp:1.6,bossDmg:1.3,bossSpd:1.15}, // 몹 하드 배율은 원본 엔진(isHard) 그대로
   scale:n=>1+0.75*(n-1),
-  gozara:{hp:6000,spd:95,contact:20,slam:35,wave:22,r:150},
+  gozara:{hp:6000,spd:95,contact:20,slam:35,wave:22,r:150,slamR:150,slamWave:400,roarWave:520,bodyR:0.58},
   kangsan:{hp:20000,spd:175,enrSpd:235,contact:26,dash:34,slam:40,bullet:16,r:130},
   boss2Delay:300, eliteEvery:150, eliteMinGap:90, chooseInv:3
 };
@@ -1481,14 +1481,14 @@ function bossAI(dt){const b=R.boss,N=NUM[b.kind],tg=nearestP(b.x,b.y);if(!tg)ret
   if(b.mode==='chase'){const sp=(b.kind==='kangsan'?(b.enr?N.enrSpd:N.spd):N.spd)*hs;b.x+=dx/dd*sp*dt;b.y+=dy/dd*sp*dt;
     if(b.mt<=0){const pool=b.kind==='gozara'?['slam','chase2','wave']:['dash','slam3','barrage','dash'];let m=pool[b.cyc++%pool.length];
       if(m==='chase2'){b.mt=2;return}
-      if(m==='slam'){b.mode='slamPrep';b.mt=1.3/(H_()?1.1:1);b.tx=tg.x;b.ty=tg.y;b.sx=b.x;b.sy=b.y;addTele({k:'circle',x:tg.x,y:tg.y,r:230,warn:b.mt,col:'#ff2e63'})}
-      else if(m==='wave'){b.mode='roar';b.mt=1.1;addTele({k:'ring',x:b.x,y:b.y,r:120,warn:1.1,col:'#ffd84d'})}
+      if(m==='slam'){b.mode='slamPrep';b.mt=1.3/(H_()?1.1:1);b.tx=tg.x;b.ty=tg.y;b.sx=b.x;b.sy=b.y;addTele({k:'circle',x:tg.x,y:tg.y,r:N.slamR,warn:b.mt,col:'#ff2e63'});addTele({k:'zone',x:tg.x,y:tg.y,r:N.slamWave,warn:b.mt+0.9,col:'#ffd84d'})}
+      else if(m==='wave'){b.mode='roar';b.mt=1.1;addTele({k:'zone',x:b.x,y:b.y,r:N.roarWave,warn:2.4,col:'#ffd84d'})}
       else if(m==='dash'){b.mode='dashPrep';b.mt=0.85/enr;const a=Math.atan2(dy,dx);b.da=a;const L=1100;addTele({k:'line',x:b.x,y:b.y,x2:b.x+Math.cos(a)*L,y2:b.y+Math.sin(a)*L,w:b.r*1.5,warn:b.mt,col:'#ff8c3a'})}
       else if(m==='slam3'){b.mode='slamPrep3';b.mt=1.1/enr;const k=b.enr?5:3;for(let i=0;i<k;i++){const ps=alive();const p=ps[i%ps.length];const x=p.x+(i<ps.length?0:rand(-260,260)),y=p.y+(i<ps.length?0:rand(-260,260));addTele({k:'circle',x,y,r:170,warn:b.mt+i*0.18,col:'#ff2e63',hit:N.slam*bdm()*enr})}}
       else if(m==='barrage'){b.mode='barPrep';b.mt=0.7;b.bw=0;addTele({k:'ring',x:b.x,y:b.y,r:b.r+30,warn:0.7,col:'#ff8cff',nodmg:true})}}}
   else if(b.mode==='slamPrep'){const k=1-Math.max(0,b.mt)/1.3;b.z=Math.sin(Math.min(1,k)*Math.PI)*120;b.x=b.sx+(b.tx-b.sx)*Math.min(1,k*1.2);b.y=b.sy+(b.ty-b.sy)*Math.min(1,k*1.2);
-    if(b.mt<=0){b.z=0;b.x=b.tx;b.y=b.ty;addShake(16);for(const p of alive())if(Math.hypot(p.x-b.x,p.y-b.y)<230)hurtP(p,N.slam*bdm());R.waves.push({x:b.x,y:b.y,r:60,max:620,spd:430,dmg:N.wave*bdm(),hit:{}});b.mode='rest';b.mt=1.2}}
-  else if(b.mode==='roar'){if(b.mt<=0){R.waves.push({x:b.x,y:b.y,r:b.r,max:800,spd:380,dmg:N.wave*bdm(),hit:{}});R.waves.push({x:b.x,y:b.y,r:b.r-240,max:800,spd:380,dmg:N.wave*bdm(),hit:{}});addShake(10);b.mode='rest';b.mt=1.4}}
+    if(b.mt<=0){b.z=0;b.x=b.tx;b.y=b.ty;addShake(16);for(const p of alive())if(Math.hypot(p.x-b.x,p.y-b.y)<N.slamR)hurtP(p,N.slam*bdm());R.waves.push({x:b.x,y:b.y,r:60,max:N.slamWave,spd:430,dmg:N.wave*bdm(),hit:{}});b.mode='rest';b.mt=1.2}}
+  else if(b.mode==='roar'){if(b.mt<=0){R.waves.push({x:b.x,y:b.y,r:b.r,max:N.roarWave,spd:380,dmg:N.wave*bdm(),hit:{}});R.waves.push({x:b.x,y:b.y,r:b.r-240,max:N.roarWave,spd:380,dmg:N.wave*bdm(),hit:{}});addShake(10);b.mode='rest';b.mt=1.4}}
   else if(b.mode==='dashPrep'){if(b.mt<=0){b.mode='dash';b.mt=1100/1150}}
   else if(b.mode==='dash'){const sp=1150*(b.enr?1.1:1);b.x+=Math.cos(b.da)*sp*dt;b.y+=Math.sin(b.da)*sp*dt;for(const p of alive())if(Math.hypot(p.x-b.x,p.y-b.y)<b.r*0.8+14)hurtP(p,N.dash*bdm()*enr);
     if(b.mt<=0){b.mode='rest';b.mt=b.enr?0.55:0.9}}
@@ -1498,7 +1498,7 @@ function bossAI(dt){const b=R.boss,N=NUM[b.kind],tg=nearestP(b.x,b.y);if(!tg)ret
       const a=off+i/n*TAU;ebullets.push({x:b.x,y:b.y,vx:Math.cos(a)*260*enr,vy:Math.sin(a)*260*enr,r:9,life:4,dmg:N.bullet*bdm(),k:"bossbullet"})}}if(b.mt<=0){b.mode='rest';b.mt=0.9}}
   else if(b.mode==='rest'){if(b.mt<=0){b.mode='chase';b.mt=b.kind==='gozara'?2.6:(b.enr?1.2:1.8)}}
 
-  if(b.mode!=='slamPrep')for(const p of alive())if(Math.hypot(p.x-b.x,p.y-b.y)<b.r*0.75+12)hurtP(p,N.contact*bdm())}
+  if(b.mode!=='slamPrep')for(const p of alive())if(Math.hypot(p.x-b.x,p.y-b.y)<(b.kind==='gozara'?b.r*N.bodyR:b.r*0.75+12))hurtP(p,N.contact*bdm())}
 function applyPick(p,i){if(!p.opts||!p.opts[i]||p.dead)return;const o=p.opts[i];const prev=P;P=p;
   if(o.kind==='w'){if(!P.weapons[o.id]){P.weapons[o.id]=1;P.wOrder.push(o.id)}else P.weapons[o.id]++}
   else if(o.kind==='p'){if(!P.passives[o.id]){P.passives[o.id]=1;P.pOrder.push(o.id)}else P.passives[o.id]++;if(o.id==='heart'){P.maxHp+=20;P.hp=Math.min(P.maxHp,P.hp+20)}}
@@ -1639,7 +1639,7 @@ function hostUpdate(dt){
       if(k==='gozara'){for(let i=0;i<30;i++)dropGem(b.x+rand(-90,90),b.y+rand(-90,90),8);pickups.push({type:'chest',x:b.x,y:b.y,t:0});R.phase='inter';R.votes={}}
       else{R.phase='ending';R.endT=3;enemies=[];gems=[];projs=[];pickups=[];rbanner('세상이 정화되었다.','#ffffff',3.2)}}}
   for(const tl of R.tele){tl.t+=dt;if(tl.hit&&!tl.done&&tl.t>=tl.warn){tl.done=1;addShake(10);for(const p of alive())if(Math.hypot(p.x-tl.x,p.y-tl.y)<tl.r)hurtP(p,tl.hit)}}R.tele=R.tele.filter(tl=>tl.t<tl.warn+0.25);
-  for(const w of R.waves){w.r+=w.spd*dt;for(const p of alive()){const d=Math.hypot(p.x-w.x,p.y-w.y);if(w.r>0&&!w.hit[p.id]&&Math.abs(d-w.r)<22){w.hit[p.id]=1;hurtP(p,w.dmg)}}}R.waves=R.waves.filter(w=>w.r<w.max);
+  for(const w of R.waves){w.r+=w.spd*dt;for(const p of alive()){const d=Math.hypot(p.x-w.x,p.y-w.y);if(w.r>0&&!w.hit[p.id]&&Math.abs(d-w.r)<22&&(!w.max||d<=w.max)){w.hit[p.id]=1;hurtP(p,w.dmg)}}}R.waves=R.waves.filter(w=>w.r<w.max);
   enemies=enemies.filter(e=>!e.dead);
   // 개인 레벨 업: 게임은 멈추지 않음, 선택 중 최대 3초 무적
   for(const p of RP){if(p.dead)continue;while(p.xp>=p.need){p.xp-=p.need;p.level++;p.need=lvNeed(p.level);p.pendingLv++}
@@ -1772,6 +1772,7 @@ function drawTele(){for(const t of R.tele){const k=Math.min(1,t.t/t.warn);ctx.sa
     if(t.k==='circle'){ctx.globalAlpha=0.18+0.2*k;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,TAU);ctx.fill();ctx.globalAlpha=1;ctx.setLineDash([18,12]);ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.arc(t.x,t.y,t.r*k,0,TAU);ctx.stroke();
       ctx.beginPath();ctx.moveTo(t.x-30,t.y);ctx.lineTo(t.x+30,t.y);ctx.moveTo(t.x,t.y-30);ctx.lineTo(t.x,t.y+30);ctx.stroke()}
     else if(t.k==='line'){const a=Math.atan2(t.y2-t.y,t.x2-t.x),L=Math.hypot(t.x2-t.x,t.y2-t.y);ctx.translate(t.x,t.y);ctx.rotate(a);ctx.globalAlpha=0.15+0.25*k;ctx.fillRect(0,-t.w/2,L,t.w);ctx.globalAlpha=1;ctx.setLineDash([20,12]);ctx.strokeRect(0,-t.w/2,L,t.w);ctx.setLineDash([]);ctx.fillRect(0,-3,L*k,6)}
+    else if(t.k==='zone'){ctx.globalAlpha=0.08+0.12*k;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,TAU);ctx.fill();ctx.globalAlpha=0.9;ctx.setLineDash([14,10]);ctx.lineWidth=3;ctx.stroke();ctx.setLineDash([])}
     else if(t.k==='ring'){ctx.globalAlpha=0.5+0.5*Math.sin(t.t*25);ctx.lineWidth=8;ctx.beginPath();ctx.arc(t.x,t.y,t.r+(1-k)*60,0,TAU);ctx.stroke()}ctx.restore()}
   ctx.strokeStyle='#ffd84d';for(const w of R.waves){if(w.r<=0)continue;ctx.globalAlpha=0.28;ctx.lineWidth=26;ctx.beginPath();ctx.arc(w.x,w.y,w.r,0,TAU);ctx.stroke();ctx.globalAlpha=1;ctx.lineWidth=10;ctx.stroke()}}
 function drawOtherWeapons(p){// 원본 render의 회전 칼날/불꽃 오라 그리기 (다른 플레이어용)
