@@ -778,6 +778,7 @@ function gameUpdate(dt){
       for(let yy=cy-1;yy<=cy+1&&cnt<6;yy++)for(let xx=cx-1;xx<=cx+1&&cnt<6;xx++){if(xx<0||yy<0||xx>=GN||yy>=GN)continue;const c=grid[yy*GN+xx];
         for(let i=0;i<c.length;i++){const o=c[i];if(o===e||o.dead)continue;const ox=e.x-o.x,oy=e.y-o.y,rr=e.r+o.r;const dd=ox*ox+oy*oy;
           if(dd<rr*rr&&dd>0.01){const dl=Math.sqrt(dd);const push=(rr-dl)/dl*(o.type==='boss'?1:0.5)*Math.min(1,dt*20);e.x+=ox*push;e.y+=oy*push;if(++cnt>=6)break}}}}
+    if(e.pT>0){e.pT-=dt;vx=vy=0;e.x+=e.pvx*dt;e.y+=e.pvy*dt;const pd=Math.exp(-3.2*dt);e.pvx*=pd;e.pvy*=pd}
     e.x+=(vx+e.kbx)*dt;e.y+=(vy+e.kby)*dt;const kd=Math.exp(-9*dt);e.kbx*=kd;e.kby*=kd;
     e.x=clamp(e.x,-WH+5,WH-5);e.y=clamp(e.y,-WH+5,WH-5);
     // 너무 멀어지면 앞쪽으로 재배치
@@ -1605,6 +1606,7 @@ function hostUpdate(dt){
       for(let yy=cy-1;yy<=cy+1&&cnt<6;yy++)for(let xx=cx-1;xx<=cx+1&&cnt<6;xx++){if(xx<0||yy<0||xx>=GN||yy>=GN)continue;const c=grid[yy*GN+xx];
         for(let i=0;i<c.length;i++){const o=c[i];if(o===e||o.dead||o.type==='raidboss')continue;const ox=e.x-o.x,oy=e.y-o.y,rr=e.r+o.r;const dd=ox*ox+oy*oy;
           if(dd<rr*rr&&dd>0.01){const dl=Math.sqrt(dd);const push=(rr-dl)/dl*0.5*Math.min(1,dt*20);e.x+=ox*push;e.y+=oy*push;if(++cnt>=6)break}}}}
+    if(e.pT>0){e.pT-=dt;vx=vy=0;e.x+=e.pvx*dt;e.y+=e.pvy*dt;const pd=Math.exp(-3.2*dt);e.pvx*=pd;e.pvy*=pd}
     e.x+=(vx+e.kbx)*dt;e.y+=(vy+e.kby)*dt;const kd=Math.exp(-9*dt);e.kbx*=kd;e.kby*=kd;
     e.x=clamp(e.x,-WH+5,WH-5);e.y=clamp(e.y,-WH+5,WH-5);
     if(d>farD&&e.type!=='elite'){P=tp;const q=offscreenPos();e.x=q.x;e.y=q.y}
@@ -1948,8 +1950,8 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 <script>
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
-const SKILLS={bolt:{cd:15,d:'거대한 화살 직선 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파·강한 넉백'},chain:{cd:20,d:'하늘에서 번개 연타'},
-  boom:{cd:20,d:'거대 부메랑 왕복 2타'},seek:{cd:20,d:'유도 구체 다수'},aura:{cd:20,d:'5초간 오라 거대화'},meteor:{cd:20,d:'지정 위치에 유성 1개 낙하'},beam:{cd:30,dur:10,d:'10초 지속 레이저'}};
+const SKILLS={bolt:{cd:15,d:'거대한 화살 직선 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:20,d:'거대 충격파·강한 넉백'},chain:{cd:20,d:'하늘에서 번개 연타'},
+  boom:{cd:20,d:'거대 부메랑 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:20,d:'5초간 오라 거대화'},meteor:{cd:20,d:'지정 위치에 유성 1개 낙하'},beam:{cd:30,dur:10,d:'10초 지속 레이저'}};
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
 const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
 if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
@@ -1975,7 +1977,7 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
   if(id==='bolt'){projs.push({k:'Sarrow',x,y,vx:ax*900,vy:ay*900,r:28,dmg:D*5,life:1.3,hit:new Set(),rot:a});S.shoot();S.zap()}
   else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:24,dmg:D*2.5,hm:new Map(),rot:0,life:2.6});S.shoot()}
   else if(id==='pulse'){const Rr=380*am;rings.push({x,y,r:0,max:Rr,t:0,dur:0.6,c:'#8ff6ff'});rings.push({x,y,r:0,max:Rr*0.65,t:0,dur:0.45,c:'#ffffff'});
-    buildGrid();query(x,y,Rr,(e,dx,dy)=>hurtEnemy(e,D*4,dx,dy,1400));burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
+    buildGrid();query(x,y,Rr,(e,dx,dy)=>{hurtEnemy(e,D*4,0,0,0);skPush(e,x,y)});burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
   else if(id==='chain'){projs.push({k:'Sstorm',x,y,r:0,n:8,cd:0,dmg:D*3,life:4,rot:0})}
   else if(id==='boom'){projs.push({k:'Sboom',x,y,dx:ax,dy:ay,t:0,out:true,dist:0,r:42,dmg:D*4,hit:new Set(),rot:0});S.shoot()}
   else if(id==='seek'){const tg=nearestN(x,y,16,760);for(let i=0;i<16;i++){const b=a+(i/15-0.5)*2.6;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*1.5,life:4,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
@@ -1984,6 +1986,10 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
     meteors.push({x:mx,y:my,t:0,warn:1.1,dmg:D*10,rad:st.rad*am,hit:false,big:1});S.pulse()}
   else if(id==='beam'){projs.push({k:'Slaser',x,y,r:0,t:0,life:10,tick:0,dmg:D*0.8,ax,ay,rot:a,len:760*am});S.zap()}
 }
+// 충격파 밀어내기: kbRes 무시, 감속(ease-out) 속도, 밀리는 동안(1.2초) 자체 이동 없음
+function skPush(e,x,y){if(e.dead||e.type==='raidboss')return;let dx=e.x-x,dy=e.y-y;const d=Math.hypot(dx,dy);if(d<1){const b=rand(0,TAU);dx=Math.cos(b);dy=Math.sin(b)}else{dx/=d;dy/=d}
+  const boss=e.type==='boss',ex=Math.min(W*0.5/VS/(Math.abs(dx)||1e-6),H*0.5/VS/(Math.abs(dy)||1e-6))*0.92,dist=boss?70:Math.max(260,ex-Math.max(d,0)),T=1.2,k=3.2,v0=dist*k/(1-Math.exp(-k*T));
+  e.pT=T;e.pvx=dx*v0;e.pvy=dy*v0;e.kbx=e.kby=0}
 function skProj(p,dt){
   if(p.k==='Sarrow'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(Math.random()<0.8)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.3,max:0.3,c:'#4df3ff',s:6});
     query(p.x,p.y,p.r,e=>{if(p.hit.has(e))return;p.hit.add(e);hurtEnemy(e,p.dmg,p.vx,p.vy,260);burst(e.x,e.y,'#4df3ff',4,140,0.25,2.5)})}
