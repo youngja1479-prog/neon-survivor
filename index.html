@@ -810,7 +810,7 @@ function gameUpdate(dt){
       burst(m.x,m.y,'#ff9a3c',18,260,0.45,3.5);burst(m.x,m.y,'#fff27a',8,150,0.3,3);addShake(3);S.boom()}}
   mines=mines.filter(m=>!m.dead&&m.life>0);
   // 유성우
-  for(const m of meteors){m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});
+  for(const m of meteors){m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);
     burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}}
   meteors=meteors.filter(m=>m.t<m.warn+0.05);
   // 적 탄환
@@ -1451,7 +1451,8 @@ function onHostData(c,d){
   if(d.t==='in'){p.mx=clamp(+d.mx||0,-1,1);p.my=clamp(+d.my||0,-1,1);if(d.sq)p.ack=d.sq|0;if(d.vw)p.vw=clamp(d.vw|0,200,1500);if(d.vh)p.vh=clamp(d.vh|0,150,1100)}
   else if(d.t==='pick')applyPick(p,d.i);
   else if(d.t==='cont')vote(p)
-  else if(d.t==='sk')skQ.push([p.id,d.w,+d.ax||0,+d.ay||0])}
+  else if(d.t==='sk')skQ.push([p.id,d.w,+d.ax||0,+d.ay||0,d.tx==null?null:+d.tx,d.ty==null?null:+d.ty])
+  else if(d.t==='aim')p.aim=d.off?null:[+d.x||0,+d.y||0]}
 function setRaidUI(on){$('rChatBtn').style.display=on?'flex':'none';if(!on){closeChat();$('rChatOv').innerHTML=''}}
 // ---------- 엔진 시작/종료 ----------
 function beginEngine(diff){window.__raidMd=diff==='hard'?{name:'레이드 · 하드',col:'#ff4d6d'}:{name:'레이드 · 노멀',col:'#ff8c3a'};savedMode=gameMode;gameMode=diff==='hard'?'hard':'normal';startWeapon='bolt';newGame();banner=null;G.tip=null;G.tipQ=[];G.tipFlags={loop:1,loop2:1,elite:1};
@@ -1629,7 +1630,7 @@ function hostUpdate(dt){
     if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,250));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});
       burst(m.x,m.y,'#ff9a3c',18,260,0.45,3.5);burst(m.x,m.y,'#fff27a',8,150,0.3,3);addShake(3);S.boom()}});
   mines=mines.filter(m=>!m.dead&&m.life>0);
-  for(const m of meteors)withOwner(m,()=>{m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});
+  for(const m of meteors)withOwner(m,()=>{m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);
     burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}});
   meteors=meteors.filter(m=>m.t<m.warn+0.05);
   for(const b of ebullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;for(const p of alive()){const rr=b.r+p.r-4;if((b.x-p.x)**2+(b.y-p.y)**2<rr*rr){b.life=0;hurtP(p,Math.round(b.dmg));break}}}
@@ -1676,7 +1677,7 @@ const e1=v=>B64[clamp(v|0,0,63)],e2=v=>{v=clamp(Math.round(v)+2048,0,4095);retur
 const d1=(S,i)=>B64D[S.charCodeAt(i)],d2=(S,i)=>(B64D[S.charCodeAt(i)]<<6|B64D[S.charCodeAt(i+1)])-2048,d3=(S,i)=>(B64D[S.charCodeAt(i)]<<12|B64D[S.charCodeAt(i+1)]<<6|B64D[S.charCodeAt(i+2)])-131072;
 const wrapA=a=>{a=a%TAU;if(a>Math.PI)a-=TAU;if(a<-Math.PI)a+=TAU;return a};
 const HPT=new Set(['elite','brute','boss']);
-const STK=['diff','k','b2','v','bn','gb','TR','RV','LF','CL','EV','PU','MN','MT','RG','ZP','BM','TL','W','BS','GM'];
+const STK=['diff','k','b2','v','bn','gb','TR','RV','LF','CL','EV','PU','MN','MT','RG','ZP','BM','TL','W','BS','GM','AM'];
 // 게스트별 스냅샷: 게스트 화면(+여유) 밖 엔티티 제외, 좌표 정수/상대좌표, 변하지 않은 필드는 생략(신뢰성 있는 순서 채널), 느린 데이터는 ~5Hz
 function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||sn%3===1;const pk=c._pk=c._pk||{},last=c._ls=c._ls||{};
   const me=RP.find(p=>p.id===c.pid);const fp=(me&&!me.dead?me:(RP.find(p=>!p.dead)||me||RP[0]));
@@ -1699,7 +1700,7 @@ function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||
   TL:R.tele.map(t=>[t.k,r1(t.x),r1(t.y),r1(t.r||0),r1(t.x2||0),r1(t.y2||0),r1(t.w||0),r2(t.t),r2(t.warn),t.col]),W:R.waves.map(w=>[r1(w.x),r1(w.y),r1(w.r)]),
   BS:R.boss?[R.boss.kind,0,r1(R.boss.x),r1(R.boss.y),R.boss.r,r1(R.boss.hp),r1(R.boss.maxHp),R.boss.mode,R.boss.face,R.boss.flash>0?1:0,R.boss.enr?1:0,r1(R.boss.z)]:null};
   if(slow){const GM=[];for(const g of gems){if(GM.length>=1500)break;if(inV(g.x,g.y,150))GM.push(r1(g.x),r1(g.y),g.v)}o.GM=GM;
-    o.PU=pickups.filter(i=>inV(i.x,i.y,150)).map(i=>[i.type,r1(i.x),r1(i.y),r2(i.t)]);o.MN=mines.filter(m=>inV(m.x,m.y,150)).map(m=>[r1(m.x),r1(m.y),r2(m.t)])}
+    o.AM=RP.map(p=>p.aim&&!p.dead?[r1(p.aim[0]),r1(p.aim[1])]:0);o.PU=pickups.filter(i=>inV(i.x,i.y,150)).map(i=>[i.type,r1(i.x),r1(i.y),r2(i.t)]);o.MN=mines.filter(m=>inV(m.x,m.y,150)).map(m=>[r1(m.x),r1(m.y),r2(m.t)])}
   for(const k of STK){if(!(k in o))continue;const js=JSON.stringify(o[k]);if(!full&&last[k]===js)delete o[k];else last[k]=js}
   return o}
 function sendSnaps(){for(const c of conns)if(c.open&&!(c.metadata&&c.metadata.probe))try{c.send(snapFor(c))}catch(e){}}
@@ -1710,6 +1711,7 @@ function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;G.kills=R.kills
   RP=d.P.map(a=>{const p=old[a[0]]||{r:14,baseSpd:210,hurtT:0,name:'?',col:'#fff',maxHp:100,weapons:{},passives:{},wOrder:[],pOrder:[],need:1,opts:null};Object.assign(p,{id:a[0],x:a[1],y:a[2],hp:a[3],fx:a[4],fy:a[5],moving:!!a[6],walk:a[7],inv:a[8],dead:!!a[9],level:a[10],xp:a[11],chooseT:a[12]});
     const h=a[13];if(h)Object.assign(p,{name:h[0],col:h[1],maxHp:h[2],weapons:h[3],passives:h[4],wOrder:h[5],pOrder:h[6],need:h[7],opts:h[8]});return p});
   if(d.RV)RP.forEach((p,i)=>{p.reviveT=d.RV[i]||0});
+  if(d.AM)RP.forEach((p,i)=>{p.aim=d.AM[i]||null});
   if(d.TR)RP.forEach((p,i)=>{const t=d.TR[i];if(!t)return;const A=t[0]||'',o=[];if(typeof A==='string'){for(let j=0;j+6<A.length;j+=7)o.push({x:d3(A,j),y:d3(A,j+3),a:d1(A,j+6)/20})}else for(let j=0;j<A.length;j+=3)o.push({x:A[j],y:A[j+1],a:A[j+2]/20});p.trail=o;p.combo=t[1]});
   if(d.BT!=null&&Math.abs(G.beatPh-d.BT)>0.12)G.beatPh=d.BT;
   if(d.LF)G.loopFx=d.LF.map(a=>{const poly=[];for(let j=0;j<a[2].length;j+=2)poly.push({x:a[2][j],y:a[2][j+1]});return {perfect:!!a[0],t:a[1],poly}});
@@ -1927,6 +1929,9 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 .skb.act{border-color:#ff6ad5;box-shadow:0 0 18px #ff6ad5}
 .skb.hold{transform:scale(1.08);background:rgba(77,243,255,.3)}
 #skBtnB{margin-top:-40px}
+#skCancel{position:fixed;display:none;width:64px;height:64px;border-radius:50%;border:3px dashed #ff4d6d;background:rgba(60,10,25,.75);color:#ff8c8c;font-size:26px;font-weight:900;text-align:center;line-height:40px;z-index:9;pointer-events:none}
+#skCancel small{display:block;font-size:10px;line-height:10px}#skCancel.show{display:block}#skCancel.over{background:#ff2e63;color:#fff;transform:scale(1.15)}
+#skFlash{position:fixed;inset:0;background:#fff3d8;opacity:0;pointer-events:none;z-index:7}
 @media (max-height:560px){#skBtns{bottom:70px}.skb{width:64px;height:64px}.skb .cd{line-height:64px}}
 </style>
 <div class="ov" id="settings">
@@ -1938,12 +1943,13 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
   <div id="skSetMsg"></div>
   <div class="row"><button class="btn sec" id="setBackBtn">타이틀로</button></div>
 </div>
+<div id="skCancel">✖<small>취소</small></div><div id="skFlash"></div>
 <div id="skBtns"><button class="skb" id="skBtnA"><b>A</b><span class="nm"></span><span class="cd"></span></button><button class="skb" id="skBtnB" style="border-color:#ff6ad5"><b>B</b><span class="nm"></span><span class="cd"></span></button></div>
 <script>
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
 const SKILLS={bolt:{cd:15,d:'거대한 화살 직선 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파·강한 넉백'},chain:{cd:20,d:'하늘에서 번개 연타'},
-  boom:{cd:20,d:'거대 부메랑 왕복 2타'},seek:{cd:20,d:'유도 구체 다수'},aura:{cd:20,d:'5초간 오라 거대화'},meteor:{cd:30,d:'거대 유성 1개 낙하'},beam:{cd:30,dur:10,d:'10초 지속 레이저'}};
+  boom:{cd:20,d:'거대 부메랑 왕복 2타'},seek:{cd:20,d:'유도 구체 다수'},aura:{cd:20,d:'5초간 오라 거대화'},meteor:{cd:20,d:'지정 위치에 유성 1개 낙하'},beam:{cd:30,dur:10,d:'10초 지속 레이저'}};
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
 const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
 if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
@@ -1964,24 +1970,28 @@ function renderSkSet(){for(const slot of ['A','B']){const row=$('skRow'+slot);ro
 $('setMenuBtn').onclick=()=>{initAudio();openSettings()};
 $('setBackBtn').onclick=()=>{$('settings').classList.remove('show');toTitle()};
 // ---------- 스킬 발동 (현재 P 기준; 레이드 호스트는 swapIn 후 호출) ----------
-function fireSkill(id,ax,ay){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=0}else{ax/=l;ay/=l}
+function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=0}else{ax/=l;ay/=l}
   const st=skBase(id),D=st.dmg,am=areaMul(),a=Math.atan2(ay,ax),x=P.x,y=P.y;
   if(id==='bolt'){projs.push({k:'Sarrow',x,y,vx:ax*900,vy:ay*900,r:28,dmg:D*5,life:1.3,hit:new Set(),rot:a});S.shoot();S.zap()}
-  else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:20,dmg:D*2.5,hm:new Map(),rot:0,life:2.6});S.shoot()}
+  else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:24,dmg:D*2.5,hm:new Map(),rot:0,life:2.6});S.shoot()}
   else if(id==='pulse'){const Rr=380*am;rings.push({x,y,r:0,max:Rr,t:0,dur:0.6,c:'#8ff6ff'});rings.push({x,y,r:0,max:Rr*0.65,t:0,dur:0.45,c:'#ffffff'});
     buildGrid();query(x,y,Rr,(e,dx,dy)=>hurtEnemy(e,D*4,dx,dy,1400));burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
   else if(id==='chain'){projs.push({k:'Sstorm',x,y,r:0,n:8,cd:0,dmg:D*3,life:4,rot:0})}
   else if(id==='boom'){projs.push({k:'Sboom',x,y,dx:ax,dy:ay,t:0,out:true,dist:0,r:42,dmg:D*4,hit:new Set(),rot:0});S.shoot()}
   else if(id==='seek'){const tg=nearestN(x,y,16,760);for(let i=0;i<16;i++){const b=a+(i/15-0.5)*2.6;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*1.5,life:4,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
   else if(id==='aura'){const Rr=Math.min(500,st.rad*2.6*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:5,tick:0,dmg:D*2,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
-  else if(id==='meteor'){meteors.push({x:x+ax*260,y:y+ay*260,t:0,warn:1.1,dmg:D*10,rad:230*am,hit:false,big:1});S.pulse()}
+  else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
+    meteors.push({x:mx,y:my,t:0,warn:1.1,dmg:D*10,rad:st.rad*am,hit:false,big:1});S.pulse()}
   else if(id==='beam'){projs.push({k:'Slaser',x,y,r:0,t:0,life:10,tick:0,dmg:D*0.8,ax,ay,rot:a,len:760*am});S.zap()}
 }
 function skProj(p,dt){
   if(p.k==='Sarrow'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(Math.random()<0.8)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.3,max:0.3,c:'#4df3ff',s:6});
     query(p.x,p.y,p.r,e=>{if(p.hit.has(e))return;p.hit.add(e);hurtEnemy(e,p.dmg,p.vx,p.vy,260);burst(e.x,e.y,'#4df3ff',4,140,0.25,2.5)})}
-  else if(p.k==='Sblade'){p.t+=dt;p.life-=dt;if(p.t<1){const an=p.a0+p.t*16,Rr=50+p.t*70;p.x=P.x+Math.cos(an)*Rr;p.y=P.y+Math.sin(an)*Rr;p.rot=an+Math.PI/2}
-    else{p.x+=p.dx*820*dt;p.y+=p.dy*820*dt;p.rot=Math.atan2(p.dy,p.dx)}
+  else if(p.k==='Sblade'){p.t+=dt;p.life-=dt;const OT=1.2,REV=2.5;
+    if(p.t<OT){const an=p.a0+p.t/OT*REV*TAU,Rr=Math.min(130,40+p.t*600);p.x=P.x+Math.cos(an)*Rr;p.y=P.y+Math.sin(an)*Rr;p.rot=an+Math.PI/2;p.ox=p.x-P.x;p.oy=p.y-P.y;
+      if(Math.random()<0.5)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.22,max:0.22,c:'#c9a6ff',s:5})}
+    else{if(!p.go){p.go=1;p.hm=new Map();const fl=Math.hypot(P.fx||0,P.fy||0);if(fl>0.01){p.dx=P.fx/fl;p.dy=P.fy/fl}p.x=P.x+p.ox;p.y=P.y+p.oy}
+      p.x+=p.dx*900*dt;p.y+=p.dy*900*dt;p.rot=Math.atan2(p.dy,p.dx)}
     query(p.x,p.y,p.r,e=>{const lt=p.hm.get(e);if(lt===undefined||G.t-lt>0.25){p.hm.set(e,G.t);hurtEnemy(e,p.dmg,e.x-P.x,e.y-P.y,160)}})}
   else if(p.k==='Sboom'){p.t+=dt;p.rot+=dt*20;const sp=760;
     if(p.out){p.x+=p.dx*sp*dt;p.y+=p.dy*sp*dt;p.dist+=sp*dt;if(p.dist>=620){p.out=false;p.hit=new Set()}}
@@ -2003,15 +2013,20 @@ function skProj(p,dt){
 // ---------- 그리기 (월드 좌표) ----------
 function drawSkillWorld(){ctx.save();ctx.globalCompositeOperation='lighter';
   for(const p of projs){if(p.k[0]!=='S')continue;
-    if(p.k==='Sarrow'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.shadowColor='#4df3ff';ctx.shadowBlur=24;ctx.fillStyle='#bff9ff';
-      ctx.beginPath();ctx.moveTo(48,0);ctx.lineTo(14,-22);ctx.lineTo(14,-8);ctx.lineTo(-60,-6);ctx.lineTo(-74,-18);ctx.lineTo(-66,0);ctx.lineTo(-74,18);ctx.lineTo(-60,6);ctx.lineTo(14,8);ctx.lineTo(14,22);ctx.closePath();ctx.fill();
-      ctx.strokeStyle='#4df3ff';ctx.lineWidth=4;ctx.stroke();ctx.restore()}
+    if(p.k==='Sarrow'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      const tg=ctx.createLinearGradient(-260,0,-70,0);tg.addColorStop(0,'rgba(77,243,255,0)');tg.addColorStop(1,'rgba(77,243,255,.45)');ctx.fillStyle=tg;ctx.beginPath();ctx.moveTo(-70,-9);ctx.lineTo(-260,0);ctx.lineTo(-70,9);ctx.closePath();ctx.fill();
+      ctx.shadowColor='#4df3ff';ctx.shadowBlur=22;ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.strokeStyle='#4df3ff';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(-66,0);ctx.lineTo(22,0);ctx.stroke();ctx.strokeStyle='#e8fdff';ctx.lineWidth=3.5;ctx.stroke();
+      ctx.fillStyle='#ffffff';ctx.strokeStyle='#4df3ff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(62,0);ctx.lineTo(16,-20);ctx.lineTo(24,0);ctx.lineTo(16,20);ctx.closePath();ctx.stroke();ctx.fill();
+      ctx.fillStyle='rgba(120,220,255,.85)';ctx.strokeStyle='#4df3ff';ctx.lineWidth=2.5;for(const sg of [-1,1])for(const k of [0,14]){ctx.beginPath();ctx.moveTo(-50-k,0);ctx.lineTo(-62-k,sg*18);ctx.lineTo(-72-k,sg*18);ctx.lineTo(-62-k,0);ctx.closePath();ctx.fill();ctx.stroke()}
+      ctx.restore()}
     else if(p.k==='Sblade'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot+G.t*14);ctx.scale(2.2,2.2);ctx.fillStyle='#e2ccff';ctx.shadowColor='#b9f';ctx.shadowBlur=16;
       ctx.beginPath();ctx.moveTo(-15,0);ctx.lineTo(0,-5);ctx.lineTo(15,0);ctx.lineTo(0,5);ctx.closePath();ctx.fill();ctx.restore()}
     else if(p.k==='Sboom'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);drawIcon(ctx,'boom',(p.r||42)*2.4);ctx.restore()}
     else if(p.k==='Saura'){const Rr=p.R||p.r*8;const gr=ctx.createRadialGradient(p.x,p.y,Rr*0.15,p.x,p.y,Rr);gr.addColorStop(0,'rgba(255,120,40,0.05)');gr.addColorStop(0.75,'rgba(255,100,40,0.2)');gr.addColorStop(1,'rgba(255,190,80,0.45)');
       ctx.fillStyle=gr;ctx.beginPath();ctx.arc(p.x,p.y,Rr*(1+Math.sin(G.t*9)*0.03),0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,160,60,.7)';ctx.lineWidth=4;ctx.stroke()}}
   ctx.restore();
+  if(state==='raid')for(const q of rRP()){if(q.id===rMe()||!q.aim||q.dead)continue;ctx.save();ctx.strokeStyle=q.col;ctx.fillStyle='rgba(255,154,93,.12)';ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.beginPath();ctx.arc(q.aim[0],q.aim[1],80,0,TAU);ctx.fill();ctx.stroke();ctx.setLineDash([]);ctx.font='900 12px '+FONT;ctx.fillStyle=q.col;ctx.textAlign='center';ctx.fillText(q.name+' 조준',q.aim[0],q.aim[1]-90);ctx.restore()}
   // 미리보기 (누르고 있는 동안)
   const me=myP();if(!skHold||!me||me.dead||!inSkillGame())return;const id=skId(skHold);let fx=me.fx||1,fy=me.fy||0;const fl=Math.hypot(fx,fy)||1;fx/=fl;fy/=fl;
   const am=(()=>{const sv=P;P=me;const v=areaMul();P=sv;return v})();const col=skHold==='A'?'77,243,255':'255,106,213',x=me.x,y=me.y;
@@ -2020,33 +2035,66 @@ function drawSkillWorld(){ctx.save();ctx.globalCompositeOperation='lighter';
   const circ=(cx,cy,r)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.fill();ctx.stroke()};
   if(id==='bolt')line(1100,28);else if(id==='orbit'){circ(x,y,120);line(900,60)}else if(id==='beam')line(760*am,22);else if(id==='boom')line(620,42);
   else if(id==='pulse')circ(x,y,380*am);else if(id==='aura'){const sv=P;P=me;const r=Math.min(500,skBase('aura').rad*2.6*am);P=sv;circ(x,y,r)}
-  else if(id==='meteor')circ(x+fx*260,y+fy*260,230*am);else if(id==='chain')circ(x,y,480);else if(id==='seek'){circ(x,y,760);line(200,10)}
+  else if(id==='meteor'&&skAimP){const sv=P;P=me;const r=skBase('meteor').rad*am;P=sv;ctx.setLineDash([]);ctx.lineWidth=4;circ(skAimP.x,skAimP.y,r);ctx.beginPath();ctx.moveTo(skAimP.x-r-14,skAimP.y);ctx.lineTo(skAimP.x+r+14,skAimP.y);ctx.moveTo(skAimP.x,skAimP.y-r-14);ctx.lineTo(skAimP.x,skAimP.y+r+14);ctx.stroke()}else if(id==='chain')circ(x,y,480);else if(id==='seek'){circ(x,y,760);line(200,10)}
   ctx.setLineDash([]);ctx.restore()}
 // ---------- 입력 ----------
-function skPress(slot){if(!inSkillGame())return;skHold=slot;initAudio()}
-function skRelease(slot){if(skHold!==slot)return;skHold=null;const id=skId(slot);if(!inSkillGame()||skCD[id]>0||skAct[id]>0)return;const me=myP();if(!me||me.dead)return;
-  const ax=me.fx||1,ay=me.fy||0;
-  if(state==='play')fireSkill(id,ax,ay);
-  else if(rR().host)skQ.push([rMe(),id,ax,ay]);
-  else if(RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'sk',w:id,ax:Math.round(ax*1000)/1000,ay:Math.round(ay*1000)/1000});else return;
+// 조준(유성우) · 취소 구역 · 착탄 연출
+let skKb=false,skAimP=null,skPtr=null,skAimSent=0;const MOVEK=['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'],skKeys={};
+const needsAim=id=>id==='meteor';
+function clampView(pt){const v=viewHalf();pt.x=clamp(pt.x,camX-v.w+20,camX+v.w-20);pt.y=clamp(pt.y,camY-v.h+20,camY+v.h-20);return pt}
+function skCancelEl(){return $('skCancel')}
+function placeCancel(slot){const b=$('skBtn'+slot).getBoundingClientRect(),c=skCancelEl();c.style.left=Math.max(4,b.left-80)+'px';c.style.top=(b.top-6)+'px';c.classList.add('show');c.classList.remove('over')}
+function skEnd(){skHold=null;skKb=false;skAimP=null;skPtr=null;skCancelEl().classList.remove('show','over');
+  for(const k of MOVEK)if(skKeys[k]){keys[k]=true;skKeys[k]=false} // 조준 중 누르던 이동키 복구
+  if(state==='raid'&&rR()&&!rR().host&&RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'aim',off:1});
+  const me=state==='raid'&&rR()&&rR().host&&rRP().find(p=>p.id===rMe());if(me)me.aim=null}
+function skPress(slot,kb){if(!inSkillGame()||skHold)return;skHold=slot;skKb=!!kb;initAudio();placeCancel(slot);
+  const me=myP();if(me&&needsAim(skId(slot)))skAimP=clampView({x:me.x+(me.fx||1)*260,y:me.y+(me.fy||0)*260});
+  if(kb)for(const k of MOVEK)if(keys[k]){skKeys[k]=true;keys[k]=false}}
+function skCancel(){if(!skHold)return;skEnd()} // 쿨타임 소모 없음
+function skRelease(slot){if(skHold!==slot)return;const id=skId(slot),aim=skAimP;skEnd();if(!inSkillGame()||skCD[id]>0||skAct[id]>0)return;const me=myP();if(!me||me.dead)return;
+  const ax=me.fx||1,ay=me.fy||0,tx=aim?Math.round(aim.x):null,ty=aim?Math.round(aim.y):null;
+  if(state==='play')fireSkill(id,ax,ay,tx,ty);
+  else if(rR().host)skQ.push([rMe(),id,ax,ay,tx,ty]);
+  else if(RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'sk',w:id,ax:Math.round(ax*1000)/1000,ay:Math.round(ay*1000)/1000,tx,ty});else return;
   skCD[id]=SKILLS[id].cd;if(SKILLS[id].dur)skAct[id]=SKILLS[id].dur}
+function skAimTick(dt){if(!skHold)return;if(!inSkillGame()){skEnd();return}
+  if(skAimP){if(skKb){let x=0,y=0;if(skKeys.KeyA||skKeys.ArrowLeft)x--;if(skKeys.KeyD||skKeys.ArrowRight)x++;if(skKeys.KeyW||skKeys.ArrowUp)y--;if(skKeys.KeyS||skKeys.ArrowDown)y++;
+      const l=Math.hypot(x,y)||1;skAimP.x+=x/l*720*dt;skAimP.y+=y/l*720*dt}
+    clampView(skAimP);
+    if(state==='raid'&&rR()){if(rR().host){const me=rRP().find(p=>p.id===rMe());if(me)me.aim=[skAimP.x,skAimP.y]}
+      else if(RB.hostConn&&RB.hostConn.open&&(skAimSent-=dt)<=0){skAimSent=0.08;RB.hostConn.send({t:'aim',x:Math.round(skAimP.x),y:Math.round(skAimP.y)})}}}}
+function overCancel(cx,cy){const r=skCancelEl().getBoundingClientRect();return cx>=r.left-6&&cx<=r.right+6&&cy>=r.top-6&&cy<=r.bottom+6}
 for(const slot of ['A','B']){const b=$('skBtn'+slot);
-  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();try{b.setPointerCapture(e.pointerId)}catch(_){}b._pid=e.pointerId;skPress(slot)});
-  const up=e=>{if(b._pid!==e.pointerId)return;b._pid=null;e.preventDefault();skRelease(slot)};b.addEventListener('pointerup',up);
-  b.addEventListener('pointercancel',e=>{if(b._pid===e.pointerId){b._pid=null;if(skHold===slot)skHold=null}});b.addEventListener('contextmenu',e=>e.preventDefault())}
-addEventListener('keydown',e=>{if(e.repeat||RB.chatOpen)return;if(e.code==='KeyJ')skPress('A');else if(e.code==='KeyK')skPress('B')});
-addEventListener('keyup',e=>{if(e.code==='KeyJ')skRelease('A');else if(e.code==='KeyK')skRelease('B')});
+  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(skHold)return;try{b.setPointerCapture(e.pointerId)}catch(_){}b._pid=e.pointerId;skPress(slot,false);
+    if(skAimP)skPtr={sx:e.clientX,sy:e.clientY,ox:skAimP.x,oy:skAimP.y}});
+  b.addEventListener('pointermove',e=>{if(b._pid!==e.pointerId||skHold!==slot)return;skCancelEl().classList.toggle('over',overCancel(e.clientX,e.clientY));
+    if(skAimP&&skPtr){const k=2.2/VS;skAimP.x=skPtr.ox+(e.clientX-skPtr.sx)*k;skAimP.y=skPtr.oy+(e.clientY-skPtr.sy)*k;clampView(skAimP)}});
+  const up=e=>{if(b._pid!==e.pointerId)return;b._pid=null;e.preventDefault();if(skHold===slot&&overCancel(e.clientX,e.clientY))skCancel();else skRelease(slot)};b.addEventListener('pointerup',up);
+  b.addEventListener('pointercancel',e=>{if(b._pid===e.pointerId){b._pid=null;if(skHold===slot)skCancel()}});b.addEventListener('contextmenu',e=>e.preventDefault())}
+addEventListener('keydown',e=>{if(!skHold||!skKb)return;
+  if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();skCancel();return}
+  if(MOVEK.includes(e.code)){e.preventDefault();e.stopImmediatePropagation();skKeys[e.code]=true;keys[e.code]=false}},true);
+addEventListener('keyup',e=>{if(skHold&&skKb&&MOVEK.includes(e.code)){skKeys[e.code]=false}},true);
+addEventListener('keydown',e=>{if(e.repeat||RB.chatOpen)return;if(e.code==='KeyJ')skPress('A',true);else if(e.code==='KeyK')skPress('B',true)});
+addEventListener('keyup',e=>{if(e.code==='KeyJ'&&skKb)skRelease('A');else if(e.code==='KeyK'&&skKb)skRelease('B')});
+// 착탄: 화면 흔들림 + 섬광. 레이드 게스트는 동기화된 링(표식 색)으로 감지
+const IMPACT_C='#fff0c8';let flashA=0;const seenImp=new Set();
+function skImpact(m){rings.push({x:m.x,y:m.y,r:0,max:m.rad*1.6,t:0,dur:0.45,c:IMPACT_C});burst(m.x,m.y,'#ffe0a0',30,340,0.6,4.5);impactFx()}
+function impactFx(){addShake(16);flashA=0.75}
+setInterval(()=>{if(state==='raid'&&rR()&&!rR().host)for(const r of rings)if(r.c===IMPACT_C&&r.t<0.3){const k=Math.round(r.x)+','+Math.round(r.y);if(!seenImp.has(k)){seenImp.add(k);if(seenImp.size>50)seenImp.clear();impactFx()}}},50);
+(function fl(){const el=$('skFlash');flashA=Math.max(0,flashA-0.03);const v=flashA.toFixed(2);if(el.style.opacity!==v)el.style.opacity=v;requestAnimationFrame(fl)})();
 // ---------- 레이드: 호스트가 요청을 처리 (주인 기준으로 발동 → 피해·효과는 스냅샷으로 모두에게 동기화) ----------
-function hostSkill(p,id,ax,ay){const R=rR();if(!p||p.dead||!skOK(id)||!R||['inter','clear','fail','ending'].includes(R.phase))return false;p.skcd=p.skcd||{};if(p.skcd[id]>0)return false;
-  p.skcd[id]=SKILLS[id].cd+(SKILLS[id].dur||0)-0.6;RB.swapIn(p);const a=projs.length,c=meteors.length;buildGrid();fireSkill(id,ax,ay);
+function hostSkill(p,id,ax,ay,tx,ty){const R=rR();if(!p||p.dead||!skOK(id)||!R||['inter','clear','fail','ending'].includes(R.phase))return false;p.skcd=p.skcd||{};if(p.skcd[id]>0)return false;
+  p.skcd[id]=SKILLS[id].cd+(SKILLS[id].dur||0)-0.6;RB.swapIn(p);const a=projs.length,c=meteors.length;buildGrid();fireSkill(id,ax,ay,tx,ty);
   for(let i=a;i<projs.length;i++)RB.owners.set(projs[i],p.id);for(let i=c;i<meteors.length;i++)RB.owners.set(meteors[i],p.id);RB.swapOut(p);return true}
 {const _rf=window.__raidFrame;window.__raidFrame=function(dt){
-  const R=rR(),RP=rRP();if(R&&R.host){for(const p of RP){if(p.skcd)for(const k in p.skcd)p.skcd[k]-=dt}while(skQ.length){const q=skQ.shift();hostSkill(RP.find(p=>p.id===q[0]),q[1],q[2],q[3])}}else skQ.length=0;
+  const R=rR(),RP=rRP();if(R&&R.host){for(const p of RP){if(p.skcd)for(const k in p.skcd)p.skcd[k]-=dt}while(skQ.length){const q=skQ.shift();hostSkill(RP.find(p=>p.id===q[0]),q[1],q[2],q[3],q[4],q[5])}}else skQ.length=0;
   return _rf(dt)}}
 {const _ng=newGame;newGame=function(){_ng();for(const k in skCD)delete skCD[k];for(const k in skAct)delete skAct[k];skHold=null;skQ.length=0}}
 // ---------- 버튼 UI / 쿨타임 ----------
 let skLast=performance.now();
-function skLoop(now){const dt=Math.min(0.1,(now-skLast)/1000);skLast=now;
+function skLoop(now){const dt=Math.min(0.1,(now-skLast)/1000);skLast=now;skAimTick(dt);
   const on=state==='play'||state==='raid'||state==='paused'||state==='levelup'||state==='dying';$('skBtns').classList.toggle('show',state==='play'||state==='raid');
   if(inSkillGame()){for(const k in skAct){if(skAct[k]>0)skAct[k]-=dt}for(const k in skCD){if(!(skAct[k]>0)&&skCD[k]>0)skCD[k]-=dt}}else if(!on)skHold=null;
   if(!inSkillGame())skHold=null;
