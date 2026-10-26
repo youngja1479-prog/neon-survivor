@@ -84,6 +84,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
     </details>
   </div>
   <button class="btn" id="startBtn">게임 시작</button>
+  <button class="btn sec" id="setMenuBtn" style="background:linear-gradient(90deg,#6a5cff,#4df3ff)">⚙️ 설정 (A/B 스킬)</button>
   <button class="btn sec" id="raidMenuBtn" style="background:linear-gradient(90deg,#ff3c9d,#ff8c3a)">레이드 (협동)</button>
   <div class="best" id="bestTitle"></div>
 </div>
@@ -240,7 +241,7 @@ const STAT_LBL={dmg:'피해',n:'개수',cd:'쿨타임',pierce:'관통',rad:'범�
 const RANGED_W=new Set(['bolt','chain','boom','seek','beam','meteor']);
 const MODES={
   normal:{name:'일반 모드',short:'일반',col:'#4df3ff',desc:'모든 무기를 사용할 수 있는 기본 생존전입니다. 5분 보스를 처치하면 클리어.'},
-  warrior:{name:'전사 모드',short:'전사',col:'#ffb24d',desc:'원거리 무기가 전부 사라집니다. 회전 칼날·충격파·지뢰·불꽃 오라만 씁니다.'},
+  warrior:{name:'전사 모드',short:'전사',col:'#ffb24d',desc:'원거리 무기가 전부 사라집니다. 회전 칼날·충격파·불꽃 오라 + 보조무기 지뢰만 씁니다.'},
   hard:{name:'하드 모드',short:'하드',col:'#ff4d6d',desc:'무기는 전부 사용. 적 체력·피해·속도·물량이 크게 오르고, 위험한 적이 더 빨리 나옵니다. 5분 보스도 더 셉니다.'},
   crazy:{name:'크레이지 모드',short:'크레이지',col:'#ff00e5',desc:'캐릭터 Lv100 시작! 무기·패시브 Lv5(최대 10). 30초 뒤 강화 보스. 하트 드묾, 폭탄·자석 희귀, 엘리트는 하트+자석. 회복 물약 카드 없음.'}
 };
@@ -248,8 +249,9 @@ const isHard=()=>gameMode==='hard';const UPD=()=>isCrazy()?1:1.1;
 const isCrazy=()=>gameMode==='crazy';
 const CRAZY_T0=600; // ~10분 경과 스폰/난이도
 const diffT=()=>G?G.t+(isCrazy()?CRAZY_T0:0):0;
-function allowedWeapons(){return Object.keys(WEAPONS).filter(id=>gameMode!=='warrior'||!RANGED_W.has(id))}
-function isAllowedWeapon(id){return !!WEAPONS[id]&&(gameMode!=='warrior'||!RANGED_W.has(id))}
+const SUB_W=new Set(['mine']); // 보조무기: 시작 무기·A/B 스킬 불가, 레벨 업 카드로만 획득
+function allowedWeapons(){return Object.keys(WEAPONS).filter(id=>!SUB_W.has(id)&&(gameMode!=='warrior'||!RANGED_W.has(id)))}
+function isAllowedWeapon(id){return !!WEAPONS[id]&&!SUB_W.has(id)&&(gameMode!=='warrior'||!RANGED_W.has(id))}
 const PASSIVES={
   speed:{name:'신속의 장화',desc:'이동 속도 +8%'},
   heart:{name:'강철 심장',desc:'최대 체력 +20, 체력 20 회복'},
@@ -784,7 +786,7 @@ function gameUpdate(dt){
     const rr=e.r+P.r-3;if((P.x-e.x)**2+(P.y-e.y)**2<rr*rr)hurtPlayer(Math.round(e.dmg))
   }
   // 발사체
-  for(const p of projs){
+  for(const p of projs){if(p.k[0]==='S'){skProj(p,dt);continue}
     if(p.k==='bolt'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
       if(Math.random()<0.5)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.18,max:0.18,c:'#4df3ff',s:3});
       query(p.x,p.y,p.r,(e)=>{if(p.life<=0||p.hit.has(e))return;p.hit.add(e);hurtEnemy(e,p.dmg,p.vx,p.vy,110);burst(p.x,p.y,'#4df3ff',3,100,0.2,2);if(p.pierce--<=0)p.life=0})}
@@ -897,7 +899,7 @@ function render(){
   for(const b of ebullets){const s=SPR[b.k];ctx.drawImage(s.c,b.x-s.size/2,b.y-s.size/2,s.size,s.size)}
   ctx.globalCompositeOperation='lighter';
   // 발사체
-  for(const p of projs){if(p.k==='bolt'||p.k==='seek'){const s=SPR[p.k];ctx.drawImage(s.c,p.x-s.size/2,p.y-s.size/2,s.size,s.size)}
+  for(const p of projs){if(p.k[0]==='S')continue;if(p.k==='bolt'||p.k==='seek'){const s=SPR[p.k];ctx.drawImage(s.c,p.x-s.size/2,p.y-s.size/2,s.size,s.size)}
     else{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);drawIcon(ctx,'boom',p.r*2.4);ctx.restore()}}
   // 회전 칼날
   const os=wstat('orbit');if(os){const R=os.rad*areaMul();for(let i=0;i<os.n;i++){const a=G.t*3.4+i/os.n*TAU;ctx.save();ctx.translate(P.x+Math.cos(a)*R,P.y+Math.sin(a)*R);ctx.rotate(a+G.t*10);const sz=os.size||1;ctx.scale(sz,sz);
@@ -916,6 +918,7 @@ function render(){
   // 파티클
   for(const p of parts){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.c;ctx.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s)}ctx.globalAlpha=1;
   ctx.globalCompositeOperation='source-over';
+  drawSkillWorld();
   // 플레이어
   if(state!=='dying'&&state!=='over'){if(window.__raidDrawPlayers)window.__raidDrawPlayers();else drawPlayer()}
   // 데미지 숫자
@@ -1076,7 +1079,8 @@ function renderTitleBg(){
 function upgradeOptions(){
   const opts=[];
   for(const id of P.wOrder)if(P.weapons[id]<maxLv())opts.push({kind:'w',id,w:3});
-  if(P.wOrder.length<MAX_WEAPONS)for(const id of allowedWeapons())if(!P.weapons[id])opts.push({kind:'w',id,w:G.level<6?4:2.5});
+  if(P.wOrder.filter(id=>!SUB_W.has(id)).length<MAX_WEAPONS)for(const id of allowedWeapons())if(!P.weapons[id])opts.push({kind:'w',id,w:G.level<6?4:2.5});
+  for(const id of SUB_W)if(!P.weapons[id])opts.push({kind:'w',id,w:G.level<6?4:2.5}); // 보조무기(지뢰): 무기 칸과 별도
   for(const id in PASSIVES)if(pl(id)<maxLv())opts.push({kind:'p',id,w:2});
   if(!isCrazy())opts.push({kind:'f',id:'food',w:1.6});
   const pick=[];while(pick.length<3&&opts.length){let s=0;for(const o of opts)s+=o.w;let r=Math.random()*s;let idx=0;for(;idx<opts.length;idx++){r-=opts[idx].w;if(r<=0)break}
@@ -1088,10 +1092,10 @@ function describe(o){
   if(o.kind==='f')return {name:'회복 물약',lv:'',ds:'체력을 50 회복합니다.',tag:'n',tagT:'회복'};
   if(o.kind==='p'){const l=pl(o.id);return {name:PASSIVES[o.id].name,lv:l?`Lv.${l} → ${l+1}${l+1===maxLv()?' (최대)':''}`:'새 능력!',ds:PASSIVES[o.id].desc,tag:l?'p':'n',tagT:l?'패시브 강화':'새 패시브'}}
   const Wd=WEAPONS[o.id],l=P.weapons[o.id]||0;
-  if(!l)return {name:Wd.name,lv:'새 무기!',ds:Wd.desc,tag:'n',tagT:'새 무기'};
+  if(!l)return SUB_W.has(o.id)?{name:Wd.name,lv:'새 보조무기!',ds:Wd.desc+' (획득하면 자동 설치)',tag:'n',tagT:'보조무기'}:{name:Wd.name,lv:'새 무기!',ds:Wd.desc,tag:'n',tagT:'새 무기'};
   const a=Wd.lv[l-1],b=Wd.lv[l];const ch=[];
   for(const k in b)if(a[k]!==b[k]){if(k==='cd')ch.push(`${STAT_LBL[k]} ${a[k]}초 → ${b[k]}초`);else if(k==='rad'||k==='len')ch.push(`${STAT_LBL[k]} +${Math.round((b[k]/a[k]-1)*100)}%`);else ch.push(`${STAT_LBL[k]} ${a[k]} → ${b[k]}`)}
-  return {name:Wd.name,lv:`Lv.${l} → ${l+1}${l+1===maxLv()?' (최대)':''}`,ds:ch.join('<br>'),tag:'w',tagT:'무기 강화'};
+  return {name:Wd.name,lv:`Lv.${l} → ${l+1}${l+1===maxLv()?' (최대)':''}`,ds:ch.join('<br>'),tag:'w',tagT:SUB_W.has(o.id)?'보조무기 강화':'무기 강화'};
 }
 const PICKUP_LIFE=20,PICKUP_BLINK=5; // 하트·자석·폭탄: 15초 뒤부터 깜빡이다 20초에 소멸 (보물 상자는 유지)
 let curOpts=[],lvOpenT=0;const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
@@ -1117,7 +1121,7 @@ function chooseUpgrade(i){
 }
 
 // ================== 화면 전환 ==================
-function hideAll(){for(const id of ['title','pickmode','pickstart','levelup','pause','over','victory'])$(id).classList.remove('show')}
+function hideAll(){for(const id of ['settings','title','pickmode','pickstart','levelup','pause','over','victory'])$(id).classList.remove('show')}
 function openModePick(){
   initAudio();hideAll();state='pickmode';$('pbtn').style.display='none';
   const box=$('modeCards');box.innerHTML='';
@@ -1372,11 +1376,11 @@ function renderLobby(){const L=$('rPlist');L.innerHTML='';lobby.players.forEach(
   $('rStartBtn').style.display=host?'':'none'}
 function wIcon(id,sz){const c=makeCanvas(sz*2,sz*2);const g=c.getContext('2d');g.translate(sz,sz);drawIcon(g,id,sz*1.7);return c}
 function myW(){const me=lobby.players.find(p=>p.id===myId);return me&&me.w||'bolt'}
-function renderWpick(){const B=$('rWpick');if(!B)return;B.innerHTML='';const cur=myW();for(const id of Object.keys(WEAPONS)){const b=document.createElement('div');b.className='wb'+(id===cur?' sel':'');b.dataset.w=id;b.appendChild(wIcon(id,20));b.appendChild(document.createTextNode(WEAPONS[id].name));b.style.color=WEAPONS[id].color;b.onclick=()=>pickW(id);B.appendChild(b)}}
-function pickW(id){if(!WEAPONS[id]||R)return;try{localStorage.setItem('neonSurvivorStartW',id)}catch(e){}
+function renderWpick(){const B=$('rWpick');if(!B)return;B.innerHTML='';const cur=myW();for(const id of Object.keys(WEAPONS).filter(id=>!SUB_W.has(id))){const b=document.createElement('div');b.className='wb'+(id===cur?' sel':'');b.dataset.w=id;b.appendChild(wIcon(id,20));b.appendChild(document.createTextNode(WEAPONS[id].name));b.style.color=WEAPONS[id].color;b.onclick=()=>pickW(id);B.appendChild(b)}}
+function pickW(id){if(!WEAPONS[id]||SUB_W.has(id)||R)return;try{localStorage.setItem('neonSurvivorStartW',id)}catch(e){}
   if(net.role==='client'){const me=lobby.players.find(p=>p.id===myId);if(me)me.w=id;renderLobby();if(hostConn&&hostConn.open)hostConn.send({t:'wpick',w:id})}
   else{const me=lobby.players.find(p=>p.id===myId);if(me)me.w=id;syncLobby()}}
-function prefW(){try{const w=localStorage.getItem('neonSurvivorStartW');if(w&&WEAPONS[w])return w}catch(e){}return 'bolt'}
+function prefW(){try{const w=localStorage.getItem('neonSurvivorStartW');if(w&&WEAPONS[w]&&!SUB_W.has(w))return w}catch(e){}return 'bolt'}
 function syncLobby(){renderLobby();bcast({t:'lobby',players:lobby.players,diff:lobby.diff})}
 function enterRoom(code){$('rHome').style.display='none';$('rRoom').style.display='';$('rCode').textContent=code;renderLobby()}
 function offlineHost(why,retry){cleanupNet();net={role:'offline',code:'SOLO'};myId='p0';lobby.players=[{id:'p0',name:'P1',col:COLS[0],w:prefW()}];enterRoom('SOLO');if(retry)connFail(why+' — 오프라인 솔로로는 플레이 가능',retry);else msg(why+' — 오프라인 솔로로 플레이할 수 있어요.')}
@@ -1441,19 +1445,20 @@ function onClientData(d){
   if(d.t==='s'&&R){onSnap(d)}
 }
 function onHostData(c,d){
-  if(d.t==='wpick'){const lp=lobby.players.find(p=>p.id===c.pid);if(lp&&WEAPONS[d.w]&&!R){lp.w=d.w;syncLobby()}return}
+  if(d.t==='wpick'){const lp=lobby.players.find(p=>p.id===c.pid);if(lp&&WEAPONS[d.w]&&!SUB_W.has(d.w)&&!R){lp.w=d.w;syncLobby()}return}
   if(d.t==='chat'){const lp=lobby.players.find(p=>p.id===c.pid);if(!lp)return;const m=String(d.m||'').slice(0,60);addChat(lp.name,lp.col,m);bcast({t:'chat',n:lp.name,c:lp.col,m});return}
   if(!R)return;const p=RP.find(p=>p.id===c.pid);if(!p)return;
   if(d.t==='in'){p.mx=clamp(+d.mx||0,-1,1);p.my=clamp(+d.my||0,-1,1);if(d.sq)p.ack=d.sq|0;if(d.vw)p.vw=clamp(d.vw|0,200,1500);if(d.vh)p.vh=clamp(d.vh|0,150,1100)}
   else if(d.t==='pick')applyPick(p,d.i);
-  else if(d.t==='cont')vote(p)}
+  else if(d.t==='cont')vote(p)
+  else if(d.t==='sk')skQ.push([p.id,d.w,+d.ax||0,+d.ay||0])}
 function setRaidUI(on){$('rChatBtn').style.display=on?'flex':'none';if(!on){closeChat();$('rChatOv').innerHTML=''}}
 // ---------- 엔진 시작/종료 ----------
 function beginEngine(diff){window.__raidMd=diff==='hard'?{name:'레이드 · 하드',col:'#ff4d6d'}:{name:'레이드 · 노멀',col:'#ff8c3a'};savedMode=gameMode;gameMode=diff==='hard'?'hard':'normal';startWeapon='bolt';newGame();banner=null;G.tip=null;G.tipQ=[];G.tipFlags={loop:1,loop2:1,elite:1};
   window.__raidDrawPlayers=drawRaidWorld;for(const k of ['gozara','kangsan'])for(const f of [0,1])for(const e of [0,1])bossSprite(k,f,e)}
 function endRaid(){rjoy=null;joy=null;window.__raidDrawPlayers=null;QM=58;if(R)gameMode=savedMode;R=null;RP=[];state='raidlobby';setRaidUI(false);$('raidLvl').classList.remove('show')}
 function mkPlayer(lp,i){const hp0=isHard()?80:100;return {id:lp.id,name:lp.name,col:lp.col,x:Math.cos(i*TAU/4)*70,y:Math.sin(i*TAU/4)*70,r:14,hp:hp0,maxHp:hp0,baseSpd:isHard()?198:210,inv:0,fx:1,fy:0,
-  weapons:{[WEAPONS[lp.w]?lp.w:'bolt']:1},passives:{},wOrder:[WEAPONS[lp.w]?lp.w:'bolt'],pOrder:[],hurtT:0,moving:false,walk:0,mx:0,my:0,dead:false,
+  weapons:{[WEAPONS[lp.w]&&!SUB_W.has(lp.w)?lp.w:'bolt']:1},passives:{},wOrder:[WEAPONS[lp.w]&&!SUB_W.has(lp.w)?lp.w:'bolt'],pOrder:[],hurtT:0,moving:false,walk:0,mx:0,my:0,dead:false,
   level:1,xp:0,need:xpNeed(1),pendingLv:0,timers:{},auraT:0,opts:null,chooseT:0,dmgDone:0,trail:[],combo:0}}
 function swapIn(p){P=p;if(p.trail){G.trail=p.trail;G.combo=p.combo|0}G.level=p.level;G.xp=p.xp;G.need=p.need;G.pendingLv=p.pendingLv;G.timers=p.timers;G.auraT=p.auraT}
 function swapOut(p){if(p.trail){p.trail=G.trail;p.combo=G.combo}p.level=G.level;p.xp=G.xp;p.need=G.need;p.pendingLv=G.pendingLv;p.timers=G.timers;p.auraT=G.auraT}
@@ -1604,7 +1609,7 @@ function hostUpdate(dt){
     if(d>farD&&e.type!=='elite'){P=tp;const q=offscreenPos();e.x=q.x;e.y=q.y}
     const rr=e.r+tp.r-3;if((tp.x-e.x)**2+(tp.y-e.y)**2<rr*rr)hurtP(tp,Math.round(e.dmg))}
   // 발사체 (원본 로직, 주인 기준)
-  for(const p of projs)withOwner(p,()=>{
+  for(const p of projs)withOwner(p,()=>{if(p.k[0]==='S'){skProj(p,dt);return}
     if(p.k==='bolt'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
       if(Math.random()<0.5)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.18,max:0.18,c:'#4df3ff',s:3});
       query(p.x,p.y,p.r,(e)=>{if(p.life<=0||p.hit.has(e))return;p.hit.add(e);hurtEnemy(e,p.dmg,p.vx,p.vy,110);burst(p.x,p.y,'#4df3ff',3,100,0.2,2);if(p.pierce--<=0)p.life=0})}
@@ -1661,7 +1666,7 @@ function hostUpdate(dt){
 }
 // ---------- 스냅샷 (클라이언트도 원본 render로 똑같이 그리기 위한 상태) ----------
 const r1=v=>Math.round(v),r2=v=>Math.round(v*100)/100;
-const ET=Object.keys(ETYPES),PK=['bolt','boom','seek'],EBK=['ebullet','bossbullet'],ROTT=new Set(['charger','elite','boss']);
+const ET=Object.keys(ETYPES),PK=['bolt','boom','seek','Sarrow','Sblade','Sboom','Sstorm','Saura','Slaser'],EBK=['ebullet','bossbullet'],ROTT=new Set(['charger','elite','boss']);
 let snapN=0;const pKey={};
 function nearAny(x,y,ps,m){for(const p of ps)if(Math.abs(p.x-x)<m&&Math.abs(p.y-y)<m*0.8)return true;return false}
 let nidC=0;const nid=o=>o._n||(o._n=(nidC=(nidC+1)&4095)||(nidC=1));
@@ -1887,6 +1892,7 @@ $('rEndLobbyBtn').onclick=()=>{$('raidEnd').classList.remove('show');endShown=''
   if(wasHost&&(net.role==='host'||net.role==='offline')){lobby.players=lobby.players.filter(p=>p.id==='p0'||conns.some(c=>c.pid===p.id));showOv('raidLobby');syncLobby()}else if(net.role==='client'&&hostConn&&hostConn.open){showOv('raidLobby');renderLobby()}else openLobby()};
 $('rEndMenuBtn').onclick=()=>{$('raidEnd').classList.remove('show');endShown='';endRaid();cleanupNet();showOv(null);toTitle()};
 // ---------- 디버그 ----------
+window.__rsk={get R(){return R},get RP(){return RP},get myId(){return myId},get hostConn(){return hostConn},get chatOpen(){return chatOpen},owners,swapIn,swapOut}; // A/B 스킬 스크립트용 브리지
 window.__raid={NUM,get R(){return R},get RP(){return RP},get myId(){return myId},get net(){return net},get lobby(){return lobby},chat:sendChat,
   reviveFF(sec){if(!R||!R.host)return false;for(const p of RP)if(p.dead&&p.reviveT>0)p.reviveT=Math.min(p.reviveT,sec==null?0.05:sec);return true},
   killP(id){if(!R||!R.host)return false;const p=RP.find(q=>q.id===id);if(!p||p.dead)return false;p.inv=0;p.chooseT=0;const g=R.god;R.god=false;hurtP(p,1e9);R.god=g;return true},
@@ -1901,5 +1907,156 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 })();
 
 </script>
+<!-- ================== A/B 스킬 (설정 · 버튼 · 효과 · 레이드 동기화) ================== -->
+<style>
+#settings .skrow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px auto 10px;max-width:640px}
+#settings .skt{font-weight:900;font-size:16px;margin-top:6px}
+#settings .chip{width:64px;background:#1c1840;border:2px solid #4a3aa0;border-radius:10px;padding:3px;cursor:pointer;font-size:10.5px;font-weight:700;color:#cfd3ff;user-select:none}
+#settings .chip canvas{width:38px;height:38px;display:block;margin:0 auto}
+#settings .chip.sel{border-color:#4df3ff;box-shadow:0 0 12px #4df3ff;background:#123048}
+#settings .chip.off{opacity:.3;cursor:not-allowed}
+#settings .chip small{display:block;color:#8a8fc0;font-weight:400}
+#skSetMsg{min-height:18px;color:#7dffb0;font-size:13px}
+#skBtns{position:fixed;right:16px;bottom:96px;display:none;gap:12px;z-index:8;touch-action:none;user-select:none;-webkit-user-select:none}
+#skBtns.show{display:flex}
+.skb{position:relative;width:76px;height:76px;border-radius:50%;border:3px solid #4df3ff;background:rgba(20,18,50,.75);color:#fff;font-family:inherit;touch-action:none;padding:0;overflow:hidden;cursor:pointer;box-shadow:0 0 14px rgba(77,243,255,.5)}
+.skb b{display:block;font-size:22px;line-height:24px;margin-top:8px}
+.skb .nm{display:block;font-size:10px;font-weight:700;line-height:12px}
+.skb .cd{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);font-size:18px;font-weight:900;line-height:76px;top:0;display:none}
+.skb.cool{border-color:#555a80;box-shadow:none}.skb.cool .cd{display:block}
+.skb.act{border-color:#ff6ad5;box-shadow:0 0 18px #ff6ad5}
+.skb.hold{transform:scale(1.08);background:rgba(77,243,255,.3)}
+#skBtnB{margin-top:-40px}
+@media (max-height:560px){#skBtns{bottom:70px}.skb{width:64px;height:64px}.skb .cd{line-height:64px}}
+</style>
+<div class="ov" id="settings">
+  <div class="big" style="color:#4df3ff;text-shadow:0 0 20px #4df3ff">⚙️ 설정</div>
+  <div style="color:#cfd3ff;font-size:14px">A/B 스킬로 쓸 무기를 고르세요 · 두 스킬은 서로 달라야 합니다 · 게임 중에는 바꿀 수 없어요</div>
+  <div style="color:#8a8fc0;font-size:12px">스킬 피해는 해당 무기 레벨에 비례 (무기가 없어도 기본 피해로 사용 가능) · 키보드 J / K · 누르고 있으면 범위 미리보기, 떼면 발동</div>
+  <div class="skt" style="color:#4df3ff">A 스킬 [J]</div><div class="skrow" id="skRowA"></div>
+  <div class="skt" style="color:#ff6ad5">B 스킬 [K]</div><div class="skrow" id="skRowB"></div>
+  <div id="skSetMsg"></div>
+  <div class="row"><button class="btn sec" id="setBackBtn">타이틀로</button></div>
+</div>
+<div id="skBtns"><button class="skb" id="skBtnA"><b>A</b><span class="nm"></span><span class="cd"></span></button><button class="skb" id="skBtnB" style="border-color:#ff6ad5"><b>B</b><span class="nm"></span><span class="cd"></span></button></div>
+<script>
+'use strict';
+// 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
+const SKILLS={bolt:{cd:15,d:'거대한 화살 직선 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파·강한 넉백'},chain:{cd:20,d:'하늘에서 번개 연타'},
+  boom:{cd:20,d:'거대 부메랑 왕복 2타'},seek:{cd:20,d:'유도 구체 다수'},aura:{cd:20,d:'5초간 오라 거대화'},meteor:{cd:30,d:'거대 유성 1개 낙하'},beam:{cd:30,dur:10,d:'10초 지속 레이저'}};
+const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
+const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
+if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
+const skCD={},skAct={},skQ=[];let skHold=null;
+function skIcon(id,sz){const c=makeCanvas(sz*2,sz*2);const g=c.getContext('2d');g.translate(sz,sz);drawIcon(g,id,sz*1.7);return c}
+function skId(slot){return slot==='A'?SET.skA:SET.skB}
+function myP(){return state==='raid'?rRP().find(p=>p.id===rMe()):P}
+function inSkillGame(){return state==='play'||(state==='raid'&&!!rR()&&!['inter','clear','fail','ending'].includes(rR().phase))}
+function skBase(id){const L=WEAPONS[id].lv;const l=Math.max(1,Math.min(L.length,(P.weapons&&P.weapons[id])||1));return L[l-1]}
+function skShake(v){if(state!=='raid'||(P&&P.id===rMe()))addShake(v)}
+// ---------- 설정 화면 ----------
+function openSettings(){if(state!=='title')return;hideAll();renderSkSet();$('settings').classList.add('show')}
+function renderSkSet(){for(const slot of ['A','B']){const row=$('skRow'+slot);row.innerHTML='';const other=slot==='A'?SET.skB:SET.skA,cur=skId(slot);
+  for(const id of Object.keys(SKILLS)){const c=document.createElement('div');c.className='chip'+(id===cur?' sel':'')+(id===other?' off':'');c.dataset.w=id;c.dataset.slot=slot;
+    c.appendChild(skIcon(id,19));c.appendChild(document.createTextNode(WEAPONS[id].name));const sm=document.createElement('small');sm.textContent=SKILLS[id].cd+'초'+(SKILLS[id].dur?' (+10초 지속)':'');c.appendChild(sm);c.title=SKILLS[id].d;
+    c.onclick=()=>{if(id===other){$('skSetMsg').style.color='#ff8c8c';$('skSetMsg').textContent='A와 B는 서로 다른 무기여야 해요';return}
+      if(slot==='A')SET.skA=id;else SET.skB=id;saveSettings();$('skSetMsg').style.color='#7dffb0';$('skSetMsg').textContent=`저장됨 · A: ${WEAPONS[SET.skA].name} / B: ${WEAPONS[SET.skB].name}`;renderSkSet()};row.appendChild(c)}}}
+$('setMenuBtn').onclick=()=>{initAudio();openSettings()};
+$('setBackBtn').onclick=()=>{$('settings').classList.remove('show');toTitle()};
+// ---------- 스킬 발동 (현재 P 기준; 레이드 호스트는 swapIn 후 호출) ----------
+function fireSkill(id,ax,ay){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=0}else{ax/=l;ay/=l}
+  const st=skBase(id),D=st.dmg,am=areaMul(),a=Math.atan2(ay,ax),x=P.x,y=P.y;
+  if(id==='bolt'){projs.push({k:'Sarrow',x,y,vx:ax*900,vy:ay*900,r:28,dmg:D*5,life:1.3,hit:new Set(),rot:a});S.shoot();S.zap()}
+  else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:20,dmg:D*2.5,hm:new Map(),rot:0,life:2.6});S.shoot()}
+  else if(id==='pulse'){const Rr=380*am;rings.push({x,y,r:0,max:Rr,t:0,dur:0.6,c:'#8ff6ff'});rings.push({x,y,r:0,max:Rr*0.65,t:0,dur:0.45,c:'#ffffff'});
+    buildGrid();query(x,y,Rr,(e,dx,dy)=>hurtEnemy(e,D*4,dx,dy,1400));burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
+  else if(id==='chain'){projs.push({k:'Sstorm',x,y,r:0,n:8,cd:0,dmg:D*3,life:4,rot:0})}
+  else if(id==='boom'){projs.push({k:'Sboom',x,y,dx:ax,dy:ay,t:0,out:true,dist:0,r:42,dmg:D*4,hit:new Set(),rot:0});S.shoot()}
+  else if(id==='seek'){const tg=nearestN(x,y,16,760);for(let i=0;i<16;i++){const b=a+(i/15-0.5)*2.6;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*1.5,life:4,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
+  else if(id==='aura'){const Rr=Math.min(500,st.rad*2.6*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:5,tick:0,dmg:D*2,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
+  else if(id==='meteor'){meteors.push({x:x+ax*260,y:y+ay*260,t:0,warn:1.1,dmg:D*10,rad:230*am,hit:false,big:1});S.pulse()}
+  else if(id==='beam'){projs.push({k:'Slaser',x,y,r:0,t:0,life:10,tick:0,dmg:D*0.8,ax,ay,rot:a,len:760*am});S.zap()}
+}
+function skProj(p,dt){
+  if(p.k==='Sarrow'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(Math.random()<0.8)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.3,max:0.3,c:'#4df3ff',s:6});
+    query(p.x,p.y,p.r,e=>{if(p.hit.has(e))return;p.hit.add(e);hurtEnemy(e,p.dmg,p.vx,p.vy,260);burst(e.x,e.y,'#4df3ff',4,140,0.25,2.5)})}
+  else if(p.k==='Sblade'){p.t+=dt;p.life-=dt;if(p.t<1){const an=p.a0+p.t*16,Rr=50+p.t*70;p.x=P.x+Math.cos(an)*Rr;p.y=P.y+Math.sin(an)*Rr;p.rot=an+Math.PI/2}
+    else{p.x+=p.dx*820*dt;p.y+=p.dy*820*dt;p.rot=Math.atan2(p.dy,p.dx)}
+    query(p.x,p.y,p.r,e=>{const lt=p.hm.get(e);if(lt===undefined||G.t-lt>0.25){p.hm.set(e,G.t);hurtEnemy(e,p.dmg,e.x-P.x,e.y-P.y,160)}})}
+  else if(p.k==='Sboom'){p.t+=dt;p.rot+=dt*20;const sp=760;
+    if(p.out){p.x+=p.dx*sp*dt;p.y+=p.dy*sp*dt;p.dist+=sp*dt;if(p.dist>=620){p.out=false;p.hit=new Set()}}
+    else{const dx=P.x-p.x,dy=P.y-p.y,d=Math.hypot(dx,dy)||1;p.x+=dx/d*sp*dt;p.y+=dy/d*sp*dt;if(d<P.r+24)p.dead=true}
+    if(p.t>6)p.dead=true;
+    query(p.x,p.y,p.r,e=>{if(p.hit.has(e))return;p.hit.add(e);hurtEnemy(e,p.dmg,e.x-p.x,e.y-p.y,220)})}
+  else if(p.k==='Sstorm'){p.x=P.x;p.y=P.y;p.life-=dt;p.cd-=dt;
+    if(p.cd<=0&&p.n>0){p.cd=0.22;p.n--;const c=nearestN(P.x,P.y,12,480);let tx,ty;if(c.length){const e=c[(Math.random()*c.length)|0];tx=e.x;ty=e.y}else{const b=rand(0,TAU),r=rand(60,320);tx=P.x+Math.cos(b)*r;ty=P.y+Math.sin(b)*r}
+      zaps.push({pts:[{x:tx+rand(-50,50),y:ty-460},{x:tx+rand(-25,25),y:ty-230},{x:tx,y:ty}],t:0.32});rings.push({x:tx,y:ty,r:0,max:95,t:0,dur:0.3,c:'#fff27a'});
+      query(tx,ty,95,(e,dx,dy)=>hurtEnemy(e,p.dmg,dx,dy,90));burst(tx,ty,'#fff27a',10,200,0.35,3);skShake(3);S.zap()}
+    if(p.n<=0)p.dead=true}
+  else if(p.k==='Saura'){p.x=P.x;p.y=P.y;p.life-=dt;p.tick-=dt;if(p.tick<=0){p.tick=0.3;query(p.x,p.y,p.R,e=>{hurtEnemy(e,p.dmg,e.x-p.x,e.y-p.y,40);if(Math.random()<0.3)burst(e.x,e.y,'#ff7a3c',2,60,0.4,2.5)})}}
+  else if(p.k==='Slaser'){p.x=P.x;p.y=P.y;p.life-=dt;if(P.dead||state==='dying'){p.dead=true;return}
+    const fx=P.fx||0,fy=P.fy||0;if(fx||fy){let ta=Math.atan2(fy,fx),da=Math.atan2(Math.sin(ta-p.rot),Math.cos(ta-p.rot));p.rot+=da*Math.min(1,dt*8)}
+    const L=p.len,x2=p.x+Math.cos(p.rot)*L,y2=p.y+Math.sin(p.rot)*L,half=22;beams.push({x1:p.x,y1:p.y,x2,y2,t:0,dur:0.09,w:half});
+    p.tick-=dt;if(p.tick<=0){p.tick=0.15;const vx=x2-p.x,vy=y2-p.y,l2=vx*vx+vy*vy||1;
+      query((p.x+x2)/2,(p.y+y2)/2,L*0.5+50,e=>{let t=((e.x-p.x)*vx+(e.y-p.y)*vy)/l2;t=t<0?0:t>1?1:t;const dx=p.x+vx*t-e.x,dy=p.y+vy*t-e.y,rr=e.r+half;if(dx*dx+dy*dy<rr*rr)hurtEnemy(e,p.dmg,e.x-p.x,e.y-p.y,60)})}}
+}
+// ---------- 그리기 (월드 좌표) ----------
+function drawSkillWorld(){ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const p of projs){if(p.k[0]!=='S')continue;
+    if(p.k==='Sarrow'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.shadowColor='#4df3ff';ctx.shadowBlur=24;ctx.fillStyle='#bff9ff';
+      ctx.beginPath();ctx.moveTo(48,0);ctx.lineTo(14,-22);ctx.lineTo(14,-8);ctx.lineTo(-60,-6);ctx.lineTo(-74,-18);ctx.lineTo(-66,0);ctx.lineTo(-74,18);ctx.lineTo(-60,6);ctx.lineTo(14,8);ctx.lineTo(14,22);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#4df3ff';ctx.lineWidth=4;ctx.stroke();ctx.restore()}
+    else if(p.k==='Sblade'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot+G.t*14);ctx.scale(2.2,2.2);ctx.fillStyle='#e2ccff';ctx.shadowColor='#b9f';ctx.shadowBlur=16;
+      ctx.beginPath();ctx.moveTo(-15,0);ctx.lineTo(0,-5);ctx.lineTo(15,0);ctx.lineTo(0,5);ctx.closePath();ctx.fill();ctx.restore()}
+    else if(p.k==='Sboom'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);drawIcon(ctx,'boom',(p.r||42)*2.4);ctx.restore()}
+    else if(p.k==='Saura'){const Rr=p.R||p.r*8;const gr=ctx.createRadialGradient(p.x,p.y,Rr*0.15,p.x,p.y,Rr);gr.addColorStop(0,'rgba(255,120,40,0.05)');gr.addColorStop(0.75,'rgba(255,100,40,0.2)');gr.addColorStop(1,'rgba(255,190,80,0.45)');
+      ctx.fillStyle=gr;ctx.beginPath();ctx.arc(p.x,p.y,Rr*(1+Math.sin(G.t*9)*0.03),0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,160,60,.7)';ctx.lineWidth=4;ctx.stroke()}}
+  ctx.restore();
+  // 미리보기 (누르고 있는 동안)
+  const me=myP();if(!skHold||!me||me.dead||!inSkillGame())return;const id=skId(skHold);let fx=me.fx||1,fy=me.fy||0;const fl=Math.hypot(fx,fy)||1;fx/=fl;fy/=fl;
+  const am=(()=>{const sv=P;P=me;const v=areaMul();P=sv;return v})();const col=skHold==='A'?'77,243,255':'255,106,213',x=me.x,y=me.y;
+  ctx.save();ctx.strokeStyle=`rgba(${col},.85)`;ctx.fillStyle=`rgba(${col},.12)`;ctx.lineWidth=3;ctx.setLineDash([10,8]);
+  const line=(L,w)=>{ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(fy,fx));ctx.beginPath();ctx.rect(0,-w,L,w*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(L,-w*1.8);ctx.lineTo(L+30,0);ctx.lineTo(L,w*1.8);ctx.stroke();ctx.restore()};
+  const circ=(cx,cy,r)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.fill();ctx.stroke()};
+  if(id==='bolt')line(1100,28);else if(id==='orbit'){circ(x,y,120);line(900,60)}else if(id==='beam')line(760*am,22);else if(id==='boom')line(620,42);
+  else if(id==='pulse')circ(x,y,380*am);else if(id==='aura'){const sv=P;P=me;const r=Math.min(500,skBase('aura').rad*2.6*am);P=sv;circ(x,y,r)}
+  else if(id==='meteor')circ(x+fx*260,y+fy*260,230*am);else if(id==='chain')circ(x,y,480);else if(id==='seek'){circ(x,y,760);line(200,10)}
+  ctx.setLineDash([]);ctx.restore()}
+// ---------- 입력 ----------
+function skPress(slot){if(!inSkillGame())return;skHold=slot;initAudio()}
+function skRelease(slot){if(skHold!==slot)return;skHold=null;const id=skId(slot);if(!inSkillGame()||skCD[id]>0||skAct[id]>0)return;const me=myP();if(!me||me.dead)return;
+  const ax=me.fx||1,ay=me.fy||0;
+  if(state==='play')fireSkill(id,ax,ay);
+  else if(rR().host)skQ.push([rMe(),id,ax,ay]);
+  else if(RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'sk',w:id,ax:Math.round(ax*1000)/1000,ay:Math.round(ay*1000)/1000});else return;
+  skCD[id]=SKILLS[id].cd;if(SKILLS[id].dur)skAct[id]=SKILLS[id].dur}
+for(const slot of ['A','B']){const b=$('skBtn'+slot);
+  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();try{b.setPointerCapture(e.pointerId)}catch(_){}b._pid=e.pointerId;skPress(slot)});
+  const up=e=>{if(b._pid!==e.pointerId)return;b._pid=null;e.preventDefault();skRelease(slot)};b.addEventListener('pointerup',up);
+  b.addEventListener('pointercancel',e=>{if(b._pid===e.pointerId){b._pid=null;if(skHold===slot)skHold=null}});b.addEventListener('contextmenu',e=>e.preventDefault())}
+addEventListener('keydown',e=>{if(e.repeat||RB.chatOpen)return;if(e.code==='KeyJ')skPress('A');else if(e.code==='KeyK')skPress('B')});
+addEventListener('keyup',e=>{if(e.code==='KeyJ')skRelease('A');else if(e.code==='KeyK')skRelease('B')});
+// ---------- 레이드: 호스트가 요청을 처리 (주인 기준으로 발동 → 피해·효과는 스냅샷으로 모두에게 동기화) ----------
+function hostSkill(p,id,ax,ay){const R=rR();if(!p||p.dead||!skOK(id)||!R||['inter','clear','fail','ending'].includes(R.phase))return false;p.skcd=p.skcd||{};if(p.skcd[id]>0)return false;
+  p.skcd[id]=SKILLS[id].cd+(SKILLS[id].dur||0)-0.6;RB.swapIn(p);const a=projs.length,c=meteors.length;buildGrid();fireSkill(id,ax,ay);
+  for(let i=a;i<projs.length;i++)RB.owners.set(projs[i],p.id);for(let i=c;i<meteors.length;i++)RB.owners.set(meteors[i],p.id);RB.swapOut(p);return true}
+{const _rf=window.__raidFrame;window.__raidFrame=function(dt){
+  const R=rR(),RP=rRP();if(R&&R.host){for(const p of RP){if(p.skcd)for(const k in p.skcd)p.skcd[k]-=dt}while(skQ.length){const q=skQ.shift();hostSkill(RP.find(p=>p.id===q[0]),q[1],q[2],q[3])}}else skQ.length=0;
+  return _rf(dt)}}
+{const _ng=newGame;newGame=function(){_ng();for(const k in skCD)delete skCD[k];for(const k in skAct)delete skAct[k];skHold=null;skQ.length=0}}
+// ---------- 버튼 UI / 쿨타임 ----------
+let skLast=performance.now();
+function skLoop(now){const dt=Math.min(0.1,(now-skLast)/1000);skLast=now;
+  const on=state==='play'||state==='raid'||state==='paused'||state==='levelup'||state==='dying';$('skBtns').classList.toggle('show',state==='play'||state==='raid');
+  if(inSkillGame()){for(const k in skAct){if(skAct[k]>0)skAct[k]-=dt}for(const k in skCD){if(!(skAct[k]>0)&&skCD[k]>0)skCD[k]-=dt}}else if(!on)skHold=null;
+  if(!inSkillGame())skHold=null;
+  for(const slot of ['A','B']){const b=$('skBtn'+slot),id=skId(slot);const nm=WEAPONS[id].name;if(b._nm!==nm){b._nm=nm;b.querySelector('.nm').textContent=nm}
+    const act=skAct[id]>0,cd=!act&&skCD[id]>0;b.classList.toggle('act',act);b.classList.toggle('cool',cd||act);b.classList.toggle('hold',skHold===slot);
+    const t=act?'⚡'+Math.ceil(skAct[id]):cd?Math.ceil(skCD[id])+'':'';const c=b.querySelector('.cd');if(c.textContent!==t)c.textContent=t}
+  requestAnimationFrame(skLoop)}
+requestAnimationFrame(skLoop);
+window.__skill={SKILLS,skCD,skAct,skQ,fireSkill,hostSkill,skPress,skRelease,get hold(){return skHold}};
+</script>
+
 </body>
 </html>
