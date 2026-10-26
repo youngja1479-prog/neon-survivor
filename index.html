@@ -283,6 +283,17 @@ const ETYPES={
 
 // ================== 스프라이트 캐시 ==================
 function makeCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+// [perf] 글로우 이펙트 스프라이트 캐시: shadowBlur 도형을 현재 화면 배율(디바이스 px/월드 단위)로 한 번만 오프스크린에 그려 두고 drawImage
+// fn(g,blurOn) — g는 로컬 좌표계, shadowBlur 값은 원래처럼 디바이스 px 기준. padPx: 블러 여유(디바이스 px)
+const FXS={};let FXN=0;
+function fxSprite(key,x0,y0,w,h,padPx,fn){const tf=ctx.getTransform();const m=Math.hypot(tf.a,tf.b)||1;const q=Math.max(0.25,Math.round(m*8)/8);const lg=lowGfx();
+  const k=key+'|'+q+'|'+(lg?1:0);let sp=FXS[k];
+  if(!sp){if(++FXN>80){for(const kk in FXS)delete FXS[kk];FXN=1}const pd=padPx/q;const X=x0-pd,Y=y0-pd,WW=w+pd*2,HH=h+pd*2;
+    const c=makeCanvas(Math.max(1,Math.ceil(WW*q)),Math.max(1,Math.ceil(HH*q))),g=c.getContext('2d');g.scale(q,q);g.translate(-X,-Y);g.globalCompositeOperation='lighter';fn(g,!lg);
+    sp=FXS[k]={c,X,Y,WW,HH}}
+  ctx.drawImage(sp.c,sp.X,sp.Y,sp.WW,sp.HH)}
+const fxBoom=sz=>fxSprite('boom'+Math.round(sz*4),-sz*0.6,-sz*0.6,sz*1.2,sz*1.2,14,(g,bl)=>{if(!bl){const D=Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype,'shadowBlur');Object.defineProperty(g,'shadowBlur',{configurable:true,get(){return D.get.call(this)},set(v){D.set.call(this,0)}})}drawIcon(g,'boom',sz)});
+const fxBlade=(col,glow,blur)=>fxSprite('blade'+col+blur,-15,-5,30,10,blur*1.5+2,(g,bl)=>{g.fillStyle=col;g.shadowColor=glow;g.shadowBlur=bl?blur:0;g.beginPath();g.moveTo(-15,0);g.lineTo(0,-5);g.lineTo(15,0);g.lineTo(0,5);g.closePath();g.fill()});
 const SPR={};
 function buildSprites(){
   const SC=2;
@@ -636,7 +647,7 @@ function updateTips(dt){if(G.tip){G.tip.t-=dt;if(G.tip.t<=0)G.tip=null}if(!G.tip
   if(G.t>40&&G.loops===0&&tipSave.loops<5)queueTip('loop2')}
 
 // ================== 이펙트 ==================
-function burst(x,y,col,n,spd,life,size){if(lowGfx()){n=Math.ceil(n*0.35)}const cap=lowGfx()?500:1400;for(let i=0;i<n;i++){if(parts.length>cap)parts.shift();const a=rand(0,TAU),s=rand(0.3,1)*spd;
+function burst(x,y,col,n,spd,life,size){if(lowGfx()){n=Math.ceil(n*0.35)}const cap=lowGfx()?500:1400;const ov=parts.length+n-cap-1;if(ov>0)parts.splice(0,Math.min(ov,parts.length));for(let i=0;i<n;i++){const a=rand(0,TAU),s=rand(0.3,1)*spd;
   parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:life*rand(0.6,1),max:life,c:col,s:size*rand(0.6,1.2)})}}
 function dmgText(x,y,v,col,size,always){if(!always&&!SET.dmgNum)return;if(texts.length>90)texts.shift();texts.push({x:x+rand(-6,6),y:y-8,v:typeof v==='number'?Math.round(v):v,c:col,s:size,life:0.7})}
 function showBanner(txt,col){banner={txt,col,t:2.4}}
@@ -901,10 +912,10 @@ function render(){
   ctx.globalCompositeOperation='lighter';
   // 발사체
   for(const p of projs){if(p.k[0]==='S')continue;if(p.k==='bolt'||p.k==='seek'){const s=SPR[p.k];ctx.drawImage(s.c,p.x-s.size/2,p.y-s.size/2,s.size,s.size)}
-    else{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);drawIcon(ctx,'boom',p.r*2.4);ctx.restore()}}
+    else{ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);fxBoom(p.r*2.4);ctx.restore()}}
   // 회전 칼날
   const os=wstat('orbit');if(os){const R=os.rad*areaMul();for(let i=0;i<os.n;i++){const a=G.t*3.4+i/os.n*TAU;ctx.save();ctx.translate(P.x+Math.cos(a)*R,P.y+Math.sin(a)*R);ctx.rotate(a+G.t*10);const sz=os.size||1;ctx.scale(sz,sz);
-    ctx.fillStyle='#d9b8ff';ctx.shadowColor='#b9f';ctx.shadowBlur=14;ctx.beginPath();ctx.moveTo(-15,0);ctx.lineTo(0,-5);ctx.lineTo(15,0);ctx.lineTo(0,5);ctx.closePath();ctx.fill();ctx.restore()}ctx.shadowBlur=0}
+    fxBlade('#d9b8ff','#b9f',14);ctx.restore()}ctx.shadowBlur=0}
   // 파동
   for(const r of rings){const k=r.t/r.dur;ctx.strokeStyle=r.c;ctx.globalAlpha=1-k;ctx.lineWidth=10*(1-k)+2;ctx.beginPath();ctx.arc(r.x,r.y,r.max*(0.2+0.8*Math.sqrt(k)),0,TAU);ctx.stroke()}ctx.globalAlpha=1;
   // 번개
@@ -1855,7 +1866,7 @@ function drawOtherWeapons(p){// 원본 render의 회전 칼날/불꽃 오라 그
   const as=p.weapons.aura&&wstat('aura');if(as){const Rr=as.rad*areaMul();const gr=ctx.createRadialGradient(p.x,p.y,Rr*0.2,p.x,p.y,Rr);gr.addColorStop(0,'rgba(255,120,40,0.02)');gr.addColorStop(0.8,'rgba(255,100,40,0.16)');gr.addColorStop(1,'rgba(255,160,60,0.35)');
     ctx.fillStyle=gr;ctx.beginPath();ctx.arc(p.x,p.y,Rr*(1+Math.sin(G.t*6)*0.03),0,TAU);ctx.fill()}
   const os=wstat('orbit');if(os){const Rr=os.rad*areaMul();for(let i=0;i<os.n;i++){const a=G.t*3.4+i/os.n*TAU;ctx.save();ctx.translate(p.x+Math.cos(a)*Rr,p.y+Math.sin(a)*Rr);ctx.rotate(a+G.t*10);const sz=os.size||1;ctx.scale(sz,sz);
-    ctx.fillStyle='#d9b8ff';ctx.shadowColor='#b9f';ctx.shadowBlur=14;ctx.beginPath();ctx.moveTo(-15,0);ctx.lineTo(0,-5);ctx.lineTo(15,0);ctx.lineTo(0,5);ctx.closePath();ctx.fill();ctx.restore()}ctx.shadowBlur=0}}
+    fxBlade('#d9b8ff','#b9f',14);ctx.restore()}ctx.shadowBlur=0}}
 function drawRaidWorld(){drawTele();
   if(R.boss){const b=R.boss;ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(b.x,b.y+b.r*0.9,b.r*0.9*(1-b.z/300),b.r*0.25,0,0,TAU);ctx.fill();if(b.kind==='gozara')drawGozara(b);else drawKangsan(b)}
   const cam=camP;
@@ -2020,15 +2031,16 @@ function skProj(p,dt){
 function drawSkillWorld(){ctx.save();ctx.globalCompositeOperation='lighter';
   for(const p of projs){if(p.k[0]!=='S')continue;
     if(p.k==='Sarrow'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
-      const tg=ctx.createLinearGradient(-260,0,-70,0);tg.addColorStop(0,'rgba(77,243,255,0)');tg.addColorStop(1,'rgba(77,243,255,.45)');ctx.fillStyle=tg;ctx.beginPath();ctx.moveTo(-70,-9);ctx.lineTo(-260,0);ctx.lineTo(-70,9);ctx.closePath();ctx.fill();
-      ctx.shadowColor='#4df3ff';ctx.shadowBlur=22;ctx.lineCap='round';ctx.lineJoin='round';
-      ctx.strokeStyle='#4df3ff';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(-66,0);ctx.lineTo(22,0);ctx.stroke();ctx.strokeStyle='#e8fdff';ctx.lineWidth=3.5;ctx.stroke();
-      ctx.fillStyle='#ffffff';ctx.strokeStyle='#4df3ff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(62,0);ctx.lineTo(16,-20);ctx.lineTo(24,0);ctx.lineTo(16,20);ctx.closePath();ctx.stroke();ctx.fill();
-      ctx.fillStyle='rgba(120,220,255,.85)';ctx.strokeStyle='#4df3ff';ctx.lineWidth=2.5;for(const sg of [-1,1])for(const k of [0,14]){ctx.beginPath();ctx.moveTo(-50-k,0);ctx.lineTo(-62-k,sg*18);ctx.lineTo(-72-k,sg*18);ctx.lineTo(-62-k,0);ctx.closePath();ctx.fill();ctx.stroke()}
+      fxSprite('Sarrow',-262,-22,328,44,34,(g,bl)=>{
+      const tg=g.createLinearGradient(-260,0,-70,0);tg.addColorStop(0,'rgba(77,243,255,0)');tg.addColorStop(1,'rgba(77,243,255,.45)');g.fillStyle=tg;g.beginPath();g.moveTo(-70,-9);g.lineTo(-260,0);g.lineTo(-70,9);g.closePath();g.fill();
+      g.shadowColor='#4df3ff';g.shadowBlur=bl?22:0;g.lineCap='round';g.lineJoin='round';
+      g.strokeStyle='#4df3ff';g.lineWidth=9;g.beginPath();g.moveTo(-66,0);g.lineTo(22,0);g.stroke();g.strokeStyle='#e8fdff';g.lineWidth=3.5;g.stroke();
+      g.fillStyle='#ffffff';g.strokeStyle='#4df3ff';g.lineWidth=4;g.beginPath();g.moveTo(62,0);g.lineTo(16,-20);g.lineTo(24,0);g.lineTo(16,20);g.closePath();g.stroke();g.fill();
+      g.fillStyle='rgba(120,220,255,.85)';g.strokeStyle='#4df3ff';g.lineWidth=2.5;for(const sg of [-1,1])for(const k of [0,14]){g.beginPath();g.moveTo(-50-k,0);g.lineTo(-62-k,sg*18);g.lineTo(-72-k,sg*18);g.lineTo(-62-k,0);g.closePath();g.fill();g.stroke()}
+      });
       ctx.restore()}
-    else if(p.k==='Sblade'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot+G.t*14);ctx.scale(2.2,2.2);ctx.fillStyle='#e2ccff';ctx.shadowColor='#b9f';ctx.shadowBlur=16;
-      ctx.beginPath();ctx.moveTo(-15,0);ctx.lineTo(0,-5);ctx.lineTo(15,0);ctx.lineTo(0,5);ctx.closePath();ctx.fill();ctx.restore()}
-    else if(p.k==='Sboom'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);drawIcon(ctx,'boom',(p.r||42)*2.4);ctx.restore()}
+    else if(p.k==='Sblade'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot+G.t*14);ctx.scale(2.2,2.2);fxBlade('#e2ccff','#b9f',16);ctx.restore()}
+    else if(p.k==='Sboom'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);fxBoom((p.r||42)*2.4);ctx.restore()}
     else if(p.k==='Saura'){const Rr=p.R||p.r*8;const gr=ctx.createRadialGradient(p.x,p.y,Rr*0.15,p.x,p.y,Rr);gr.addColorStop(0,'rgba(255,120,40,0.05)');gr.addColorStop(0.75,'rgba(255,100,40,0.2)');gr.addColorStop(1,'rgba(255,190,80,0.45)');
       ctx.fillStyle=gr;ctx.beginPath();ctx.arc(p.x,p.y,Rr*(1+Math.sin(G.t*9)*0.03),0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,160,60,.7)';ctx.lineWidth=4;ctx.stroke()}}
   ctx.restore();
