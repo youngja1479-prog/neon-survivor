@@ -1951,7 +1951,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
 const SKILLS={bolt:{cd:15,d:'거대한 화살 직선 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:20,d:'거대 충격파·강한 넉백'},chain:{cd:20,d:'하늘에서 번개 연타'},
-  boom:{cd:20,d:'거대 부메랑 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:20,d:'5초간 오라 거대화'},meteor:{cd:20,d:'지정 위치에 유성 1개 낙하'},beam:{cd:30,dur:10,d:'10초 지속 레이저'}};
+  boom:{cd:20,d:'거대 부메랑 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:20,d:'5초간 오라 거대화'},meteor:{cd:20,d:'지정 위치에 유성 1개 낙하'},beam:{cd:20,dur:10,d:'10초 지속 레이저'}};
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
 const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
 if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
@@ -1984,7 +1984,7 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
   else if(id==='aura'){const Rr=Math.min(500,st.rad*2.6*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:5,tick:0,dmg:D*2,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
   else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
     meteors.push({x:mx,y:my,t:0,warn:1.1,dmg:D*10,rad:st.rad*am,hit:false,big:1});S.pulse()}
-  else if(id==='beam'){projs.push({k:'Slaser',x,y,r:0,t:0,life:10,tick:0,dmg:D*0.8,ax,ay,rot:a,len:760*am});S.zap()}
+  else if(id==='beam'){projs.push({k:'Slaser',x,y,r:0,t:0,life:10,tick:0,dmg:D*1.6,ax,ay,rot:a,len:760*am});S.zap()}
 }
 // 충격파 밀어내기: kbRes 무시, 감속(ease-out) 속도, 밀리는 동안(1.2초) 자체 이동 없음
 function skPush(e,x,y){if(e.dead||e.type==='raidboss')return;let dx=e.x-x,dy=e.y-y;const d=Math.hypot(dx,dy);if(d<1){const b=rand(0,TAU);dx=Math.cos(b);dy=Math.sin(b)}else{dx/=d;dy/=d}
