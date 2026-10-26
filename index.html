@@ -245,7 +245,7 @@ const MODES={
   hard:{name:'하드 모드',short:'하드',col:'#ff4d6d',desc:'무기는 전부 사용. 적 체력·피해·속도·물량이 크게 오르고, 위험한 적이 더 빨리 나옵니다. 5분 보스도 더 셉니다.'},
   crazy:{name:'크레이지 모드',short:'크레이지',col:'#ff00e5',desc:'캐릭터 Lv100 시작! 무기·패시브 Lv5(최대 10). 30초 뒤 강화 보스. 하트 드묾, 폭탄·자석 희귀, 엘리트는 하트+자석. 회복 물약 카드 없음.'}
 };
-const isHard=()=>gameMode==='hard';const UPD=()=>isCrazy()?1:(state==='raid'?1.45:1);
+const isHard=()=>gameMode==='hard';const UPD=()=>isCrazy()?1:(state==='raid'?1.45:1.1);
 const isCrazy=()=>gameMode==='crazy';
 const CRAZY_T0=600; // ~10분 경과 스폰/난이도
 const diffT=()=>G?G.t+(isCrazy()?CRAZY_T0:0):0;
