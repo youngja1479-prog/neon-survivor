@@ -2009,6 +2009,7 @@ function skProj(p,dt){
       if(Math.random()<0.5)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.22,max:0.22,c:'#c9a6ff',s:5})}
     else{if(!p.go){p.go=1;p.hm=new Map();const fl=Math.hypot(P.fx||0,P.fy||0);if(fl>0.01){p.dx=P.fx/fl;p.dy=P.fy/fl}p.x=P.x+p.ox;p.y=P.y+p.oy}
       p.x+=p.dx*900*dt;p.y+=p.dy*900*dt;p.rot=Math.atan2(p.dy,p.dx)}
+    for(const b of ebullets){if(b.life<=0)continue;const rr=b.r+p.r*1.6;if((b.x-p.x)**2+(b.y-p.y)**2<rr*rr){b.life=0;if(parts.length<600)parts.push({x:b.x,y:b.y,vx:0,vy:0,life:0.25,max:0.25,c:'#e2ccff',s:7})}}
     query(p.x,p.y,p.r,e=>{const lt=p.hm.get(e);if(lt===undefined||G.t-lt>0.25){p.hm.set(e,G.t);hurtEnemy(e,p.dmg,e.x-P.x,e.y-P.y,160)}})}
   else if(p.k==='Sboom'){p.t+=dt;p.rot+=dt*20;const sp=760;
     if(p.out){p.x+=p.dx*sp*dt;p.y+=p.dy*sp*dt;p.dist+=sp*dt;if(p.dist>=620){p.out=false;p.hit=new Set()}}
