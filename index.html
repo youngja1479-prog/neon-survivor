@@ -1985,7 +1985,7 @@ $('setBackBtn').onclick=()=>{$('settings').classList.remove('show');toTitle()};
 // ---------- 스킬 발동 (현재 P 기준; 레이드 호스트는 swapIn 후 호출) ----------
 function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=0}else{ax/=l;ay/=l}
   const st=skBase(id),D=st.dmg,am=areaMul(),a=Math.atan2(ay,ax),x=P.x,y=P.y;
-  if(id==='bolt'){projs.push({k:'Sarrow',x,y,vx:ax*900,vy:ay*900,r:28,dmg:D*5,life:1.3,hit:new Set(),rot:a});S.shoot();S.zap()}
+  if(id==='bolt'){projs.push({k:'Sarrow',x,y,vx:ax*900,vy:ay*900,r:40,dmg:D*6,life:1.3,hit:new Set(),rot:a});S.shoot();S.zap()}
   else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:24,dmg:D*2.5,hm:new Map(),rot:0,life:2.6});S.shoot()}
   else if(id==='pulse'){const Rr=380*am;rings.push({x,y,r:0,max:Rr,t:0,dur:0.6,c:'#8ff6ff'});rings.push({x,y,r:0,max:Rr*0.65,t:0,dur:0.45,c:'#ffffff'});
     buildGrid();query(x,y,Rr,(e,dx,dy)=>{hurtEnemy(e,D*4,0,0,0);skPush(e,x,y)});burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
@@ -2030,7 +2030,7 @@ function skProj(p,dt){
 // ---------- 그리기 (월드 좌표) ----------
 function drawSkillWorld(){ctx.save();ctx.globalCompositeOperation='lighter';
   for(const p of projs){if(p.k[0]!=='S')continue;
-    if(p.k==='Sarrow'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+    if(p.k==='Sarrow'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.scale(1.4,1.4);
       fxSprite('Sarrow',-262,-22,328,44,34,(g,bl)=>{
       const tg=g.createLinearGradient(-260,0,-70,0);tg.addColorStop(0,'rgba(77,243,255,0)');tg.addColorStop(1,'rgba(77,243,255,.45)');g.fillStyle=tg;g.beginPath();g.moveTo(-70,-9);g.lineTo(-260,0);g.lineTo(-70,9);g.closePath();g.fill();
       g.shadowColor='#4df3ff';g.shadowBlur=bl?22:0;g.lineCap='round';g.lineJoin='round';
