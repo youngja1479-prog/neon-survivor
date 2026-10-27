@@ -248,7 +248,7 @@ const MODES={
   hard:{name:'하드 모드',short:'하드',col:'#ff4d6d',desc:'무기는 전부 사용. 적 체력·피해·속도·물량이 크게 오르고, 위험한 적이 더 빨리 나옵니다. 5분 보스도 더 셉니다.'},
   crazy:{name:'크레이지 모드',short:'크레이지',col:'#ff00e5',desc:'캐릭터 Lv100 시작! 무기·패시브 Lv5(최대 10). 30초 뒤 강화 보스. 하트 드묾, 폭탄·자석 희귀, 엘리트는 하트+자석. 회복 물약 카드 없음.'}
 };
-const isHard=()=>gameMode==='hard';const UPD=()=>isCrazy()?1:(state==='raid'?1.45:1.1);
+const isHard=()=>gameMode==='hard';const UPD=()=>isCrazy()?1:(state==='raid'?1.3:1.0);
 const isCrazy=()=>gameMode==='crazy';
 const CRAZY_T0=600; // ~10분 경과 스폰/난이도
 const diffT=()=>G?G.t+(isCrazy()?CRAZY_T0:0):0;
@@ -1502,7 +1502,7 @@ function hurtP(p,d){if(p.dead||p.inv>0||p.chooseT>0||R.god)return;const prev=P;P
   if(p.hp<=0){p.hp=0;p.dead=true;burst(p.x,p.y,p.col,60,320,1,4);if(RP.length>1){p.reviveT=NUM.reviveT||30;rbanner(p.name+' 쓰러짐! '+Math.ceil(p.reviveT)+'초 후 부활','#ff8c8c',2)}else rbanner(p.name+' 쓰러짐!','#ff8c8c',2)}}
 function reviveP(p){const ps=alive();if(!ps.length)return;const t=ps[(Math.random()*ps.length)|0];const a=Math.random()*Math.PI*2;p.x=t.x+Math.cos(a)*50;p.y=t.y+Math.sin(a)*50;p.dead=false;p.reviveT=0;p.hp=Math.max(1,Math.round(p.maxHp*0.5));p.inv=2;p.trail=[];rings.push({x:p.x,y:p.y,r:0,max:120,t:0,dur:0.5,c:p.col});burst(p.x,p.y,p.col,40,260,0.8,4);rbanner(p.name+' 부활!','#7dffb0',2)}
 function addTele(o){o.t=0;R.tele.push(o)}
-function makeBoss(kind){const N=NUM[kind];const ps=alive();const c=ps[0]||{x:0,y:0};const hp=N.hp*NUM.scale(R.n)*(H_()?NUM.hard.bossHp:1)*1.45;
+function makeBoss(kind){const N=NUM[kind];const ps=alive();const c=ps[0]||{x:0,y:0};const hp=N.hp*NUM.scale(R.n)*(H_()?NUM.hard.bossHp:1)*1.3;
   const b={type:'raidboss',kind,name:kind==='gozara'?'고자라':'차박후 강똥원 원비 강산',x:clamp(c.x+520,-WH+200,WH-200),y:clamp(c.y-200,-WH+200,WH-200),r:N.r,hp,maxHp:hp,mode:'chase',mt:2.5,face:-1,flash:0,kbx:0,kby:0,kbRes:0,xp:0,
     orbT:-9,slowT:0,dead:false,enr:false,z:0,cyc:0,spd:0,dmg:0};
   R.boss=b;enemies.push(b);QM=Math.max(58,N.r+10);
@@ -1546,7 +1546,7 @@ function applyPick(p,i){if(!p.opts||!p.opts[i]||p.dead)return;const o=p.opts[i];
   burst(P.x,P.y,'#ffd84d',24,220,0.6,3);P.inv=Math.max(P.inv,0.6);P=prev;p.opts=null;p.chooseT=0;if(p.id===myId)S.level()}
 function vote(p){if(R.phase!=='inter'||p.dead)return;R.votes[p.id]=1;if(alive().every(q=>R.votes[q.id])){R.phase='wave2';R.boss2At=R.t+NUM.boss2Delay;R.nextElite=R.t+60;rbanner('몹 웨이브 재개! 5분 뒤 두 번째 보스가 온다…','#ffd84d',4)}}
 // 일반 모드 스폰 공식 재사용 (pickType/spawnEnemy/offscreenPos 원본 그대로)
-function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;let rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*NUM.mobRateMul*(0.75+0.25*R.n)*1.35;
+function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;let rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*NUM.mobRateMul*(0.75+0.25*R.n)*1.2;
   if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6;
   const cap=Math.min(isHard()?640:520,((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5);
   R.spawnAcc+=rate*dt;const ps=alive();if(!ps.length)return;
