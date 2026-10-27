@@ -2108,13 +2108,31 @@ function skAimTick(dt){if(!skHold)return;if(!inSkillGame()){skEnd();return}
       else if(RB.hostConn&&RB.hostConn.open&&(skAimSent-=dt)<=0){skAimSent=0.08;RB.hostConn.send({t:'aim',x:Math.round(skAimP.x),y:Math.round(skAimP.y)})}}}}
 function overCancel(cx,cy){const r=skCancelEl().getBoundingClientRect();return cx>=r.left-6&&cx<=r.right+6&&cy>=r.top-6&&cy<=r.bottom+6}
 // MOBA식: 버튼 밖으로 한 번 끌어낸 뒤(_out) 다시 버튼 위에서 떼면 취소 · 그 외(탭, 밖에서 떼기)는 발동
+// 터치 입력: 누를 때마다 상태 초기화 · pointerId별 추적 · 데드존(반지름+12px) 밖으로 나가야 취소 준비(armed)
+// 취소 = armed 상태에서 버튼 안(반지름+6px)에서 뗄 때만 · 그 외 뗌/pointercancel/캡처 유실 = 발동 (armed면 취소) · 상태가 남지 않음
+const skT={};
+function skDist(t,x,y){return Math.hypot(x-t.cx,y-t.cy)}
+function skFinish(slot,e,how){const t=skT[slot];if(!t||(e&&e.pointerId!==t.pid))return;delete skT[slot];
+  if(skHold!==slot||skKb)return;const inside=e?skDist(t,e.clientX,e.clientY)<=t.r+6:false;
+  if(t.armed&&(how==='lost'||how==='cancel'||inside))skCancel();else skRelease(slot)}
 for(const slot of ['A','B']){const b=$('skBtn'+slot);
-  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(skHold)return;try{b.setPointerCapture(e.pointerId)}catch(_){}b._pid=e.pointerId;b._out=false;skPress(slot,false);
+  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();
+    if(skHold&&skHold!==slot&&!skKb&&!skT[skHold]){skEnd()} // 이전 누름 유실 → 정리
+    if(skHold===slot&&!skKb){delete skT[slot];skEnd()}
+    if(skHold)return;try{b.setPointerCapture(e.pointerId)}catch(_){}
+    const r=b.getBoundingClientRect();skT[slot]={pid:e.pointerId,cx:r.left+r.width/2,cy:r.top+r.height/2,r:r.width/2,armed:false};skPress(slot,false);
+    if(skHold!==slot){delete skT[slot];return}
     if(skAimP)skPtr={sx:e.clientX,sy:e.clientY,ox:skAimP.x,oy:skAimP.y}});
-  b.addEventListener('pointermove',e=>{if(b._pid!==e.pointerId||skHold!==slot)return;const oc=overCancel(e.clientX,e.clientY);if(!oc&&!b._out){b._out=true;skCancelEl().classList.add('armed')}skCancelEl().classList.toggle('over',b._out&&oc);
+  b.addEventListener('pointermove',e=>{const t=skT[slot];if(!t||t.pid!==e.pointerId||skHold!==slot)return;const d=skDist(t,e.clientX,e.clientY);
+    if(!t.armed&&d>t.r+12){t.armed=true;skCancelEl().classList.add('armed')}skCancelEl().classList.toggle('over',t.armed&&d<=t.r+6);
     if(skAimP&&skPtr){const k=2.2/VS;skAimP.x=skPtr.ox+(e.clientX-skPtr.sx)*k;skAimP.y=skPtr.oy+(e.clientY-skPtr.sy)*k;clampView(skAimP)}});
-  const up=e=>{if(b._pid!==e.pointerId)return;b._pid=null;e.preventDefault();if(skHold===slot&&b._out&&overCancel(e.clientX,e.clientY))skCancel();else skRelease(slot);b._out=false};b.addEventListener('pointerup',up);
-  b.addEventListener('pointercancel',e=>{if(b._pid===e.pointerId){b._pid=null;if(skHold===slot)skCancel()}});b.addEventListener('contextmenu',e=>e.preventDefault())}
+  b.addEventListener('pointerup',e=>{e.preventDefault();skFinish(slot,e,'up')});
+  b.addEventListener('pointercancel',e=>skFinish(slot,e,'cancel'));
+  b.addEventListener('lostpointercapture',e=>skFinish(slot,e,'lost'));
+  b.addEventListener('contextmenu',e=>e.preventDefault())}
+// 캡처 실패 대비: 문서 레벨에서도 같은 pointerId의 뗌을 받음 (이미 처리됐으면 무시)
+addEventListener('pointerup',e=>{for(const s of ['A','B'])skFinish(s,e,'up')});
+addEventListener('pointercancel',e=>{for(const s of ['A','B'])skFinish(s,e,'cancel')});
 addEventListener('keydown',e=>{if(!skHold||!skKb)return;
   if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();skCancel();return}
   if(MOVEK.includes(e.code)){e.preventDefault();e.stopImmediatePropagation();skKeys[e.code]=true;keys[e.code]=false}},true);
