@@ -1957,7 +1957,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 .skb.hold{transform:scale(1.08);background:rgba(77,243,255,.3)}
 #skBtnB{margin-top:-40px}
 #skCancel{position:fixed;display:none;width:64px;height:64px;border-radius:50%;border:3px dashed #ff4d6d;background:rgba(60,10,25,.75);color:#ff8c8c;font-size:26px;font-weight:900;text-align:center;line-height:40px;z-index:9;pointer-events:none}
-#skCancel small{display:block;font-size:10px;line-height:10px}#skCancel.show{display:block}#skCancel.over{background:#ff2e63;color:#fff;transform:scale(1.15)}
+#skCancel small{display:block;font-size:10px;line-height:10px}#skCancel.show{display:block}#skCancel{opacity:.55}#skCancel.armed{opacity:.9}#skCancel.over{opacity:1}#skCancel.over{background:#ff2e63;color:#fff;transform:scale(1.15)}
 #skFlash{position:fixed;inset:0;background:#fff3d8;opacity:0;pointer-events:none;z-index:7}
 @media (max-height:560px){#skBtns{bottom:70px}.skb{width:64px;height:64px}.skb .cd{line-height:64px}}
 </style>
@@ -2083,11 +2083,9 @@ let skKb=false,skAimP=null,skPtr=null,skAimSent=0;const MOVEK=['KeyW','KeyA','Ke
 const needsAim=id=>id==='meteor';
 function clampView(pt){const v=viewHalf();pt.x=clamp(pt.x,camX-v.w+20,camX+v.w-20);pt.y=clamp(pt.y,camY-v.h+20,camY+v.h-20);return pt}
 function skCancelEl(){return $('skCancel')}
-function placeCancel(slot){const c=skCancelEl(),vis=el=>el&&el.offsetParent!==null&&getComputedStyle(el).display!=='none';
-  // A/B 버튼 위에 배치 (C 메이데이 버튼이 보이면 그 위까지 피함) · 화면 안으로 클램프
-  const ab=['A','B'].map(k=>$('skBtn'+k)).filter(vis).map(e=>e.getBoundingClientRect());if(!ab.length)ab.push($('skBtn'+slot).getBoundingClientRect());
-  const all=ab.concat([$('mdBtn')].filter(vis).map(e=>e.getBoundingClientRect()));const l=Math.min(...ab.map(r=>r.left)),r=Math.max(...ab.map(r=>r.right)),t=Math.min(...all.map(q=>q.top));
-  c.style.left=Math.round(Math.max(4,Math.min(innerWidth-68,(l+r)/2-32)))+'px';c.style.top=Math.round(Math.max(72,t-76))+'px';c.classList.add('show');c.classList.remove('over')}
+function placeCancel(slot){const c=skCancelEl(),r=$('skBtn'+slot).getBoundingClientRect();
+  // 누르고 있는 버튼 위에 정확히 겹쳐 표시 (같은 위치·크기)
+  c.style.left=Math.round(r.left)+'px';c.style.top=Math.round(r.top)+'px';c.style.width=Math.round(r.width)+'px';c.style.height=Math.round(r.height)+'px';c.style.lineHeight=Math.round(r.height*0.62)+'px';c.style.paddingTop=Math.round(r.height*0.08)+'px';c.style.boxSizing='border-box';c.classList.toggle('armed',false);c.classList.add('show');c.classList.remove('over')}
 function skEnd(){skHold=null;skKb=false;skAimP=null;skPtr=null;skCancelEl().classList.remove('show','over');
   for(const k of MOVEK)if(skKeys[k]){keys[k]=true;skKeys[k]=false} // 조준 중 누르던 이동키 복구
   if(state==='raid'&&rR()&&!rR().host&&RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'aim',off:1});
@@ -2109,12 +2107,13 @@ function skAimTick(dt){if(!skHold)return;if(!inSkillGame()){skEnd();return}
     if(state==='raid'&&rR()){if(rR().host){const me=rRP().find(p=>p.id===rMe());if(me)me.aim=[skAimP.x,skAimP.y]}
       else if(RB.hostConn&&RB.hostConn.open&&(skAimSent-=dt)<=0){skAimSent=0.08;RB.hostConn.send({t:'aim',x:Math.round(skAimP.x),y:Math.round(skAimP.y)})}}}}
 function overCancel(cx,cy){const r=skCancelEl().getBoundingClientRect();return cx>=r.left-6&&cx<=r.right+6&&cy>=r.top-6&&cy<=r.bottom+6}
+// MOBA식: 버튼 밖으로 한 번 끌어낸 뒤(_out) 다시 버튼 위에서 떼면 취소 · 그 외(탭, 밖에서 떼기)는 발동
 for(const slot of ['A','B']){const b=$('skBtn'+slot);
-  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(skHold)return;try{b.setPointerCapture(e.pointerId)}catch(_){}b._pid=e.pointerId;skPress(slot,false);
+  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(skHold)return;try{b.setPointerCapture(e.pointerId)}catch(_){}b._pid=e.pointerId;b._out=false;skPress(slot,false);
     if(skAimP)skPtr={sx:e.clientX,sy:e.clientY,ox:skAimP.x,oy:skAimP.y}});
-  b.addEventListener('pointermove',e=>{if(b._pid!==e.pointerId||skHold!==slot)return;skCancelEl().classList.toggle('over',overCancel(e.clientX,e.clientY));
+  b.addEventListener('pointermove',e=>{if(b._pid!==e.pointerId||skHold!==slot)return;const oc=overCancel(e.clientX,e.clientY);if(!oc&&!b._out){b._out=true;skCancelEl().classList.add('armed')}skCancelEl().classList.toggle('over',b._out&&oc);
     if(skAimP&&skPtr){const k=2.2/VS;skAimP.x=skPtr.ox+(e.clientX-skPtr.sx)*k;skAimP.y=skPtr.oy+(e.clientY-skPtr.sy)*k;clampView(skAimP)}});
-  const up=e=>{if(b._pid!==e.pointerId)return;b._pid=null;e.preventDefault();if(skHold===slot&&overCancel(e.clientX,e.clientY))skCancel();else skRelease(slot)};b.addEventListener('pointerup',up);
+  const up=e=>{if(b._pid!==e.pointerId)return;b._pid=null;e.preventDefault();if(skHold===slot&&b._out&&overCancel(e.clientX,e.clientY))skCancel();else skRelease(slot);b._out=false};b.addEventListener('pointerup',up);
   b.addEventListener('pointercancel',e=>{if(b._pid===e.pointerId){b._pid=null;if(skHold===slot)skCancel()}});b.addEventListener('contextmenu',e=>e.preventDefault())}
 addEventListener('keydown',e=>{if(!skHold||!skKb)return;
   if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();skCancel();return}
