@@ -2083,7 +2083,11 @@ let skKb=false,skAimP=null,skPtr=null,skAimSent=0;const MOVEK=['KeyW','KeyA','Ke
 const needsAim=id=>id==='meteor';
 function clampView(pt){const v=viewHalf();pt.x=clamp(pt.x,camX-v.w+20,camX+v.w-20);pt.y=clamp(pt.y,camY-v.h+20,camY+v.h-20);return pt}
 function skCancelEl(){return $('skCancel')}
-function placeCancel(slot){const b=$('skBtn'+slot).getBoundingClientRect(),c=skCancelEl();c.style.left=Math.max(4,b.left-80)+'px';c.style.top=(b.top-6)+'px';c.classList.add('show');c.classList.remove('over')}
+function placeCancel(slot){const c=skCancelEl(),vis=el=>el&&el.offsetParent!==null&&getComputedStyle(el).display!=='none';
+  // A/B 버튼 위에 배치 (C 메이데이 버튼이 보이면 그 위까지 피함) · 화면 안으로 클램프
+  const ab=['A','B'].map(k=>$('skBtn'+k)).filter(vis).map(e=>e.getBoundingClientRect());if(!ab.length)ab.push($('skBtn'+slot).getBoundingClientRect());
+  const all=ab.concat([$('mdBtn')].filter(vis).map(e=>e.getBoundingClientRect()));const l=Math.min(...ab.map(r=>r.left)),r=Math.max(...ab.map(r=>r.right)),t=Math.min(...all.map(q=>q.top));
+  c.style.left=Math.round(Math.max(4,Math.min(innerWidth-68,(l+r)/2-32)))+'px';c.style.top=Math.round(Math.max(72,t-76))+'px';c.classList.add('show');c.classList.remove('over')}
 function skEnd(){skHold=null;skKb=false;skAimP=null;skPtr=null;skCancelEl().classList.remove('show','over');
   for(const k of MOVEK)if(skKeys[k]){keys[k]=true;skKeys[k]=false} // 조준 중 누르던 이동키 복구
   if(state==='raid'&&rR()&&!rR().host&&RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'aim',off:1});
