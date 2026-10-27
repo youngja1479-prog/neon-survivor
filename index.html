@@ -695,7 +695,6 @@ function hurtPlayer(d){
 function die(){state='dying';G.dyingT=1.6;burst(P.x,P.y,'#4df3ff',80,380,1.2,4);burst(P.x,P.y,'#ffffff',40,250,1,3);addShake(18);S.boom()}
 
 // ================== 무기 ==================
-function crowdDir(x,y){if(G._cdT===G.t)return G._cd;const N=24,c=new Array(N).fill(0);for(const e of enemies){if(e.dead)continue;const dx=e.x-x,dy=e.y-y,d2=dx*dx+dy*dy;if(d2>1100*1100)continue;let k=Math.round(Math.atan2(dy,dx)/TAU*N);k=((k%N)+N)%N;c[k]+=e.type==='boss'?3:1}let b=-1,bv=0;for(let i=0;i<N;i++){const v=c[i]+0.5*(c[(i+1)%N]+c[(i+N-1)%N]);if(v>bv){bv=v;b=i}}G._cdT=G.t;G._cd=b<0?null:[Math.cos(b/N*TAU),Math.sin(b/N*TAU)];return G._cd}
 function nearestN(x,y,n,maxD){const res=[];const md=maxD*maxD;
   for(const e of enemies){if(e.dead)continue;const d=(e.x-x)**2+(e.y-y)**2;if(d>md)continue;
     if(res.length<n){res.push([d,e]);res.sort((a,b)=>a[0]-b[0])}else if(d<res[n-1][0]){res[n-1]=[d,e];res.sort((a,b)=>a[0]-b[0])}}
@@ -2008,7 +2007,7 @@ function skProj(p,dt){
   else if(p.k==='Sblade'){p.t+=dt;p.life-=dt;const OT=1.2,REV=2.5;
     if(p.t<OT){const an=p.a0+p.t/OT*REV*TAU,Rr=Math.min(130,40+p.t*600);p.x=P.x+Math.cos(an)*Rr;p.y=P.y+Math.sin(an)*Rr;p.rot=an+Math.PI/2;p.ox=p.x-P.x;p.oy=p.y-P.y;
       if(Math.random()<0.5)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.22,max:0.22,c:'#c9a6ff',s:5})}
-    else{if(!p.go){p.go=1;p.hm=new Map();const fl=Math.hypot(P.fx||0,P.fy||0);if(fl>0.01){p.dx=P.fx/fl;p.dy=P.fy/fl}p.x=P.x+p.ox;p.y=P.y+p.oy;const bd=crowdDir(P.x,P.y);if(bd){p.dx=bd[0];p.dy=bd[1]}}
+    else{if(!p.go){p.go=1;p.hm=new Map();const fl=Math.hypot(P.fx||0,P.fy||0);if(fl>0.01){p.dx=P.fx/fl;p.dy=P.fy/fl}p.x=P.x+p.ox;p.y=P.y+p.oy}
       p.x+=p.dx*900*dt;p.y+=p.dy*900*dt;p.rot=Math.atan2(p.dy,p.dx)}
     query(p.x,p.y,p.r,e=>{const lt=p.hm.get(e);if(lt===undefined||G.t-lt>0.25){p.hm.set(e,G.t);hurtEnemy(e,p.dmg,e.x-P.x,e.y-P.y,160)}})}
   else if(p.k==='Sboom'){p.t+=dt;p.rot+=dt*20;const sp=760;
