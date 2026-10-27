@@ -1461,6 +1461,7 @@ function onClientData(d){
   if(d.t==='hello'){myId=d.id;enterRoom(net.code);const pw=prefW();if(pw!=='bolt')hostConn.send({t:'wpick',w:pw});if(window.__cry)hostConn.send({t:'cos',c:__cry.eq()});msg('호스트가 시작하기를 기다리는 중…');return}
   if(d.t==='lobby'){lobby.players=d.players;lobby.diff=d.diff;renderLobby();return}
   if(d.t==='chat'){addChat(d.n,d.c,d.m);return}
+  if(d.t==='mdv'){if(window.__md)__md.fx(d);return}
   if(d.t==='cry'){if(window.__cry)__cry.add(d.n|0,String(d.w||''));return}
   if(d.t==='start'){showOv(null);beginEngine(d.diff);R={host:false,t:0,phase:'wave1',diff:d.diff,boss:null,tele:[],waves:[],banner:null,votes:{},kills:0};RP=[];guestReset();state='raid';setRaidUI(true);return}
   if(d.t==='s'&&R){onSnap(d)}
@@ -1474,7 +1475,7 @@ function onHostData(c,d){
   else if(d.t==='pick')applyPick(p,d.i);
   else if(d.t==='cont')vote(p)
   else if(d.t==='sk')skQ.push([p.id,d.w,+d.ax||0,+d.ay||0,d.tx==null?null:+d.tx,d.ty==null?null:+d.ty])
-  else if(d.t==='md'){if(window.__md)__md.host(p)}
+  else if(d.t==='md'){if(window.__md)__md.host(p,String(d.v||''))}
   else if(d.t==='aim')p.aim=d.off?null:[+d.x||0,+d.y||0]}
 function setRaidUI(on){$('rChatBtn').style.display=on?'flex':'none';if(!on){closeChat();$('rChatOv').innerHTML=''}}
 // ---------- 엔진 시작/종료 ----------
@@ -1920,7 +1921,7 @@ $('rEndLobbyBtn').onclick=()=>{$('raidEnd').classList.remove('show');endShown=''
   if(wasHost&&(net.role==='host'||net.role==='offline')){lobby.players=lobby.players.filter(p=>p.id==='p0'||conns.some(c=>c.pid===p.id));showOv('raidLobby');syncLobby()}else if(net.role==='client'&&hostConn&&hostConn.open){showOv('raidLobby');renderLobby()}else openLobby()};
 $('rEndMenuBtn').onclick=()=>{$('raidEnd').classList.remove('show');endShown='';endRaid();cleanupNet();showOv(null);toTitle()};
 // ---------- 디버그 ----------
-window.__rsk={get R(){return R},get RP(){return RP},get myId(){return myId},get hostConn(){return hostConn},get chatOpen(){return chatOpen},get lobby(){return lobby},cryAll(n,w){for(const q of RP)if(!q.left)cryTo(q.id,n,w)},owners,swapIn,swapOut}; // A/B 스킬 스크립트용 브리지
+window.__rsk={get R(){return R},get RP(){return RP},get myId(){return myId},get hostConn(){return hostConn},get chatOpen(){return chatOpen},get lobby(){return lobby},bcast,cryAll(n,w){for(const q of RP)if(!q.left)cryTo(q.id,n,w)},owners,swapIn,swapOut}; // A/B 스킬 스크립트용 브리지
 window.__raid={NUM,get R(){return R},get RP(){return RP},get myId(){return myId},get net(){return net},get lobby(){return lobby},chat:sendChat,
   reviveFF(sec){if(!R||!R.host)return false;for(const p of RP)if(p.dead&&p.reviveT>0)p.reviveT=Math.min(p.reviveT,sec==null?0.05:sec);return true},
   killP(id){if(!R||!R.host)return false;const p=RP.find(q=>q.id===id);if(!p||p.dead)return false;p.inv=0;p.chooseT=0;const g=R.god;R.god=false;hurtP(p,1e9);R.god=g;return true},
@@ -1966,6 +1967,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
   <div style="color:#8a8fc0;font-size:12px">스킬 피해는 해당 무기 레벨에 비례 (무기가 없어도 기본 피해로 사용 가능) · 키보드 J / K · 누르고 있으면 범위 미리보기, 떼면 발동</div>
   <div class="skt" style="color:#4df3ff">A 스킬 [J]</div><div class="skrow" id="skRowA"></div>
   <div class="skt" style="color:#ff6ad5">B 스킬 [K]</div><div class="skrow" id="skRowB"></div>
+  <div class="skt" style="color:#ff4d6d">🚨 메이데이 [C]</div><div class="skrow" id="mdRow"></div>
   <div id="skSetMsg"></div>
   <div class="row"><button class="btn sec" id="setBackBtn">타이틀로</button></div>
 </div>
@@ -1989,10 +1991,10 @@ function skShake(v){if(state!=='raid'||(P&&P.id===rMe()))addShake(v)}
 // ---------- 설정 화면 ----------
 function openSettings(){if(state!=='title')return;hideAll();renderSkSet();$('settings').classList.add('show')}
 function renderSkSet(){for(const slot of ['A','B']){const row=$('skRow'+slot);row.innerHTML='';const other=slot==='A'?SET.skB:SET.skA,cur=skId(slot);
-  for(const id of Object.keys(SKILLS)){const c=document.createElement('div');c.className='chip'+(id===cur?' sel':'')+(id===other?' off':'');c.dataset.w=id;c.dataset.slot=slot;
-    c.appendChild(skIcon(id,19));c.appendChild(document.createTextNode(WEAPONS[id].name));const sm=document.createElement('small');sm.textContent=SKILLS[id].cd+'초'+(SKILLS[id].dur?' (+10초 지속)':'');c.appendChild(sm);c.title=SKILLS[id].d;
-    c.onclick=()=>{if(id===other){$('skSetMsg').style.color='#ff8c8c';$('skSetMsg').textContent='A와 B는 서로 다른 무기여야 해요';return}
-      if(slot==='A')SET.skA=id;else SET.skB=id;saveSettings();$('skSetMsg').style.color='#7dffb0';$('skSetMsg').textContent=`저장됨 · A: ${WEAPONS[SET.skA].name} / B: ${WEAPONS[SET.skB].name}`;renderSkSet()};row.appendChild(c)}}}
+  for(const id of Object.keys(SKILLS)){const c=document.createElement('div');const lk=!!(window.__cry&&!__cry.ownsSk(id));c.className='chip'+(id===cur?' sel':'')+(id===other||lk?' off':'');c.dataset.w=id;c.dataset.slot=slot;
+    c.appendChild(skIcon(id,19));c.appendChild(document.createTextNode((lk?'🔒 ':'')+WEAPONS[id].name));const sm=document.createElement('small');sm.textContent=SKILLS[id].cd+'초'+(SKILLS[id].dur?' (+10초 지속)':'');c.appendChild(sm);c.title=SKILLS[id].d;
+    c.onclick=()=>{if(lk){$('skSetMsg').style.color='#ff8c8c';$('skSetMsg').textContent='🔒 상점 「스킬」 탭에서 해금하세요 (💠 100)';return}if(id===other){$('skSetMsg').style.color='#ff8c8c';$('skSetMsg').textContent='A와 B는 서로 다른 무기여야 해요';return}
+      if(slot==='A')SET.skA=id;else SET.skB=id;saveSettings();$('skSetMsg').style.color='#7dffb0';$('skSetMsg').textContent=`저장됨 · A: ${SET.skA?WEAPONS[SET.skA].name:'없음'} / B: ${SET.skB?WEAPONS[SET.skB].name:'없음'}`;renderSkSet()};row.appendChild(c)}}}
 $('setMenuBtn').onclick=()=>{initAudio();openSettings()};
 $('setBackBtn').onclick=()=>{$('settings').classList.remove('show');toTitle()};
 // ---------- 스킬 발동 (현재 P 기준; 레이드 호스트는 swapIn 후 호출) ----------
@@ -2086,7 +2088,7 @@ function skEnd(){skHold=null;skKb=false;skAimP=null;skPtr=null;skCancelEl().clas
   for(const k of MOVEK)if(skKeys[k]){keys[k]=true;skKeys[k]=false} // 조준 중 누르던 이동키 복구
   if(state==='raid'&&rR()&&!rR().host&&RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'aim',off:1});
   const me=state==='raid'&&rR()&&rR().host&&rRP().find(p=>p.id===rMe());if(me)me.aim=null}
-function skPress(slot,kb){if(!inSkillGame()||skHold)return;skHold=slot;skKb=!!kb;initAudio();placeCancel(slot);
+function skPress(slot,kb){if(!inSkillGame()||skHold||!skId(slot))return;skHold=slot;skKb=!!kb;initAudio();placeCancel(slot);
   const me=myP();if(me&&needsAim(skId(slot)))skAimP=clampView({x:me.x+(me.fx||1)*260,y:me.y+(me.fy||0)*260});
   if(kb)for(const k of MOVEK)if(keys[k]){skKeys[k]=true;keys[k]=false}}
 function skCancel(){if(!skHold)return;skEnd()} // 쿨타임 소모 없음
@@ -2136,7 +2138,7 @@ function skLoop(now){const dt=Math.min(0.1,(now-skLast)/1000);skLast=now;skAimTi
   const on=state==='play'||state==='raid'||state==='paused'||state==='levelup'||state==='dying';$('skBtns').classList.toggle('show',state==='play'||state==='raid');
   if(inSkillGame()){for(const k in skAct){if(skAct[k]>0)skAct[k]-=dt}for(const k in skCD){if(!(skAct[k]>0)&&skCD[k]>0)skCD[k]-=dt}}else if(!on)skHold=null;
   if(!inSkillGame())skHold=null;
-  for(const slot of ['A','B']){const b=$('skBtn'+slot),id=skId(slot);const nm=WEAPONS[id].name;if(b._nm!==nm){b._nm=nm;b.querySelector('.nm').textContent=nm}
+  for(const slot of ['A','B']){const b=$('skBtn'+slot),id=skId(slot);const nm=id?WEAPONS[id].name:'없음';b.style.display=id?'':'none';if(b._nm!==nm){b._nm=nm;b.querySelector('.nm').textContent=nm}
     const act=skAct[id]>0,cd=!act&&skCD[id]>0;b.classList.toggle('act',act);b.classList.toggle('cool',cd||act);b.classList.toggle('hold',skHold===slot);
     const t=act?'⚡'+Math.ceil(skAct[id]):cd?Math.ceil(skCD[id])+'':'';const c=b.querySelector('.cd');if(c.textContent!==t)c.textContent=t}
   requestAnimationFrame(skLoop)}
@@ -2167,7 +2169,7 @@ window.__skill={SKILLS,skCD,skAct,skQ,fireSkill,hostSkill,skPress,skRelease,get 
 <div class="ov" id="shop">
   <div class="big" style="color:#ffd84d;text-shadow:0 0 20px #ffb800">🛒 상점</div>
   <div id="shopBal" style="color:#9ff;font-weight:900">💠 0</div>
-  <div class="tabs"><button class="tab" data-k="c">색상 스킨</button><button class="tab" data-k="t">이동 궤적</button><button class="tab" data-k="s">모양 스킨</button><button class="tab" data-k="m">메이데이</button></div>
+  <div class="tabs"><button class="tab" data-k="c">색상 스킨</button><button class="tab" data-k="t">이동 궤적</button><button class="tab" data-k="s">모양 스킨</button><button class="tab" data-k="k">스킬</button><button class="tab" data-k="m">메이데이</button></div>
   <div id="shopList"></div><div id="shopMsg"></div>
   <div class="row"><button class="btn sec" id="shopBackBtn">타이틀로</button></div>
 </div>
@@ -2180,11 +2182,17 @@ const ITEMS={
  c:[['pink','분홍','#ff6ad5'],['green','초록','#5dff8a'],['gold','금색','#ffd84d'],['orange','주황','#ff8c3a'],['violet','보라','#b46bff'],['white','순백','#ffffff'],['red','진홍','#ff4d6d']].map(a=>({id:'c_'+a[0],k:'c',n:a[1],col:a[2],p:30})),
  t:[['spark','불꽃 입자'],['bubble','물방울 링'],['star','별가루'],['pixel','네온 픽셀'],['rainbow','무지개 띠']].map(a=>({id:'t_'+a[0],k:'t',n:a[1],tk:a[0],p:60})),
  s:[['star','별'],['skull','해골'],['robot','로봇'],['cat','고양이'],['ghost','유령'],['gem','다이아']].map(a=>({id:'s_'+a[0],k:'s',n:a[1],sk:a[0],p:100})),
+ k:Object.keys(SKILLS).filter(skOK).map(w=>({id:'sk_'+w,k:'k',n:WEAPONS[w].name,sw:w,p:100})),
  m:[{id:'mayday',k:'m',n:'메이데이',p:1000}]};
 const ALL={};for(const k in ITEMS)for(const it of ITEMS[k])ALL[it.id]=it;
 let PF=(()=>{const d={cry:0,own:[],eq:{c:null,t:null,s:null},dev:false,used:[]};try{const o=JSON.parse(localStorage.getItem(KEY));if(o)return Object.assign(d,o,{eq:Object.assign(d.eq,o.eq||{})})}catch(e){}return d})();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(PF))}catch(e){}}
-const owns=id=>PF.dev||PF.own.includes(id);
+const FREE=new Set(); // 기본 무료 스킬 없음
+const owns=id=>PF.dev||FREE.has(id)||PF.own.includes(id);const ownsSk=w=>owns('sk_'+w);
+function skFix(){const L=Object.keys(SKILLS).filter(w=>skOK(w)&&ownsSk(w));let ch=false;
+  const ok=w=>!!w&&ownsSk(w);if(!ok(SET.skA)){SET.skA=ok(SET.skB)?SET.skB:(L[0]||null);ch=true}
+  if(!ok(SET.skB)||SET.skB===SET.skA){SET.skB=L.find(w=>w!==SET.skA)||null;ch=true}
+  if(ch)saveSettings()}
 function refresh(){const t='💠 크리스탈 '+PF.cry;$('cryTitle').textContent=t+(PF.dev?' · 🛠 제작자 모드':'');$('cryHud').textContent='💠 '+PF.cry;$('shopBal').textContent='💠 보유 크리스탈: '+PF.cry}
 // ---- 코드 ----
 const CODES={KS0825:50,KC1031:100};
@@ -2240,37 +2248,62 @@ function drawTrailFx(p){const id=p.id||'solo';ctx.save();ctx.globalCompositeOper
 // ---- 바닥 크리스탈 ----
 function drawGem(g,t){const s=1+Math.sin(t*5)*0.08;g.save();g.scale(s,s);g.shadowColor='#9ff';g.shadowBlur=lowGfx()?0:14;g.fillStyle='#5ff3ff';g.strokeStyle='#e8ffff';g.lineWidth=1.5;g.beginPath();g.moveTo(0,-11);g.lineTo(8,-2);g.lineTo(0,11);g.lineTo(-8,-2);g.closePath();g.fill();g.stroke();g.shadowBlur=0;g.fillStyle='rgba(255,255,255,.7)';g.beginPath();g.moveTo(0,-11);g.lineTo(3,-2);g.lineTo(-3,-2);g.closePath();g.fill();g.restore()}
 // ---- 메이데이 ----
-const MD={dur:5,n:45,rad:110,dmg:150}; // 5초간 45발, 반경 110, 발당 150×적체력배율
-let mdUsed=false,mdSir=0;
+// 메이데이: 3종 (설정에서 선택) · 맵 전체 폭격 · 플레이어 피해 없음. 레이드: 호스트가 피해 계산, {t:'mdv',v,s,id} 1회 전송 → 각자 시드로 연출
+const MD={dur:5,waves:10,vis:6,dmg:60,eliteF:0.03,bossF:0.012}; // 0.5초마다 10회, 맵의 모든 적: 일반 60×적체력배율 / 엘리트 최대체력 3% / 보스 1.2%
+const MDV={meteor:{n:'유성우',ic:'☄️',c:'#ff9a5d'},bolt:{n:'번개',ic:'⚡',c:'#9fd8ff'},mine:{n:'떨어지는 지뢰',ic:'💣',c:'#ff4d6d'}};
+if(!MDV[SET.mdV])SET.mdV='meteor';
+let mdUsed=false,mdSir=0,MDE=[],MDX=[];
+function mdRng(s){return()=>{s=(s+0x6D2B79F5)|0;let t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296}}
 function mdTime(){const R=rR();return state==='raid'&&R?R.t:G?G.t:0}
 function mdReady(){if(!owns('mayday')||mdUsed||!inSkillGame())return false;const me=myP();return !!me&&!me.dead&&mdTime()>=180&&me.hp/me.maxHp<0.3}
-function mdSpawn(p){const v=viewHalf(),w=p.vw||v.w,h=p.vh||v.h,c=meteors.length;
-  for(let i=0;i<MD.n;i++)meteors.push({x:p.x+rand(-w,w),y:p.y+rand(-h,h),t:-i*(MD.dur/MD.n),warn:0.55,dmg:MD.dmg*hpMul(),rad:MD.rad,hit:false});
-  if(state==='raid')for(let i=c;i<meteors.length;i++)RB.owners.set(meteors[i],p.id);
-  rings.push({x:p.x,y:p.y,r:0,max:Math.max(w,h),t:0,dur:0.8,c:'#ff4d6d'});showBanner('🚨 메이데이! '+(state==='raid'?(p.name||'')+' ':'')+'폭격 지원 도착','#ff4d6d');addShake(10);S.boom()}
-function hostMd(p){const R=rR();if(!p||p.dead||p.mdUsed||!R||['inter','clear','fail','ending'].includes(R.phase))return;if(R.t<180||p.hp/p.maxHp>=0.3)return;p.mdUsed=true;mdSpawn(p)}
-function mdFire(){if(!mdReady())return;mdUsed=true;mdSir=MD.dur+0.6;initAudio();
-  if(state==='play')mdSpawn(P);else{const R=rR();if(R.host)hostMd(myP());else if(RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'md'})}}
+function mdStart(v,seed,pid,auth){if(!MDV[v])v='meteor';if(MDE.length>=4)return;MDE.push({v,seed:seed|0,pid,auth,t:0,w:0});
+  showBanner('🚨 메이데이! '+MDV[v].ic+' '+MDV[v].n+' 폭격','#ff4d6d');addShake(10);S.boom()}
+function mdDamage(e){const raid=state==='raid';const p=raid?rRP().find(q=>q.id===e.pid):P;if(!p)return;if(raid)RB.swapIn(p);
+  try{for(const en of enemies.slice()){if(en.dead)continue;
+    if(en.type==='boss'||en.type==='raidboss')hurtEnemy(en,en.maxHp*MD.bossF/dmgMul(),0,0,0);else if(en.type==='elite')hurtEnemy(en,en.maxHp*MD.eliteF/dmgMul(),0,0,0);else hurtEnemy(en,MD.dmg*hpMul(),0,0,0)}}
+  finally{if(raid)RB.swapOut(p)}}
+function mdWave(e,i){const r=mdRng(e.seed*31+i),v=viewHalf();for(let k=0;k<MD.vis&&MDX.length<40;k++)MDX.push({v:e.v,x:camX+(r()*2-1)*v.w,y:camY+(r()*2-1)*v.h,t:-k*0.05,hit:false});
+  if(e.auth)mdDamage(e)}
+function mdTick(dt){const step=MD.dur/MD.waves;for(const e of MDE){e.t+=dt;while(e.w<MD.waves&&e.t>=e.w*step){mdWave(e,e.w);e.w++}}MDE=MDE.filter(e=>e.w<MD.waves);
+  for(const x of MDX){x.t+=dt;if(!x.hit&&x.t>=0.35){x.hit=true;burst(x.x,x.y,MDV[x.v].c,8,220,0.4,3);addShake(3)}}MDX=MDX.filter(x=>x.t<0.8)}
+function hostMd(p,v){const R=rR();if(!p||p.dead||p.mdUsed||!R||['inter','clear','fail','ending'].includes(R.phase))return;if(R.t<180||p.hp/p.maxHp>=0.3)return;p.mdUsed=true;
+  v=MDV[v]?v:'meteor';const s=(Math.random()*2147483647)|0;mdStart(v,s,p.id,true);if(RB.bcast)RB.bcast({t:'mdv',v,s,id:p.id})}
+function mdFx(d){if(!d||!MDV[d.v])return;mdStart(d.v,d.s|0,d.id,false)}
+function mdFire(){if(!mdReady())return;mdUsed=true;mdSir=MD.dur+0.6;initAudio();const v=SET.mdV;
+  if(state==='play')mdStart(v,(Math.random()*2147483647)|0,'solo',true);else{const R=rR();if(R.host)hostMd(myP(),v);else if(RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'md',v})}}
+{const _dw=drawSkillWorld;drawSkillWorld=function(){_dw();if(!MDX.length)return;ctx.save();
+  for(const x of MDX){if(x.t<0)continue;const c=MDV[x.v].c;
+    if(x.t<0.35){const k=x.t/0.35;ctx.globalAlpha=0.35+0.4*k;ctx.strokeStyle=c;ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.beginPath();ctx.arc(x.x,x.y,60,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+      if(x.v==='meteor'){const sx=x.x-140*(1-k),sy=x.y-260*(1-k);ctx.strokeStyle='rgba(255,154,93,.6)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(sx-50,sy-90);ctx.lineTo(sx,sy);ctx.stroke();ctx.fillStyle='#ffe0a0';ctx.beginPath();ctx.arc(sx,sy,12,0,TAU);ctx.fill()}
+      else if(x.v==='mine'){const yy=x.y-240*(1-k*k);ctx.fillStyle='#2a1030';ctx.strokeStyle=c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x.x,yy,12,0,TAU);ctx.fill();ctx.stroke();ctx.fillStyle=Math.floor(x.t*20)%2?'#fff':c;ctx.beginPath();ctx.arc(x.x,yy-3,4,0,TAU);ctx.fill()}}
+    else{const q=(x.t-0.35)/0.45,a=Math.max(0,1-q);ctx.globalAlpha=a;
+      if(x.v==='bolt'&&q<0.5){ctx.strokeStyle='#ffffff';ctx.lineWidth=5;ctx.shadowColor=c;ctx.shadowBlur=lowGfx()?0:16;ctx.beginPath();let yy=x.y-H/VS,xx=x.x;ctx.moveTo(xx,yy);const r=mdRng((x.x|0)*7+(x.y|0));while(yy<x.y){yy+=40;xx=x.x+(r()-0.5)*50;ctx.lineTo(yy>=x.y?x.x:xx,Math.min(yy,x.y))}ctx.stroke();ctx.shadowBlur=0}
+      ctx.strokeStyle=c;ctx.lineWidth=6*a+1;ctx.beginPath();ctx.arc(x.x,x.y,20+110*q,0,TAU);ctx.stroke();ctx.fillStyle=c;ctx.globalAlpha=a*0.25;ctx.beginPath();ctx.arc(x.x,x.y,20+90*q,0,TAU);ctx.fill()}}
+  ctx.restore()}}
+function renderMdRow(){const row=$('mdRow');if(!row)return;row.innerHTML='';const own=owns('mayday');
+  for(const v in MDV){const c=document.createElement('div');c.className='chip'+(SET.mdV===v?' sel':'')+(own?'':' off');c.dataset.md=v;c.innerHTML='<div style="font-size:24px;line-height:38px">'+MDV[v].ic+'</div>'+(own?'':'🔒 ')+MDV[v].n;
+    c.onclick=()=>{if(!owns('mayday')){$('skSetMsg').style.color='#ff8c8c';$('skSetMsg').textContent='🔒 상점에서 메이데이를 해금하세요 (💠 1000)';return}SET.mdV=v;saveSettings();$('skSetMsg').style.color='#7dffb0';$('skSetMsg').textContent='메이데이: '+MDV[v].n;renderMdRow()};row.appendChild(c)}}
 const sb=document.createElement('button');sb.className='skb';sb.id='mdBtn';sb.innerHTML='<b>C</b><span class="nm">메이데이</span>';$('skBtns').appendChild(sb);
 sb.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();mdFire()});
 addEventListener('keydown',e=>{if(e.repeat||RB.chatOpen)return;if(e.code==='KeyC'&&(state==='play'||state==='raid'))mdFire()});
-{const _ng=newGame;newGame=function(){_ng();mdUsed=false;mdSir=0;TP=[];for(const k in lastPos)delete lastPos[k]}}
+{const _ng=newGame;newGame=function(){_ng();mdUsed=false;mdSir=0;MDE=[];MDX=[];TP=[];for(const k in lastPos)delete lastPos[k]}}
 // ---- 상점 ----
 let tab='c';
-function prev(it){const c=makeCanvas(128,128),g=c.getContext('2d');g.translate(64,64);g.scale(2.2,2.2);const col=it.col||'#4df3ff';
+function prev(it){if(it.k==='k')return skIcon(it.sw,32);const c=makeCanvas(128,128),g=c.getContext('2d');g.translate(64,64);g.scale(2.2,2.2);const col=it.col||'#4df3ff';
   if(it.k==='s')shapePath(g,it.sk,col,false);else if(it.k==='m'){g.font='40px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('🚨',0,0)}
   else if(it.k==='t'){for(let i=0;i<9;i++){const x=-22+i*5.5,k=i/8;g.globalAlpha=0.2+0.8*k;g.fillStyle=it.tk==='rainbow'?'hsl('+i*40+',100%,60%)':'#4df3ff';if(it.tk==='bubble'){g.strokeStyle='#4df3ff';g.beginPath();g.arc(x,Math.sin(i)*4,2+(1-k)*4,0,TAU);g.stroke()}else if(it.tk==='pixel')g.fillRect(x-2,Math.sin(i)*4-2,4,4);else{g.beginPath();g.arc(x,Math.sin(i)*4,1+k*2.5,0,TAU);g.fill()}}g.globalAlpha=1;g.fillStyle='#0d2a44';g.strokeStyle='#4df3ff';g.lineWidth=2;g.beginPath();g.arc(22,0,8,0,TAU);g.fill();g.stroke()}
   else{g.fillStyle='#0d2a44';g.strokeStyle=col;g.lineWidth=3;g.shadowColor=col;g.shadowBlur=12;g.beginPath();g.arc(0,0,14,0,TAU);g.fill();g.stroke()}return c}
 function renderShop(){refresh();for(const b of document.querySelectorAll('#shop .tab'))b.classList.toggle('sel',b.dataset.k===tab);const L=$('shopList');L.innerHTML='';
-  for(const it of ITEMS[tab]){const d=document.createElement('div');d.className='sitem';const eq=it.k!=='m'&&PF.eq[it.k]===it.id;if(eq)d.classList.add('eq');d.appendChild(prev(it));
+  for(const it of ITEMS[tab]){const d=document.createElement('div');d.className='sitem';const eq=it.k!=='m'&&it.k!=='k'&&PF.eq[it.k]===it.id;if(eq)d.classList.add('eq');d.appendChild(prev(it));
     const nm=document.createElement('div');nm.textContent=it.n;d.appendChild(nm);const pr=document.createElement('div');pr.style.color='#9ff';pr.textContent=owns(it.id)?'보유 중':'💠 '+it.p;d.appendChild(pr);
     const b=document.createElement('button');
-    if(!owns(it.id)){b.textContent='구매';b.disabled=PF.cry<it.p;b.onclick=()=>{if(PF.cry<it.p||owns(it.id))return;PF.cry-=it.p;PF.own.push(it.id);if(it.k!=='m')PF.eq[it.k]=it.id;save();$('shopMsg').textContent=it.n+' 구매 완료!';renderShop()}}
+    if(!owns(it.id)){b.textContent='구매';b.disabled=PF.cry<it.p;b.onclick=()=>{if(PF.cry<it.p||owns(it.id))return;PF.cry-=it.p;PF.own.push(it.id);if(it.k!=='m'&&it.k!=='k')PF.eq[it.k]=it.id;save();$('shopMsg').textContent=it.n+' 구매 완료!';renderShop()}}
     else if(it.k==='m'){b.textContent='영구 해금됨';b.disabled=true}
+    else if(it.k==='k'){b.textContent=FREE.has(it.id)?'기본 제공':'해금됨 · 설정에서 선택';b.disabled=true}
     else if(eq){b.textContent='해제';b.className='uneq';b.onclick=()=>{PF.eq[it.k]=null;save();$('shopMsg').textContent=it.n+' 해제';renderShop()}}
     else{b.textContent='장착';b.className='own';b.onclick=()=>{PF.eq[it.k]=it.id;save();$('shopMsg').textContent=it.n+' 장착!';renderShop()}}
     d.appendChild(b);L.appendChild(d)}
-  if(tab==='m'){const n=document.createElement('div');n.style.cssText='width:100%;font-size:12px;color:#cfd3ff';n.textContent='한 판에 1번 · 생존 3분 이상 + 체력이 빨간색(30% 미만)일 때 C 버튼/키로 5초간 화면 전체 폭격';L.appendChild(n)}}
+  if(tab==='m'){const n=document.createElement('div');n.style.cssText='width:100%;font-size:12px;color:#cfd3ff';n.textContent='한 판에 1번 · 생존 3분 이상 + 체력이 빨간색(30% 미만)일 때 C 버튼/키로 5초간 맵 전체 폭격 · 유성우/번개/떨어지는 지뢰 3종 모두 해금 (설정에서 선택) · 내 캐릭터는 피해 없음';L.appendChild(n)}}
 for(const b of document.querySelectorAll('#shop .tab'))b.onclick=()=>{tab=b.dataset.k;$('shopMsg').textContent='';renderShop()};
 $('shopBtn').onclick=()=>{if(state!=='title')return;initAudio();hideAll();$('shopMsg').textContent='';renderShop();$('shop').classList.add('show')};
 $('shopBackBtn').onclick=()=>{$('shop').classList.remove('show');toTitle()};
@@ -2279,8 +2312,9 @@ $('shopBackBtn').onclick=()=>{$('shop').classList.remove('show');toTitle()};
 let last=performance.now();
 (function loop(now){const dt=Math.min(0.1,(now-last)/1000);last=now;const ing=state==='play'||state==='raid';$('cryHud').classList.toggle('show',ing||state==='paused'||state==='levelup');$('cryHud').classList.toggle('raid',state==='raid');
   sb.classList.toggle('on',owns('mayday'));const rd=mdReady();sb.classList.toggle('lock',!rd);sb.classList.toggle('ready',rd);
-  if(ing)spawnTrails(dt);mdSir=Math.max(0,mdSir-dt);$('mdSiren').style.opacity=mdSir>0?(0.5+0.5*Math.sin(now/90)).toFixed(2):'0';requestAnimationFrame(loop)})(last);
-window.__cry={add,eq:()=>clean(PF.eq),clean,drawGem,hint};window.__md={host:hostMd};
+  if(ing){spawnTrails(dt);mdTick(dt)}mdSir=Math.max(0,mdSir-dt);$('mdSiren').style.opacity=mdSir>0?(0.5+0.5*Math.sin(now/90)).toFixed(2):'0';requestAnimationFrame(loop)})(last);
+skFix();{const _os=openSettings;openSettings=function(){skFix();_os();renderMdRow()}}
+window.__cry={ownsSk,add,eq:()=>clean(PF.eq),clean,drawGem,hint};window.__md={host:hostMd,fx:mdFx};
 refresh();
 })();
 </script>
