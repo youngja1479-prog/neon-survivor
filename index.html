@@ -453,7 +453,7 @@ function spawnEnemy(type,x,y){
   enemies.push(e);return e;
 }
 let NOSP=[];function noSpAt(x,y){NOSP=NOSP.filter(z=>z.g===G&&G.t<z.until);for(const z of NOSP)if((x-z.x)**2+(y-z.y)**2<z.r*z.r)return true;return false}
-function offscreenPos(){const v=viewHalf();let a=rand(0,TAU),d=Math.hypot(v.w,v.h)+rand(40,120);for(let k=0;k<12&&noSpAt(P.x+Math.cos(a)*d,P.y+Math.sin(a)*d);k++)a=rand(0,TAU);
+function offscreenPos(){const v=viewHalf();let a=rand(0,TAU),d=Math.hypot(v.w,v.h)+rand(40,120);
   return {x:clamp(P.x+Math.cos(a)*d,-WH+20,WH-20),y:clamp(P.y+Math.sin(a)*d,-WH+20,WH-20)}}
 function pickType(){const t=diffT();const w=[['grunt',10]];
   const batT=isHard()?8:20,bruteT=isHard()?32:60,spitT=isHard()?50:95,chgT=isHard()?110:210,splT=isHard()?70:120;
@@ -2003,7 +2003,7 @@ function skPush(e,x,y){if(e.dead||e.type==='raidboss')return;let dx=e.x-x,dy=e.y
   const boss=e.type==='boss',ex=Math.min(W*0.5/VS/(Math.abs(dx)||1e-6),H*0.5/VS/(Math.abs(dy)||1e-6))*0.92,dist=boss?70:Math.max(260,ex-Math.max(d,0)),T=1.2,k=3.2,v0=dist*k/(1-Math.exp(-k*T));
   e.pT=T;e.pvx=dx*v0;e.pvy=dy*v0;e.kbx=e.kby=0}
 function skProj(p,dt){
-  if(p.k==='Sarrow'&&p.stuck){p.life-=dt}
+  if(p.k==='Sarrow'&&p.stuck){p.life-=dt;p.tk=(p.tk||0)+dt;while(p.tk>=0.1){p.tk-=0.1;query(p.x,p.y,320,e=>{if((e.x-p.x)**2+(e.y-p.y)**2<(320+e.r)**2)hurtEnemy(e,10000,0,0,0)})}}
   else if(p.k==='Sarrow'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;{if(Math.abs(p.x)>=WH||Math.abs(p.y)>=WH){p.x=clamp(p.x,-WH,WH);p.y=clamp(p.y,-WH,WH);p.stuck=1;p.life=10;
       NOSP.push({x:p.x,y:p.y,r:320,until:G.t+10,g:G});rings.push({x:p.x,y:p.y,r:0,max:320,t:0,dur:0.6,c:'#4df3ff'});burst(p.x,p.y,'#4df3ff',40,380,0.6,4);skShake(6);
       query(p.x,p.y,320,e=>{hurtEnemy(e,p.dmg*0.7,e.x-p.x,e.y-p.y,e.type==='boss'?120:700)})}}
