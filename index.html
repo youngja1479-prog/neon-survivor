@@ -1992,7 +1992,7 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
     buildGrid();query(x,y,Rr,(e,dx,dy)=>{hurtEnemy(e,D*4,0,0,0);skPush(e,x,y)});burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
   else if(id==='chain'){projs.push({k:'Sstorm',x,y,r:0,n:8,cd:0,dmg:D*3,life:4,rot:0})}
   else if(id==='boom'){for(const o of [-0.35,0,0.35]){const b=a+o;projs.push({k:'Sboom',x,y,dx:Math.cos(b),dy:Math.sin(b),t:0,out:true,dist:0,r:34,dmg:D*4,hit:new Set(),rot:0})}S.shoot()}
-  else if(id==='seek'){const tg=nearestN(x,y,16,760);for(let i=0;i<16;i++){const b=a+(i/15-0.5)*2.6;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*1.5,life:4,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
+  else if(id==='seek'){const tg=nearestN(x,y,30,760);for(let i=0;i<30;i++){const b=a+(i/29-0.5)*3.2;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*1.5,life:4,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
   else if(id==='aura'){const Rr=Math.min(500,st.rad*2.6*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:5,tick:0,dmg:D*2,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
   else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
     meteors.push({x:mx,y:my,t:0,warn:1.1,dmg:D*10,rad:st.rad*1.4*am,hit:false,big:1});S.pulse()}
