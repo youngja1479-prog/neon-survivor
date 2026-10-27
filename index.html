@@ -1963,7 +1963,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
 const SKILLS={bolt:{cd:15,d:'거대한 화살 직선 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:20,d:'거대 충격파·강한 넉백'},chain:{cd:20,d:'하늘에서 번개 연타'},
-  boom:{cd:15,d:'부메랑 3개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:20,d:'5초간 오라 거대화'},meteor:{cd:20,d:'지정 위치에 유성 1개 낙하'},beam:{cd:20,dur:10,d:'10초 지속 레이저'}};
+  boom:{cd:15,d:'부메랑 3개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:20,d:'10초간 오라 거대화'},meteor:{cd:20,d:'지정 위치에 유성 1개 낙하'},beam:{cd:20,dur:10,d:'10초 지속 레이저'}};
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
 const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
 if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
@@ -1993,7 +1993,7 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
   else if(id==='chain'){projs.push({k:'Sstorm',x,y,r:0,n:8,cd:0,dmg:D*3,life:4,rot:0})}
   else if(id==='boom'){for(const o of [-0.35,0,0.35]){const b=a+o;projs.push({k:'Sboom',x,y,dx:Math.cos(b),dy:Math.sin(b),t:0,out:true,dist:0,r:34,dmg:D*4,hit:new Set(),rot:0})}S.shoot()}
   else if(id==='seek'){const tg=nearestN(x,y,30,760);for(let i=0;i<30;i++){const b=a+(i/29-0.5)*3.2;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*1.5,life:4,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
-  else if(id==='aura'){const Rr=Math.min(500,st.rad*2.6*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:5,tick:0,dmg:D*2,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
+  else if(id==='aura'){const Rr=Math.min(650,st.rad*3.3*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:10,tick:0,dmg:D*2.4,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
   else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
     meteors.push({x:mx,y:my,t:0,warn:1.1,dmg:D*10,rad:st.rad*1.4*am,hit:false,big:1});S.pulse()}
   else if(id==='beam'){projs.push({k:'Slaser',x,y,r:0,t:0,life:10,tick:0,dmg:D*1.6,ax,ay,rot:a,len:760*am});S.zap()}
@@ -2060,7 +2060,7 @@ function drawSkillWorld(){ctx.save();ctx.globalCompositeOperation='lighter';
   const line=(L,w)=>{ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(fy,fx));ctx.beginPath();ctx.rect(0,-w,L,w*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(L,-w*1.8);ctx.lineTo(L+30,0);ctx.lineTo(L,w*1.8);ctx.stroke();ctx.restore()};
   const circ=(cx,cy,r)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.fill();ctx.stroke()};
   if(id==='bolt')line(1100,28);else if(id==='orbit'){circ(x,y,120);line(900,60)}else if(id==='beam')line(760*am,22);else if(id==='boom'){line(950,34);const s0=fx,s1=fy;for(const o of [-0.35,0.35]){const c=Math.cos(o),sn=Math.sin(o);fx=s0*c-s1*sn;fy=s0*sn+s1*c;line(950,34)}fx=s0;fy=s1}
-  else if(id==='pulse')circ(x,y,380*am);else if(id==='aura'){const sv=P;P=me;const r=Math.min(500,skBase('aura').rad*2.6*am);P=sv;circ(x,y,r)}
+  else if(id==='pulse')circ(x,y,380*am);else if(id==='aura'){const sv=P;P=me;const r=Math.min(650,skBase('aura').rad*3.3*am);P=sv;circ(x,y,r)}
   else if(id==='meteor'&&skAimP){const sv=P;P=me;const r=skBase('meteor').rad*1.4*am;P=sv;ctx.setLineDash([]);ctx.lineWidth=4;circ(skAimP.x,skAimP.y,r);ctx.beginPath();ctx.moveTo(skAimP.x-r-14,skAimP.y);ctx.lineTo(skAimP.x+r+14,skAimP.y);ctx.moveTo(skAimP.x,skAimP.y-r-14);ctx.lineTo(skAimP.x,skAimP.y+r+14);ctx.stroke()}else if(id==='chain')circ(x,y,480);else if(id==='seek'){circ(x,y,760);line(200,10)}
   ctx.setLineDash([]);ctx.restore()}
 // ---------- 입력 ----------
