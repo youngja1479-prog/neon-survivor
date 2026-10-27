@@ -1056,7 +1056,7 @@ function drawHUD(){
   ctx.strokeStyle='#ffffff55';ctx.lineWidth=1.5;roundRect(hx,hy,hw,hh,9);ctx.stroke();
   ctx.fillStyle='#fff';ctx.font=`800 12px ${FONT}`;ctx.textAlign='center';ctx.fillText(`${Math.ceil(P.hp)} / ${P.maxHp}`,hx+hw/2,hy+hh/2+1);
   // 레벨
-  ctx.textAlign='left';ctx.font=`900 16px ${FONT}`;ctx.fillStyle='#ffd84d';ctx.fillText(`레벨 ${G.level}`,hx,hy+hh+16);
+  ctx.textAlign='left';ctx.font=`900 16px ${FONT}`;ctx.fillStyle='#ffd84d';ctx.fillText(`레벨 ${G.level}`,hx,hy+hh+16);window.__lvR=hx+ctx.measureText(`레벨 ${G.level}`).width;
   const Md=(state==='raid'&&window.__raidMd)||MODES[gameMode]||MODES.normal;ctx.font=`800 12px ${FONT}`;ctx.fillStyle=Md.col;ctx.fillText(Md.name,hx,hy+hh+34);
   // 타이머
   ctx.textAlign='center';ctx.font=`900 ${W<500?26:34}px ${FONT}`;ctx.fillStyle=G.t>=600?'#ffd84d':'#fff';ctx.shadowColor='#4df3ff';ctx.shadowBlur=10;ctx.fillText(fmtTime(G.t),W/2,40);ctx.shadowBlur=0;
@@ -1946,7 +1946,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 #settings .chip.off{opacity:.3;cursor:not-allowed}
 #settings .chip small{display:block;color:#8a8fc0;font-weight:400}
 #skSetMsg{min-height:18px;color:#7dffb0;font-size:13px}
-#skBtns{position:fixed;right:16px;bottom:96px;display:none;gap:12px;z-index:8;touch-action:none;user-select:none;-webkit-user-select:none}
+#skBtns{position:fixed;right:0;bottom:0;width:0;height:0;display:none;z-index:8;touch-action:none;user-select:none;-webkit-user-select:none}
 #skBtns.show{display:flex}
 .skb{position:relative;width:76px;height:76px;border-radius:50%;border:3px solid #4df3ff;background:rgba(20,18,50,.75);color:#fff;font-family:inherit;touch-action:none;padding:0;overflow:hidden;cursor:pointer;box-shadow:0 0 14px rgba(77,243,255,.5)}
 .skb b{display:block;font-size:22px;line-height:24px;margin-top:8px}
@@ -1959,7 +1959,8 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 #skCancel{position:fixed;display:none;width:64px;height:64px;border-radius:50%;border:3px dashed #ff4d6d;background:rgba(60,10,25,.75);color:#ff8c8c;font-size:26px;font-weight:900;text-align:center;line-height:40px;z-index:9;pointer-events:none}
 #skCancel small{display:block;font-size:10px;line-height:10px}#skCancel.show{display:block}#skCancel{opacity:.55}#skCancel.armed{opacity:.9}#skCancel.over{opacity:1}#skCancel.over{background:#ff2e63;color:#fff;transform:scale(1.15)}
 #skFlash{position:fixed;inset:0;background:#fff3d8;opacity:0;pointer-events:none;z-index:7}
-@media (max-height:560px){#skBtns{bottom:70px}.skb{width:64px;height:64px}.skb .cd{line-height:64px}}
+#skBtns .skb{position:absolute}#skBtnA{right:16px;bottom:36px}#skBtnB{right:106px;bottom:22px}#mdBtn{right:26px;bottom:126px}#skBtns.raid{bottom:84px}
+@media (max-height:560px){#skBtnA{right:16px;bottom:16px}#skBtnB{right:92px;bottom:10px}#mdBtn{right:22px;bottom:92px}.skb{width:64px;height:64px}.skb .cd{line-height:64px}}
 </style>
 <div class="ov" id="settings">
   <div class="big" style="color:#4df3ff;text-shadow:0 0 20px #4df3ff">⚙️ 설정</div>
@@ -2156,7 +2157,7 @@ function hostSkill(p,id,ax,ay,tx,ty){const R=rR();if(!p||p.dead||!skOK(id)||!R||
 // ---------- 버튼 UI / 쿨타임 ----------
 let skLast=performance.now();
 function skLoop(now){const dt=Math.min(0.1,(now-skLast)/1000);skLast=now;skAimTick(dt);
-  const on=state==='play'||state==='raid'||state==='paused'||state==='levelup'||state==='dying';$('skBtns').classList.toggle('show',state==='play'||state==='raid');
+  const on=state==='play'||state==='raid'||state==='paused'||state==='levelup'||state==='dying';$('skBtns').classList.toggle('show',state==='play'||state==='raid');$('skBtns').classList.toggle('raid',state==='raid');
   if(inSkillGame()){for(const k in skAct){if(skAct[k]>0)skAct[k]-=dt}for(const k in skCD){if(!(skAct[k]>0)&&skCD[k]>0)skCD[k]-=dt}}else if(!on)skHold=null;
   if(!inSkillGame())skHold=null;
   for(const slot of ['A','B']){const b=$('skBtn'+slot),id=skId(slot);const nm=id?WEAPONS[id].name:'없음';b.style.display=id?'':'none';if(b._nm!==nm){b._nm=nm;b.querySelector('.nm').textContent=nm}
@@ -2179,9 +2180,9 @@ window.__skill={SKILLS,skCD,skAct,skQ,fireSkill,hostSkill,skPress,skRelease,get 
 .sitem button{margin-top:4px;width:100%;padding:4px 0;border-radius:7px;border:0;font-weight:900;font-family:inherit;cursor:pointer;background:#4df3ff;color:#0a0820}
 .sitem button.own{background:#5dff8a}.sitem button.uneq{background:#ff8c8c}.sitem button:disabled{background:#555a80;color:#aaa;cursor:not-allowed}
 #shopMsg{min-height:18px;font-size:13px;color:#7dffb0}
-#cryHud{position:fixed;top:56px;left:50%;transform:translateX(-50%);display:none;z-index:6;background:rgba(10,8,32,.7);border:1px solid #4df3ff;border-radius:10px;padding:2px 10px;color:#9ff;font-weight:900;font-size:14px;pointer-events:none}
-#cryHud.show{display:block}#cryHud.raid{top:138px}
-#mdBtn{border-color:#ff4d6d;display:none;margin-top:-80px}#mdBtn.on{display:block}
+#cryHud{position:fixed;top:44px;left:84px;line-height:14px;display:none;z-index:6;background:rgba(10,8,32,.7);border:1px solid #4df3ff;border-radius:10px;padding:0 8px;color:#9ff;font-weight:900;font-size:12px;pointer-events:none}
+#cryHud.show{display:block}
+#mdBtn{border-color:#ff4d6d;display:none}#mdBtn.on{display:block}
 #mdBtn.lock{border-color:#555a80;box-shadow:none;filter:grayscale(1);opacity:.55}
 #mdBtn.ready{box-shadow:0 0 20px #ff4d6d;animation:mdp .6s infinite alternate}@keyframes mdp{to{box-shadow:0 0 34px #ff2e63}}
 #mdSiren{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;background:radial-gradient(ellipse at center,rgba(255,40,40,0) 45%,rgba(255,40,40,.45))}
@@ -2217,9 +2218,9 @@ function skFix(){const L=Object.keys(SKILLS).filter(w=>skOK(w)&&ownsSk(w));let c
 function refresh(){const t='💠 크리스탈 '+PF.cry;$('cryTitle').textContent=t+(PF.dev?' · 🛠 제작자 모드':'');$('cryHud').textContent='💠 '+PF.cry;$('shopBal').textContent='💠 보유 크리스탈: '+PF.cry}
 // ---- 코드 ----
 const CODES={KS0825:50,KC1031:100,VIP777:80};
-let vipShown=false; // VIP777 힌트: 판(전투)마다 최대 1회 · 저장 안 함, 새 판에서 초기화
+let vipShown=false,vipPop=false; // VIP777 힌트: 판(전투)마다 최대 1회 · 저장 안 함, 새 판에서 초기화
 function hintShow(code){const h=$('hintPop');h.innerHTML='🔑 비밀 코드 발견!<br><span style="color:#fff;font-size:20px">'+code+'</span><br><small style="color:#cfd3ff">타이틀 화면 코드 입력에 적어 보세요</small>';h.style.display='block';clearTimeout(h._t);h._t=setTimeout(()=>{h.style.display='none'},6000)}
-function add(n,w){if(w==='hintN'){hintShow('KS0825');return}if(w==='hintB'){hintShow('KC1031');return}if(w==='hintV'){vipShown=true;hintShow('VIP777');return}n=n|0;if(n<=0)return;PF.cry+=n;save();refresh();
+function add(n,w){if(w==='hintN'){hintShow('KS0825');return}if(w==='hintB'){hintShow('KC1031');return}if(w==='hintV'){if(vipPop)return;vipPop=true;vipShown=true;hintShow('VIP777');return}n=n|0;if(n<=0)return;PF.cry+=n;save();refresh();
   if(w!=='pick'&&typeof P!=='undefined'&&P&&(state==='play'||state==='raid')){const me=typeof myP==='function'?myP():P;if(me)dmgText(me.x,me.y-34,'+'+n+' 💠','#9ff',20,true);showBanner('💠 크리스탈 +'+n+(w==='clear'?' (레이드 클리어)':w==='boss'?' (보스 처치)':''),'#9ff')}}
 function hint(kind){const R=typeof rR==='function'?rR():null;if(kind==='n'&&!vipShown&&!(state==='raid'&&R&&!R.host)&&Math.random()<0.01){vipShown=true;if(state==='raid'&&R&&R.host&&RB.cryAll)RB.cryAll(0,'hintV');else add(0,'hintV');return}const p=kind==='n'?0.001:0.01;if(Math.random()>=p)return;const w=kind==='n'?'hintN':'hintB';
   if(state==='raid'&&R&&R.host&&RB.cryAll)RB.cryAll(0,w);else add(0,w)}
@@ -2371,7 +2372,7 @@ function renderMdRow(){const row=$('mdRow');if(!row)return;row.innerHTML='';cons
 const sb=document.createElement('button');sb.className='skb';sb.id='mdBtn';sb.innerHTML='<b>C</b><span class="nm">메이데이</span>';$('skBtns').appendChild(sb);
 sb.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();mdFire()});
 addEventListener('keydown',e=>{if(e.repeat||RB.chatOpen)return;if(e.code==='KeyC'&&(state==='play'||state==='raid'))mdFire()});
-{const _ng=newGame;newGame=function(){_ng();vipShown=false;mdUsed=false;mdSir=0;MDE=[];MDS=mdSt();TP=[];for(const k in lastPos)delete lastPos[k]}}
+{const _ng=newGame;newGame=function(){_ng();vipShown=false;vipPop=false;mdUsed=false;mdSir=0;MDE=[];MDS=mdSt();TP=[];for(const k in lastPos)delete lastPos[k]}}
 // ---- 상점 ----
 let tab='c';
 function prev(it){if(it.k==='k')return skIcon(it.sw,32);const c=makeCanvas(128,128),g=c.getContext('2d');g.translate(64,64);g.scale(2.2,2.2);const col=it.col||'#4df3ff';
@@ -2395,7 +2396,7 @@ $('shopBackBtn').onclick=()=>{$('shop').classList.remove('show');toTitle()};
 {const _tt=toTitle;toTitle=function(){$('shop').classList.remove('show');_tt();refresh()}}
 // ---- 루프 ----
 let last=performance.now();
-(function loop(now){const dt=Math.min(0.1,(now-last)/1000);last=now;const ing=state==='play'||state==='raid';if(state==='title')vipShown=false;$('cryHud').classList.toggle('show',ing||state==='paused'||state==='levelup');$('cryHud').classList.toggle('raid',state==='raid');
+(function loop(now){const dt=Math.min(0.1,(now-last)/1000);last=now;const ing=state==='play'||state==='raid';$('cryHud').classList.toggle('show',ing||state==='paused'||state==='levelup');$('cryHud').classList.toggle('raid',state==='raid');if(window.__lvR)$('cryHud').style.left=Math.round(window.__lvR+8)+'px';
   sb.classList.toggle('on',owns('mayday'));const rd=mdReady();sb.classList.toggle('lock',!rd);sb.classList.toggle('ready',rd);
   if(ing){spawnTrails(dt);mdTick(dt)}mdSir=Math.max(0,mdSir-dt);$('mdSiren').style.opacity=mdSir>0?(0.5+0.5*Math.sin(now/90)).toFixed(2):'0';requestAnimationFrame(loop)})(last);
 skFix();{const _os=openSettings;openSettings=function(){skFix();_os();renderMdRow()}}
