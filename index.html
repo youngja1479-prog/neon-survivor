@@ -1677,7 +1677,7 @@ function hostUpdate(dt){
   pickups=pickups.filter(i=>!i.dead);
   // 보스
   if(R.boss){const b=R.boss;if(!b.dead&&b.hp>0)bossAI(dt);
-    if(b.dead||b.hp<=0){const k=b.kind;b.dead=true;for(const q of RP)if(!q.left){cryTo(q.id,20,'boss');cryTo(q.id,50,'clear')}if(window.__cry)__cry.hint('b');R.boss=null;R.tele=[];R.waves=[];ebullets=[];QM=58;rings.push({x:b.x,y:b.y,r:0,max:400,t:0,dur:0.8,c:'#ffd84d'});burst(b.x,b.y,'#ffd84d',90,420,1,5);
+    if(b.dead||b.hp<=0){const k=b.kind;b.dead=true;for(const q of RP)if(!q.left){cryTo(q.id,50,'clear')}if(window.__cry)__cry.hint('b');R.boss=null;R.tele=[];R.waves=[];ebullets=[];QM=58;rings.push({x:b.x,y:b.y,r:0,max:400,t:0,dur:0.8,c:'#ffd84d'});burst(b.x,b.y,'#ffd84d',90,420,1,5);
       if(k==='gozara'){for(let i=0;i<30;i++)dropGem(b.x+rand(-90,90),b.y+rand(-90,90),8);pickups.push({type:'chest',x:b.x,y:b.y,t:0});R.phase='inter';R.votes={}}
       else{R.phase='ending';R.endT=3;enemies=[];gems=[];projs=[];pickups=[];rbanner('세상이 정화되었다.','#ffffff',3.2)}}}
   for(const tl of R.tele){tl.t+=dt;if(tl.hit&&!tl.done&&tl.t>=tl.warn){tl.done=1;addShake(10);for(const p of alive())if(Math.hypot(p.x-tl.x,p.y-tl.y)<tl.r)hurtP(p,tl.hit)}}R.tele=R.tele.filter(tl=>tl.t<tl.warn+0.25);
