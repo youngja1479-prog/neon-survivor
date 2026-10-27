@@ -1699,10 +1699,10 @@ function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||
   const inV=(x,y,m)=>Math.abs(x-ox)<vw+m&&Math.abs(y-oy)<vh+m;
   // 적: id2 타입1 플래그1 x2 y2 (+hp1) (+rot2 dx1 dy1)
   let E='',ne=0;for(const e of enemies){if(e.dead||e.type==='raidboss')continue;if(!inV(e.x,e.y,e.r||0))continue;if(++ne>320)break;const n=nid(e);
-    E+=B64[n>>6]+B64[n&63]+e1(ET.indexOf(e.type))+e1((e.flash>0?1:0)|((e.st|0)<<1))+e2(e.x-ox)+e2(e.y-oy);if(HPT.has(e.type))E+=e1(Math.round(63*Math.max(0,e.hp)/e.maxHp));
+    E+=B64[n>>6]+B64[n&63]+e1(ET.indexOf(e.type)*6+clamp(e.st|0,0,2)*2+(e.flash>0?1:0))+e2(e.x-ox)+e2(e.y-oy);if(HPT.has(e.type))E+=e1(Math.round(63*Math.max(0,e.hp)/e.maxHp));
     if(ROTT.has(e.type))E+=e2(wrapA(e.rot||0)*600)+e1(Math.round((e.dx||0)*31)+32)+e1(Math.round((e.dy||0)*31)+32)}
   // 적 탄: x2 y2 종류1 vx2 vy2 (게스트가 속도로 외삽)
-  let EB='',nb=0;for(const b of ebullets){if(nb>=700)break;if(!inV(b.x,b.y,40))continue;nb++;EB+=e2(b.x-ox)+e2(b.y-oy)+e1(EBK.indexOf(b.k))+e2((b.vx||0)/2)+e2((b.vy||0)/2)}
+  let EB='',nb=0;for(const b of ebullets){if(nb>=700)break;if(!inV(b.x,b.y,40))continue;nb++;EB+=e2(b.x-ox)+e2(b.y-oy)+e1(EBK.indexOf(b.k))+e2(Math.atan2(b.vy||0,b.vx||0)*650)+e1(Math.hypot(b.vx||0,b.vy||0)/10)}
   // 발사체: id2 종류1 x2 y2 rot2 r1
   let PJ='',np=0;for(const p of projs){if(np>=300)break;if(!inV(p.x,p.y,40))continue;np++;const n=nid(p);PJ+=B64[n>>6]+B64[n&63]+e1(PK.indexOf(p.k))+e2(p.x-ox)+e2(p.y-oy)+e2(wrapA(p.rot||0)*600)+e1(r1(p.r))}
   const PL=RP.map(p=>{const fast=[p.id,r1(p.x),r1(p.y),r1(p.hp),r2(p.fx),r2(p.fy),p.moving?1:0,r2(p.walk),r2(p.inv),p.dead?1:0,p.level,r1(p.xp),r2(Math.max(0,p.chooseT))];
@@ -1731,11 +1731,11 @@ function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;G.kills=R.kills
   if(d.LF)G.loopFx=d.LF.map(a=>{const poly=[];for(let j=0;j<a[2].length;j+=2)poly.push({x:a[2][j],y:a[2][j+1]});return {perfect:!!a[0],t:a[1],poly}});
   if(d.CL)G.calls=d.CL.map(a=>({x:a[0],y:a[1],txt:a[2],c:a[3],life:a[4],s:a[5]}));
   const me=RP.find(p=>p.id===myId);if(me){if(lastMyHp!==null&&me.hp<lastMyHp){hurtFlash=0.35;S.hurt()}lastMyHp=me.hp}
-  {const A=d.E,out=[];let i=0;while(i<A.length){const ty=ET[d1(A,i+2)],f=d1(A,i+3);const e={_n:d1(A,i)<<6|d1(A,i+1),type:ty,x:d2(A,i+4)+OX,y:d2(A,i+6)+OY,r:ETYPES[ty].r,flash:f&1?0.1:0,st:f>>1,hp:1,maxHp:1,dead:false,rot:0,dx:0,dy:0};i+=8;
+  {const A=d.E,out=[];let i=0;while(i<A.length){const c2=d1(A,i+2),ty=ET[(c2/6)|0],f=c2%6;const e={_n:d1(A,i)<<6|d1(A,i+1),type:ty,x:d2(A,i+3)+OX,y:d2(A,i+5)+OY,r:ETYPES[ty].r,flash:f&1?0.1:0,st:f>>1,hp:1,maxHp:1,dead:false,rot:0,dx:0,dy:0};i+=7;
     if(HPT.has(ty))e.hp=d1(A,i++)/63;if(ROTT.has(ty)){e.rot=d2(A,i)/600;e.dx=(d1(A,i+2)-32)/31;e.dy=(d1(A,i+3)-32)/31;i+=4}e.x0=e.x;e.y0=e.y;out.push(e)}enemies=out}
   G.elite=enemies.find(e=>e.type==='elite')||null;
   {const A=d.PJ,o=[];for(let i=0;i<A.length;i+=10){const x=d2(A,i+3)+OX,y=d2(A,i+5)+OY;o.push({_n:d1(A,i)<<6|d1(A,i+1),k:PK[d1(A,i+2)],x,y,x0:x,y0:y,rot:d2(A,i+7)/600,r:d1(A,i+9)})}projs=o}
-  {const A=d.EB,o=[];for(let i=0;i<A.length;i+=9){const x=d2(A,i)+OX,y=d2(A,i+2)+OY;o.push({x,y,x0:x,y0:y,k:EBK[d1(A,i+4)],vx:d2(A,i+5)*2,vy:d2(A,i+7)*2})}ebullets=o}applyEv(d.EV);
+  {const A=d.EB,o=[];for(let i=0;i<A.length;i+=8){const x=d2(A,i)+OX,y=d2(A,i+2)+OY,an=d2(A,i+5)/650,sp=d1(A,i+7)*10;o.push({x,y,x0:x,y0:y,k:EBK[d1(A,i+4)],vx:Math.cos(an)*sp,vy:Math.sin(an)*sp})}ebullets=o}applyEv(d.EV);
   if(d.GM){const A=d.GM,o=[];for(let i=0;i<A.length;i+=3)o.push({x:A[i],y:A[i+1],v:A[i+2]});gems=o}pickups=d.PU.map(a=>({type:a[0],x:a[1],y:a[2],t:a[3]}));mines=d.MN.map(a=>({x:a[0],y:a[1],t:a[2]}));
   meteors=d.MT.map(a=>({x:a[0],y:a[1],t:a[2],warn:a[3],rad:a[4]}));rings=d.RG.map(a=>({x:a[0],y:a[1],max:a[2],t:a[3],dur:a[4],c:a[5]}));
   zaps=d.ZP.map(a=>({pts:a[0].map(q=>({x:q[0],y:q[1]})),t:a[1]}));beams=d.BM.map(a=>({x1:a[0],y1:a[1],x2:a[2],y2:a[3],t:a[4],dur:a[5],w:a[6]}));
@@ -1751,7 +1751,7 @@ function reconcile(d){const a=d.P&&d.P.find(q=>q[0]===myId);if(!a)return;const h
   const aq=d.AQ|0;pred.hist=pred.hist.filter(h=>h.s>aq);let tx=hx,ty=hy;for(const h of pred.hist){tx+=h.dx;ty+=h.dy}tx=clamp(tx,-WH+14,WH-14);ty=clamp(ty,-WH+14,WH-14);
   const ex=tx-pred.x,ey=ty-pred.y;if(Math.hypot(ex,ey)>240){pred.x=tx;pred.y=ty;pred.cx=pred.cy=0}else{pred.cx=ex;pred.cy=ey}}
 function nextMaps(d){const OX=d.O?d.O[0]:0,OY=d.O?d.O[1]:0,m={E:new Map(),PJ:new Map(),P:new Map(),B:null};
-  const A=d.E;let i=0;while(i<A.length){const ty=ET[d1(A,i+2)];m.E.set(d1(A,i)<<6|d1(A,i+1),[d2(A,i+4)+OX,d2(A,i+6)+OY]);i+=8+(HPT.has(ty)?1:0)+(ROTT.has(ty)?4:0)}
+  const A=d.E;let i=0;while(i<A.length){const ty=ET[(d1(A,i+2)/6)|0];m.E.set(d1(A,i)<<6|d1(A,i+1),[d2(A,i+3)+OX,d2(A,i+5)+OY]);i+=7+(HPT.has(ty)?1:0)+(ROTT.has(ty)?4:0)}
   const J=d.PJ;for(let k=0;k<J.length;k+=10)m.PJ.set(d1(J,k)<<6|d1(J,k+1),[d2(J,k+3)+OX,d2(J,k+5)+OY]);for(const a of d.P)m.P.set(a[0],[a[1],a[2]]);if(d.BS)m.B=[d.BS[2],d.BS[3]];return m}
 function lerpTo(o,t,a){if(!t)return;const dx=t[0]-o.x0,dy=t[1]-o.y0;if(dx*dx+dy*dy>90000)return;o.x=o.x0+dx*a;o.y=o.y0+dy*a}
 function guestTick(dt,inp){const now=performance.now(),rt=now-INTERP;let i=-1;for(let j=0;j<gBuf.length;j++)if(gBuf[j].at<=rt)i=j;
