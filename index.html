@@ -671,7 +671,7 @@ function killEnemy(e){
   S.kill();
   if(e.type==='boss'){addShake(16);G.boss=null;rings.push({x:e.x,y:e.y,r:0,max:300,t:0,dur:0.6,c:'#ff2e63'});
     for(let i=0;i<30;i++)dropGem(e.x+rand(-60,60),e.y+rand(-60,60),5);
-    pickups.push({type:'chest',x:e.x,y:e.y,t:0});showBanner('보스 격파!','#ffd84d');if(window.__cry){__cry.add(20,'boss');__cry.hint('b')}
+    pickups.push({type:'chest',x:e.x,y:e.y,t:0});showBanner('보스 격파!','#ffd84d');if(window.__cry){__cry.add(20,'boss')}
     if(!G.boss){for(const o of enemies)if(o.type==='boss'&&!o.dead)G.boss=o}
     if(!G.victory&&state==='play'){G.victory=true;openVictory()}
     return}
@@ -682,7 +682,6 @@ function killEnemy(e){
   if(e.type==='splitter'&&enemies.length<640){for(let i=0;i<3;i++){const a=rand(0,TAU),sh=spawnEnemy('shard',e.x+Math.cos(a)*12,e.y+Math.sin(a)*12);sh.kbx=Math.cos(a)*240;sh.kby=Math.sin(a)*240}burst(e.x,e.y,'#3cffd0',10,200,0.4,3)}
   dropGem(e.x,e.y,e.xp*gemMul());
   if(Math.random()<0.1)pickups.push({type:'crystal',x:e.x+rand(-8,8),y:e.y+rand(-8,8),t:0}); // 크리스탈 10%
-  if(window.__cry)__cry.hint('n');
   // 회복 물약 드롭: 일반 2.5%/6초, 하드 1.5%/9초, 크레이지 1.0%/12초. 엘리트는 위에서 확정 드롭
   const cz=isCrazy();
   if(G.healCd<=0&&Math.random()<(cz?0.010:isHard()?0.015:0.025)){
@@ -1272,7 +1271,7 @@ function frame(now){
   try{
     if(state==='raid'){if(window.__raidFrame)window.__raidFrame(dt);requestAnimationFrame(frame);return}
     if(state==='play')gameUpdate(dt);
-    else if(state==='dying'){gameUpdate(dt*0.3);G.dyingT-=dt;if(G.dyingT<=0)openGameOver()}
+    else if(state==='dying'){gameUpdate(dt*0.3);G.dyingT-=dt;if(G.dyingT<=0&&!(window.__rv&&__rv.offer()))openGameOver()}
     if(state!=='paused'&&state!=='levelup'&&state!=='victory')fxUpdate(state==='dying'?dt*0.5:dt);
     render();workMs=workMs*0.9+(performance.now()-w0)*0.1;
   }catch(err){onFrameError(err)}
@@ -1501,7 +1500,7 @@ function nearestP(x,y){let b=null,bd=1e18;for(const p of RP){if(p.dead)continue;
 function hurtP(p,d){if(p.dead||p.inv>0||p.chooseT>0||R.god)return;const prev=P;P=p;d=Math.max(1,Math.round(d*(1-0.07*pl('armor'))));P=prev;p.hp-=d;p.inv=0.5;
   dmgText(p.x,p.y-20,d,'#ff4d6d',18);burst(p.x,p.y,'#ff4d6d',10,160,0.4,3);if(p.id===myId){hurtFlash=0.35;addShake(7);S.hurt()}
   if(p.hp<=0){p.hp=0;p.dead=true;burst(p.x,p.y,p.col,60,320,1,4);if(RP.length>1){p.reviveT=NUM.reviveT||30;rbanner(p.name+' 쓰러짐! '+Math.ceil(p.reviveT)+'초 후 부활','#ff8c8c',2)}else rbanner(p.name+' 쓰러짐!','#ff8c8c',2)}}
-function reviveP(p){const ps=alive();if(!ps.length)return;const t=ps[(Math.random()*ps.length)|0];const a=Math.random()*Math.PI*2;p.x=t.x+Math.cos(a)*50;p.y=t.y+Math.sin(a)*50;p.dead=false;p.reviveT=0;p.hp=Math.max(1,Math.round(p.maxHp*0.5));p.inv=2;p.trail=[];rings.push({x:p.x,y:p.y,r:0,max:120,t:0,dur:0.5,c:p.col});burst(p.x,p.y,p.col,40,260,0.8,4);rbanner(p.name+' 부활!','#7dffb0',2)}
+function reviveP(p){const ps=alive();if(!ps.length)return;const t=ps[(Math.random()*ps.length)|0];const a=Math.random()*Math.PI*2;p.x=t.x+Math.cos(a)*50;p.y=t.y+Math.sin(a)*50;p.dead=false;p.reviveT=0;p.hp=Math.max(1,Math.round(p.maxHp*0.5));p.inv=3;p.trail=[];rings.push({x:p.x,y:p.y,r:0,max:120,t:0,dur:0.5,c:p.col});burst(p.x,p.y,p.col,40,260,0.8,4);rbanner(p.name+' 부활!','#7dffb0',2)}
 function addTele(o){o.t=0;R.tele.push(o)}
 function makeBoss(kind){const N=NUM[kind];const ps=alive();const c=ps[0]||{x:0,y:0};const hp=N.hp*NUM.scale(R.n)*(H_()?NUM.hard.bossHp:1)*1.3;
   const b={type:'raidboss',kind,name:kind==='gozara'?'고자라':'차박후 강똥원 원비 강산',x:clamp(c.x+520,-WH+200,WH-200),y:clamp(c.y-200,-WH+200,WH-200),r:N.r,hp,maxHp:hp,mode:'chase',mt:2.5,face:-1,flash:0,kbx:0,kby:0,kbRes:0,xp:0,
@@ -1678,7 +1677,7 @@ function hostUpdate(dt){
   pickups=pickups.filter(i=>!i.dead);
   // 보스
   if(R.boss){const b=R.boss;if(!b.dead&&b.hp>0)bossAI(dt);
-    if(b.dead||b.hp<=0){const k=b.kind;b.dead=true;for(const q of RP)if(!q.left){cryTo(q.id,50,'clear')}if(window.__cry)__cry.hint('b');R.boss=null;R.tele=[];R.waves=[];ebullets=[];QM=58;rings.push({x:b.x,y:b.y,r:0,max:400,t:0,dur:0.8,c:'#ffd84d'});burst(b.x,b.y,'#ffd84d',90,420,1,5);
+    if(b.dead||b.hp<=0){const k=b.kind;b.dead=true;for(const q of RP)if(!q.left){cryTo(q.id,50,'clear')}R.boss=null;R.tele=[];R.waves=[];ebullets=[];QM=58;rings.push({x:b.x,y:b.y,r:0,max:400,t:0,dur:0.8,c:'#ffd84d'});burst(b.x,b.y,'#ffd84d',90,420,1,5);
       if(k==='gozara'){for(let i=0;i<30;i++)dropGem(b.x+rand(-90,90),b.y+rand(-90,90),8);pickups.push({type:'chest',x:b.x,y:b.y,t:0});R.phase='inter';R.votes={}}
       else{R.phase='ending';R.endT=3;enemies=[];gems=[];projs=[];pickups=[];rbanner('세상이 정화되었다.','#ffffff',3.2)}}}
   for(const tl of R.tele){tl.t+=dt;if(tl.hit&&!tl.done&&tl.t>=tl.warn){tl.done=1;addShake(10);for(const p of alive())if(Math.hypot(p.x-tl.x,p.y-tl.y)<tl.r)hurtP(p,tl.hit)}}R.tele=R.tele.filter(tl=>tl.t<tl.warn+0.25);
@@ -2186,7 +2185,7 @@ window.__skill={SKILLS,skCD,skAct,skQ,fireSkill,hostSkill,skPress,skRelease,get 
 #mdBtn.lock{border-color:#555a80;box-shadow:none;filter:grayscale(1);opacity:.55}
 #mdBtn.ready{box-shadow:0 0 20px #ff4d6d;animation:mdp .6s infinite alternate}@keyframes mdp{to{box-shadow:0 0 34px #ff2e63}}
 #mdSiren{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;background:radial-gradient(ellipse at center,rgba(255,40,40,0) 45%,rgba(255,40,40,.45))}
-#hintPop{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:9;display:none;background:rgba(20,10,50,.92);border:2px solid #ffd84d;border-radius:12px;padding:10px 18px;color:#ffd84d;font-weight:900;font-size:16px;text-align:center;pointer-events:none}
+
 </style>
 <div class="ov" id="shop">
   <div class="big" style="color:#ffd84d;text-shadow:0 0 20px #ffb800">🛒 상점</div>
@@ -2195,7 +2194,7 @@ window.__skill={SKILLS,skCD,skAct,skQ,fireSkill,hostSkill,skPress,skRelease,get 
   <div id="shopList"></div><div id="shopMsg"></div>
   <div class="row"><button class="btn sec" id="shopBackBtn">타이틀로</button></div>
 </div>
-<div id="cryHud">💠 0</div><div id="mdSiren"></div><div id="hintPop"></div>
+<div id="cryHud">💠 0</div><div id="mdSiren"></div>
 <script>
 'use strict';
 (function(){
@@ -2218,12 +2217,8 @@ function skFix(){const L=Object.keys(SKILLS).filter(w=>skOK(w)&&ownsSk(w));let c
 function refresh(){const t='💠 크리스탈 '+PF.cry;$('cryTitle').textContent=t+(PF.dev?' · 🛠 제작자 모드':'');$('cryHud').textContent='💠 '+PF.cry;$('shopBal').textContent='💠 보유 크리스탈: '+PF.cry}
 // ---- 코드 ----
 const CODES={KS0825:50,KC1031:100,VIP777:80};
-let vipShown=false,vipPop=false; // VIP777 힌트: 판(전투)마다 최대 1회 · 저장 안 함, 새 판에서 초기화
-function hintShow(code){const h=$('hintPop');h.innerHTML='🔑 비밀 코드 발견!<br><span style="color:#fff;font-size:20px">'+code+'</span><br><small style="color:#cfd3ff">타이틀 화면 코드 입력에 적어 보세요</small>';h.style.display='block';clearTimeout(h._t);h._t=setTimeout(()=>{h.style.display='none'},6000)}
-function add(n,w){if(w==='hintN'){hintShow('KS0825');return}if(w==='hintB'){hintShow('KC1031');return}if(w==='hintV'){if(vipPop)return;vipPop=true;vipShown=true;hintShow('VIP777');return}n=n|0;if(n<=0)return;PF.cry+=n;save();refresh();
+function add(n,w){n=n|0;if(n<=0)return;PF.cry+=n;save();refresh();
   if(w!=='pick'&&typeof P!=='undefined'&&P&&(state==='play'||state==='raid')){const me=typeof myP==='function'?myP():P;if(me)dmgText(me.x,me.y-34,'+'+n+' 💠','#9ff',20,true);showBanner('💠 크리스탈 +'+n+(w==='clear'?' (레이드 클리어)':w==='boss'?' (보스 처치)':''),'#9ff')}}
-function hint(kind){const R=typeof rR==='function'?rR():null;if(kind==='n'&&!vipShown&&!(state==='raid'&&R&&!R.host)&&Math.random()<0.01){vipShown=true;if(state==='raid'&&R&&R.host&&RB.cryAll)RB.cryAll(0,'hintV');else add(0,'hintV');return}const p=kind==='n'?0.001:0.01;if(Math.random()>=p)return;const w=kind==='n'?'hintN':'hintB';
-  if(state==='raid'&&R&&R.host&&RB.cryAll)RB.cryAll(0,w);else add(0,w)}
 // SHA-256 (동기, file:// 대비)
 function sha256(str){const K=[],H=[];let n=2,c=0;const fr=x=>((x-Math.floor(x))*4294967296)|0;while(c<64){let pr=true;for(let i=2;i*i<=n;i++)if(n%i===0){pr=false;break}if(pr){if(c<8)H[c]=fr(Math.pow(n,1/2));K[c++]=fr(Math.pow(n,1/3))}n++}
   const b=unescape(encodeURIComponent(str)),l=b.length,w=[];for(let i=0;i<l;i++)w[i>>2]|=b.charCodeAt(i)<<(24-(i%4)*8);w[l>>2]|=0x80<<(24-(l%4)*8);const nw=(((l+8)>>6)+1)*16;for(let i=w.length;i<nw;i++)w[i]=w[i]|0;w[nw-1]=l*8;
@@ -2319,11 +2314,11 @@ function mdTickCore(st,evs,dt,envOf){const step=MD.dur/MD.waves;
   st.X=st.X.filter(x=>x.t<0.8);for(const q of st.M)q.t+=dt;for(const c of st.C)c.t+=dt;st.C=st.C.filter(c=>c.t<0.4);
   return evs.filter(e=>e.v==='mine'?!e.done:e.w<MD.waves)}
 function mdTick(dt){MDE=mdTickCore(MDS,MDE,dt,mdEnv)}
-function hostMd(p,v){const R=rR();if(!p||p.dead||p.mdUsed||!R||['inter','clear','fail','ending'].includes(R.phase))return;if(R.t<180||p.hp/p.maxHp>=0.3)return;p.mdUsed=true;
+function hostMd(p,v){const R=rR();if(!p||p.dead||p.mdUsed||!R||['inter','clear','fail','ending'].includes(R.phase))return;if(R.t<180||p.hp/p.maxHp>=0.3)return;p.mdUsed=true;p.hp=Math.min(p.maxHp,p.hp+Math.round(p.maxHp*0.5));
   v=MDV[v]?v:'meteor';const s=(Math.random()*2147483647)|0;mdStart(v,s,p.id,true);if(RB.bcast)RB.bcast({t:'mdv',v,s,id:p.id})}
 function mdFx(d){if(!d||!MDV[d.v])return;mdStart(d.v,d.s|0,d.id,false)}
 function mdFire(){if(!mdReady())return;mdUsed=true;mdSir=MD.dur+0.6;initAudio();const v=SET.mdV;
-  if(state==='play')mdStart(v,(Math.random()*2147483647)|0,'solo',true);else{const R=rR();if(R.host)hostMd(myP(),v);else if(RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'md',v})}}
+  if(state==='play'){P.hp=Math.min(P.maxHp,P.hp+Math.round(P.maxHp*0.5));mdStart(v,(Math.random()*2147483647)|0,'solo',true)}else{const R=rR();if(R.host)hostMd(myP(),v);else if(RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'md',v})}}
 function mdDraw(ctx,st,top){ctx.save();const low=lowGfx();
   for(const q of st.M){const c=MDV.mine.c,bl=Math.floor(q.t*(q.e.t>MDB.life-2?12:3))%2;ctx.fillStyle='#2a1030';ctx.strokeStyle=c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(q.x,q.y,11,0,TAU);ctx.fill();ctx.stroke();
     ctx.fillStyle=bl?'#fff':c;ctx.beginPath();ctx.arc(q.x,q.y,4,0,TAU);ctx.fill();if(!low){ctx.globalAlpha=0.18;ctx.strokeStyle=c;ctx.lineWidth=1;ctx.beginPath();ctx.arc(q.x,q.y,MDB.trig,0,TAU);ctx.stroke();ctx.globalAlpha=1}}
@@ -2372,7 +2367,7 @@ function renderMdRow(){const row=$('mdRow');if(!row)return;row.innerHTML='';cons
 const sb=document.createElement('button');sb.className='skb';sb.id='mdBtn';sb.innerHTML='<b>C</b><span class="nm">메이데이</span>';$('skBtns').appendChild(sb);
 sb.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();mdFire()});
 addEventListener('keydown',e=>{if(e.repeat||RB.chatOpen)return;if(e.code==='KeyC'&&(state==='play'||state==='raid'))mdFire()});
-{const _ng=newGame;newGame=function(){_ng();vipShown=false;vipPop=false;mdUsed=false;mdSir=0;MDE=[];MDS=mdSt();TP=[];for(const k in lastPos)delete lastPos[k]}}
+{const _ng=newGame;newGame=function(){_ng();mdUsed=false;rvUsed=false;mdSir=0;MDE=[];MDS=mdSt();TP=[];for(const k in lastPos)delete lastPos[k]}}
 // ---- 상점 ----
 let tab='c';
 function prev(it){if(it.k==='k')return skIcon(it.sw,32);const c=makeCanvas(128,128),g=c.getContext('2d');g.translate(64,64);g.scale(2.2,2.2);const col=it.col||'#4df3ff';
@@ -2400,7 +2395,14 @@ let last=performance.now();
   sb.classList.toggle('on',owns('mayday'));const rd=mdReady();sb.classList.toggle('lock',!rd);sb.classList.toggle('ready',rd);
   if(ing){spawnTrails(dt);mdTick(dt)}mdSir=Math.max(0,mdSir-dt);$('mdSiren').style.opacity=mdSir>0?(0.5+0.5*Math.sin(now/90)).toFixed(2):'0';requestAnimationFrame(loop)})(last);
 skFix();{const _os=openSettings;openSettings=function(){skFix();_os();renderMdRow()}}
-window.__cry={ownsSk,add,eq:()=>clean(PF.eq),clean,drawGem,hint};window.__md={host:hostMd,fx:mdFx};
+// 크리스탈 부활: 일반·하드·전사 모드만, 판마다 1회 (저장 안 함)
+let rvUsed=false;const RV_COST=100,RV_MODES=['normal','hard','warrior'];
+{const o=document.createElement('div');o.className='ov';o.id='rvOv';o.innerHTML='<div class="big" style="color:#ff4d6d;text-shadow:0 0 24px #ff2e63">쓰러졌다!</div><div class="stats" id="rvBal"></div><div class="row"><button class="btn" id="rvBtn">💠 크리스탈 100개로 부활</button><button class="btn sec" id="rvGive">포기</button></div>';document.body.appendChild(o);
+ $('rvBtn').onclick=()=>{if(state!=='rvoffer'||rvUsed||PF.cry<RV_COST)return;rvUsed=true;PF.cry-=RV_COST;save();refresh();o.classList.remove('show');P.hp=Math.max(1,Math.round(P.maxHp*0.5));P.inv=3;state='play';$('pbtn').style.display='flex';showBanner('부활! 3초 무적','#7dffb0')};
+ $('rvGive').onclick=()=>{if(state!=='rvoffer')return;o.classList.remove('show');openGameOver()}}
+function rvOffer(){if(rvUsed||state!=='dying'||!RV_MODES.includes(gameMode))return false;state='rvoffer';$('rvBal').textContent='보유 크리스탈: 💠 '+PF.cry;$('rvBtn').disabled=PF.cry<RV_COST;$('rvBtn').style.opacity=PF.cry<RV_COST?'.45':'';$('rvOv').classList.add('show');return true}
+window.__rv={offer:rvOffer};
+window.__cry={ownsSk,add,eq:()=>clean(PF.eq),clean,drawGem};window.__md={host:hostMd,fx:mdFx};
 refresh();
 })();
 </script>
