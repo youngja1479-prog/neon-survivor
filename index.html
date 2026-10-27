@@ -2249,7 +2249,7 @@ function drawTrailFx(p){const id=p.id||'solo';ctx.save();ctx.globalCompositeOper
 function drawGem(g,t){const s=1+Math.sin(t*5)*0.08;g.save();g.scale(s,s);g.shadowColor='#9ff';g.shadowBlur=lowGfx()?0:14;g.fillStyle='#5ff3ff';g.strokeStyle='#e8ffff';g.lineWidth=1.5;g.beginPath();g.moveTo(0,-11);g.lineTo(8,-2);g.lineTo(0,11);g.lineTo(-8,-2);g.closePath();g.fill();g.stroke();g.shadowBlur=0;g.fillStyle='rgba(255,255,255,.7)';g.beginPath();g.moveTo(0,-11);g.lineTo(3,-2);g.lineTo(-3,-2);g.closePath();g.fill();g.restore()}
 // ---- 메이데이 ----
 // 메이데이: 3종 (설정에서 선택) · 맵 전체 폭격 · 플레이어 피해 없음. 레이드: 호스트가 피해 계산, {t:'mdv',v,s,id} 1회 전송 → 각자 시드로 연출
-const MD={dur:5,waves:10,vis:6,dmg:60,eliteF:0.03,bossF:0.012}; // 0.5초마다 10회, 맵의 모든 적: 일반 60×적체력배율 / 엘리트 최대체력 3% / 보스 1.2%
+const MD={dur:5,waves:30,vis:4,cap:90,dmg:60,eliteF:0.03,bossF:0.012}; // 5초간 30회(1/6초 간격), 맵의 모든 적: 일반 60×적체력배율 / 엘리트 최대체력 3% / 보스 1.2%
 const MDV={meteor:{n:'유성우',ic:'☄️',c:'#ff9a5d'},bolt:{n:'번개',ic:'⚡',c:'#9fd8ff'},mine:{n:'떨어지는 지뢰',ic:'💣',c:'#ff4d6d'}};
 if(!MDV[SET.mdV])SET.mdV='meteor';
 let mdUsed=false,mdSir=0,MDE=[],MDX=[];
@@ -2262,27 +2262,53 @@ function mdDamage(e){const raid=state==='raid';const p=raid?rRP().find(q=>q.id==
   try{for(const en of enemies.slice()){if(en.dead)continue;
     if(en.type==='boss'||en.type==='raidboss')hurtEnemy(en,en.maxHp*MD.bossF/dmgMul(),0,0,0);else if(en.type==='elite')hurtEnemy(en,en.maxHp*MD.eliteF/dmgMul(),0,0,0);else hurtEnemy(en,MD.dmg*hpMul(),0,0,0)}}
   finally{if(raid)RB.swapOut(p)}}
-function mdWave(e,i){const r=mdRng(e.seed*31+i),v=viewHalf();for(let k=0;k<MD.vis&&MDX.length<40;k++)MDX.push({v:e.v,x:camX+(r()*2-1)*v.w,y:camY+(r()*2-1)*v.h,t:-k*0.05,hit:false});
+function mdWave(e,i){const r=mdRng(e.seed*31+i),v=viewHalf();for(let k=0;k<MD.vis&&MDX.length<MD.cap;k++)MDX.push({v:e.v,x:camX+(r()*2-1)*v.w,y:camY+(r()*2-1)*v.h,t:-k*0.04,hit:false,k});
   if(e.auth)mdDamage(e)}
 function mdTick(dt){const step=MD.dur/MD.waves;for(const e of MDE){e.t+=dt;while(e.w<MD.waves&&e.t>=e.w*step){mdWave(e,e.w);e.w++}}MDE=MDE.filter(e=>e.w<MD.waves);
-  for(const x of MDX){x.t+=dt;if(!x.hit&&x.t>=0.35){x.hit=true;burst(x.x,x.y,MDV[x.v].c,8,220,0.4,3);addShake(3)}}MDX=MDX.filter(x=>x.t<0.8)}
+  for(const x of MDX){x.t+=dt;if(!x.hit&&x.t>=0.35){x.hit=true;burst(x.x,x.y,MDV[x.v].c,5,220,0.4,3);if(!x.k)addShake(2)}}MDX=MDX.filter(x=>x.t<0.8)}
 function hostMd(p,v){const R=rR();if(!p||p.dead||p.mdUsed||!R||['inter','clear','fail','ending'].includes(R.phase))return;if(R.t<180||p.hp/p.maxHp>=0.3)return;p.mdUsed=true;
   v=MDV[v]?v:'meteor';const s=(Math.random()*2147483647)|0;mdStart(v,s,p.id,true);if(RB.bcast)RB.bcast({t:'mdv',v,s,id:p.id})}
 function mdFx(d){if(!d||!MDV[d.v])return;mdStart(d.v,d.s|0,d.id,false)}
 function mdFire(){if(!mdReady())return;mdUsed=true;mdSir=MD.dur+0.6;initAudio();const v=SET.mdV;
   if(state==='play')mdStart(v,(Math.random()*2147483647)|0,'solo',true);else{const R=rR();if(R.host)hostMd(myP(),v);else if(RB.hostConn&&RB.hostConn.open)RB.hostConn.send({t:'md',v})}}
-{const _dw=drawSkillWorld;drawSkillWorld=function(){_dw();if(!MDX.length)return;ctx.save();
-  for(const x of MDX){if(x.t<0)continue;const c=MDV[x.v].c;
+function mdDraw(ctx,list,top){ctx.save();
+  for(const x of list){if(x.t<0)continue;const c=MDV[x.v].c;
     if(x.t<0.35){const k=x.t/0.35;ctx.globalAlpha=0.35+0.4*k;ctx.strokeStyle=c;ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.beginPath();ctx.arc(x.x,x.y,60,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
       if(x.v==='meteor'){const sx=x.x-140*(1-k),sy=x.y-260*(1-k);ctx.strokeStyle='rgba(255,154,93,.6)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(sx-50,sy-90);ctx.lineTo(sx,sy);ctx.stroke();ctx.fillStyle='#ffe0a0';ctx.beginPath();ctx.arc(sx,sy,12,0,TAU);ctx.fill()}
       else if(x.v==='mine'){const yy=x.y-240*(1-k*k);ctx.fillStyle='#2a1030';ctx.strokeStyle=c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x.x,yy,12,0,TAU);ctx.fill();ctx.stroke();ctx.fillStyle=Math.floor(x.t*20)%2?'#fff':c;ctx.beginPath();ctx.arc(x.x,yy-3,4,0,TAU);ctx.fill()}}
     else{const q=(x.t-0.35)/0.45,a=Math.max(0,1-q);ctx.globalAlpha=a;
-      if(x.v==='bolt'&&q<0.5){ctx.strokeStyle='#ffffff';ctx.lineWidth=5;ctx.shadowColor=c;ctx.shadowBlur=lowGfx()?0:16;ctx.beginPath();let yy=x.y-H/VS,xx=x.x;ctx.moveTo(xx,yy);const r=mdRng((x.x|0)*7+(x.y|0));while(yy<x.y){yy+=40;xx=x.x+(r()-0.5)*50;ctx.lineTo(yy>=x.y?x.x:xx,Math.min(yy,x.y))}ctx.stroke();ctx.shadowBlur=0}
+      if(x.v==='bolt'&&q<0.5){ctx.strokeStyle='#ffffff';ctx.lineWidth=5;ctx.shadowColor=c;ctx.shadowBlur=lowGfx()?0:16;ctx.beginPath();let yy=x.y-top,xx=x.x;ctx.moveTo(xx,yy);const r=mdRng((x.x|0)*7+(x.y|0));while(yy<x.y){yy+=40;xx=x.x+(r()-0.5)*50;ctx.lineTo(yy>=x.y?x.x:xx,Math.min(yy,x.y))}ctx.stroke();ctx.shadowBlur=0}
       ctx.strokeStyle=c;ctx.lineWidth=6*a+1;ctx.beginPath();ctx.arc(x.x,x.y,20+110*q,0,TAU);ctx.stroke();ctx.fillStyle=c;ctx.globalAlpha=a*0.25;ctx.beginPath();ctx.arc(x.x,x.y,20+90*q,0,TAU);ctx.fill()}}
-  ctx.restore()}}
+  ctx.restore()}
+{const _dw=drawSkillWorld;drawSkillWorld=function(){_dw();if(MDX.length)mdDraw(ctx,MDX,H/VS)}}
+// 미리보기: 별도 캔버스·가짜 더미만 사용 (게임/저장 데이터·크리스탈·처치 수·1회 플래그 건드리지 않음)
+let mdPv=null;
+function mdPreview(){if(mdPv||state!=='title')return;initAudio();const v=MDV[SET.mdV]?SET.mdV:'meteor';
+  const cv=document.createElement('canvas');cv.id='mdPrev';cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;z-index:50;background:#07040f';document.body.appendChild(cv);
+  const g=cv.getContext('2d'),dpr=Math.min(2,window.devicePixelRatio||1);let w=0,h=0;const fit=()=>{w=innerWidth;h=innerHeight;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);g.setTransform(dpr,0,0,dpr,0,0)};fit();
+  const seed=(Math.random()*2147483647)|0,r0=mdRng(seed^0x5bd1),dum=[];
+  for(let i=0;i<36;i++)dum.push({x:40+r0()*(w-80),y:90+r0()*(h-150),hp:300,mx:300,f:0,el:i<3});
+  const fx=[],sp=[];let t=0,wv=0,last=performance.now();$('settings').classList.remove('show');
+  mdPv={cv,raf:0,stop:()=>{cancelAnimationFrame(mdPv.raf);cv.remove();mdPv=null;toTitle()}};
+  const step=MD.dur/MD.waves;
+  (function fr(now){const dt=Math.max(0,Math.min(0.1,(now-last)/1000));last=now;t+=dt;if(cv.width!==Math.round(innerWidth*dpr))fit();
+    while(wv<MD.waves&&t>=wv*step){const r=mdRng(seed*31+wv);for(let k=0;k<MD.vis&&fx.length<MD.cap;k++)fx.push({v,x:r()*w,y:60+r()*(h-60),t:-k*0.04,hit:false,k});
+      for(const d of dum){d.hp-=d.el?d.mx*MD.eliteF:MD.dmg;d.f=0.05;if(d.hp<=0)d.hp=d.mx}if(wv%6===0)S.boom();wv++}
+    for(const x of fx){x.t+=dt;if(!x.hit&&x.t>=0.35){x.hit=true;for(let i=0;i<5;i++){const a=Math.random()*TAU,q=60+Math.random()*160;sp.push({x:x.x,y:x.y,vx:Math.cos(a)*q,vy:Math.sin(a)*q,l:0.4,c:MDV[v].c})}}}
+    for(let i=fx.length-1;i>=0;i--)if(fx[i].t>=0.8)fx.splice(i,1);
+    for(let i=sp.length-1;i>=0;i--){const p=sp[i];p.l-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.l<=0)sp.splice(i,1)}
+    g.fillStyle='#07040f';g.fillRect(0,0,w,h);g.strokeStyle='rgba(120,60,200,.18)';g.lineWidth=1;for(let x=0;x<w;x+=60){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}for(let y=0;y<h;y+=60){g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}
+    for(const d of dum){d.f=Math.max(0,d.f-dt);const rr=d.el?18:12;g.fillStyle=d.f>0?'#ffffff':(d.el?'#ffb347':'#ff5d8f');g.beginPath();g.arc(d.x,d.y,rr,0,TAU);g.fill();
+      g.fillStyle='#000a';g.fillRect(d.x-16,d.y-rr-9,32,4);g.fillStyle='#7dffb0';g.fillRect(d.x-16,d.y-rr-9,32*Math.max(0,d.hp)/d.mx,4)}
+    for(const p of sp){g.globalAlpha=Math.max(0,p.l/0.4);g.fillStyle=p.c;g.fillRect(p.x-2,p.y-2,4,4)}g.globalAlpha=1;
+    mdDraw(g,fx,h);
+    g.textAlign='center';g.font='bold 26px sans-serif';g.fillStyle='#ff4d6d';g.fillText('🚨 메이데이 미리보기 · '+MDV[v].ic+' '+MDV[v].n,w/2,40);
+    g.font='14px sans-serif';g.fillStyle='#ccc';g.fillText('연습용 더미 · 기록/크리스탈/저장에 영향 없음 · '+Math.max(0,MD.dur-t).toFixed(1)+'초',w/2,64);
+    if(t>=MD.dur+0.8){mdPv.stop();return}mdPv.raf=requestAnimationFrame(fr)})(last)}
 function renderMdRow(){const row=$('mdRow');if(!row)return;row.innerHTML='';const own=owns('mayday');
   for(const v in MDV){const c=document.createElement('div');c.className='chip'+(SET.mdV===v?' sel':'')+(own?'':' off');c.dataset.md=v;c.innerHTML='<div style="font-size:24px;line-height:38px">'+MDV[v].ic+'</div>'+(own?'':'🔒 ')+MDV[v].n;
-    c.onclick=()=>{if(!owns('mayday')){$('skSetMsg').style.color='#ff8c8c';$('skSetMsg').textContent='🔒 상점에서 메이데이를 해금하세요 (💠 1000)';return}SET.mdV=v;saveSettings();$('skSetMsg').style.color='#7dffb0';$('skSetMsg').textContent='메이데이: '+MDV[v].n;renderMdRow()};row.appendChild(c)}}
+    c.onclick=()=>{if(!owns('mayday')){$('skSetMsg').style.color='#ff8c8c';$('skSetMsg').textContent='🔒 상점에서 메이데이를 해금하세요 (💠 1000)';return}SET.mdV=v;saveSettings();$('skSetMsg').style.color='#7dffb0';$('skSetMsg').textContent='메이데이: '+MDV[v].n;renderMdRow()};row.appendChild(c)}
+  const pb=document.createElement('button');pb.className='btn sec';pb.id='mdPrevBtn';pb.style.cssText='margin-left:8px;padding:8px 14px;font-size:14px';pb.textContent='▶ 미리보기';pb.onclick=mdPreview;row.appendChild(pb)}
 const sb=document.createElement('button');sb.className='skb';sb.id='mdBtn';sb.innerHTML='<b>C</b><span class="nm">메이데이</span>';$('skBtns').appendChild(sb);
 sb.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();mdFire()});
 addEventListener('keydown',e=>{if(e.repeat||RB.chatOpen)return;if(e.code==='KeyC'&&(state==='play'||state==='raid'))mdFire()});
@@ -2303,7 +2329,7 @@ function renderShop(){refresh();for(const b of document.querySelectorAll('#shop 
     else if(eq){b.textContent='해제';b.className='uneq';b.onclick=()=>{PF.eq[it.k]=null;save();$('shopMsg').textContent=it.n+' 해제';renderShop()}}
     else{b.textContent='장착';b.className='own';b.onclick=()=>{PF.eq[it.k]=it.id;save();$('shopMsg').textContent=it.n+' 장착!';renderShop()}}
     d.appendChild(b);L.appendChild(d)}
-  if(tab==='m'){const n=document.createElement('div');n.style.cssText='width:100%;font-size:12px;color:#cfd3ff';n.textContent='한 판에 1번 · 생존 3분 이상 + 체력이 빨간색(30% 미만)일 때 C 버튼/키로 5초간 맵 전체 폭격 · 유성우/번개/떨어지는 지뢰 3종 모두 해금 (설정에서 선택) · 내 캐릭터는 피해 없음';L.appendChild(n)}}
+  if(tab==='m'){const n=document.createElement('div');n.style.cssText='width:100%;font-size:12px;color:#cfd3ff';n.textContent='한 판에 1번 · 생존 3분 이상 + 체력이 빨간색(30% 미만)일 때 C 버튼/키로 5초간 맵 전체 30회 폭격 · 유성우/번개/떨어지는 지뢰 3종 모두 해금 (설정에서 선택) · 내 캐릭터는 피해 없음';L.appendChild(n)}}
 for(const b of document.querySelectorAll('#shop .tab'))b.onclick=()=>{tab=b.dataset.k;$('shopMsg').textContent='';renderShop()};
 $('shopBtn').onclick=()=>{if(state!=='title')return;initAudio();hideAll();$('shopMsg').textContent='';renderShop();$('shop').classList.add('show')};
 $('shopBackBtn').onclick=()=>{$('shop').classList.remove('show');toTitle()};
