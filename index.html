@@ -2007,8 +2007,9 @@ function skProj(p,dt){
   else if(p.k==='Sblade'){p.t+=dt;p.life-=dt;const OT=1.2,REV=2.5;
     if(p.t<OT){const an=p.a0+p.t/OT*REV*TAU,Rr=Math.min(130,40+p.t*600);p.x=P.x+Math.cos(an)*Rr;p.y=P.y+Math.sin(an)*Rr;p.rot=an+Math.PI/2;p.ox=p.x-P.x;p.oy=p.y-P.y;
       if(Math.random()<0.5)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.22,max:0.22,c:'#c9a6ff',s:5})}
-    else{if(!p.go){p.go=1;p.hm=new Map();const fl=Math.hypot(P.fx||0,P.fy||0);if(fl>0.01){p.dx=P.fx/fl;p.dy=P.fy/fl}p.x=P.x+p.ox;p.y=P.y+p.oy}
-      p.x+=p.dx*900*dt;p.y+=p.dy*900*dt;p.rot=Math.atan2(p.dy,p.dx)}
+    else{if(!p.go){p.go=1;p.hm=new Map();const fl=Math.hypot(P.fx||0,P.fy||0);if(fl>0.01){p.dx=P.fx/fl;p.dy=P.fy/fl}p.cx=P.x;p.cy=P.y}
+      p.cx+=p.dx*700*dt;p.cy+=p.dy*700*dt;const an=p.a0+p.t/OT*REV*TAU;p.x=p.cx+Math.cos(an)*130;p.y=p.cy+Math.sin(an)*130;p.rot=an+Math.PI/2;
+      if(Math.random()<0.3)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.2,max:0.2,c:'#c9a6ff',s:5})}
     for(const b of ebullets){if(b.life<=0)continue;const rr=b.r+p.r*1.6;if((b.x-p.x)**2+(b.y-p.y)**2<rr*rr){b.life=0;if(parts.length<600)parts.push({x:b.x,y:b.y,vx:0,vy:0,life:0.25,max:0.25,c:'#e2ccff',s:7})}}
     query(p.x,p.y,p.r,e=>{const lt=p.hm.get(e);if(lt===undefined||G.t-lt>0.25){p.hm.set(e,G.t);hurtEnemy(e,p.dmg,e.x-P.x,e.y-P.y,160)}})}
   else if(p.k==='Sboom'){p.t+=dt;p.rot+=dt*20;const sp=760;
