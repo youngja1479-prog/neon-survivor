@@ -452,7 +452,8 @@ function spawnEnemy(type,x,y){
   if(type==='boss'){G.bossN++;const cz=isCrazy();e.r=T.r*(cz?1.9:1);e.hp=e.maxHp=T.hp*Math.pow(2.3,G.bossN-1)*(1+diffT()/900)*(isHard()?1.85:1)*(cz?18:bossLvMul())*UPD();e.dmg=T.dmg*(1+G.bossN*0.25)*(isHard()?1.45:1)*(cz?4.5:1);e.shootT=cz?0.8:isHard()?1.7:2.5;e.dashT=cz?1.6:isHard()?3.4:5;G.boss=e}
   enemies.push(e);return e;
 }
-function offscreenPos(){const v=viewHalf();const a=rand(0,TAU);const d=Math.hypot(v.w,v.h)+rand(40,120);
+let NOSP=[];function noSpAt(x,y){NOSP=NOSP.filter(z=>z.g===G&&G.t<z.until);for(const z of NOSP)if((x-z.x)**2+(y-z.y)**2<z.r*z.r)return true;return false}
+function offscreenPos(){const v=viewHalf();let a=rand(0,TAU),d=Math.hypot(v.w,v.h)+rand(40,120);for(let k=0;k<12&&noSpAt(P.x+Math.cos(a)*d,P.y+Math.sin(a)*d);k++)a=rand(0,TAU);
   return {x:clamp(P.x+Math.cos(a)*d,-WH+20,WH-20),y:clamp(P.y+Math.sin(a)*d,-WH+20,WH-20)}}
 function pickType(){const t=diffT();const w=[['grunt',10]];
   const batT=isHard()?8:20,bruteT=isHard()?32:60,spitT=isHard()?50:95,chgT=isHard()?110:210,splT=isHard()?70:120;
@@ -1985,7 +1986,7 @@ $('setBackBtn').onclick=()=>{$('settings').classList.remove('show');toTitle()};
 // ---------- 스킬 발동 (현재 P 기준; 레이드 호스트는 swapIn 후 호출) ----------
 function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=0}else{ax/=l;ay/=l}
   const st=skBase(id),D=st.dmg,am=areaMul(),a=Math.atan2(ay,ax),x=P.x,y=P.y;
-  if(id==='bolt'){projs.push({k:'Sarrow',x,y,vx:ax*900,vy:ay*900,r:40,dmg:D*6,life:1.3,hit:new Set(),rot:a});S.shoot();S.zap()}
+  if(id==='bolt'){projs.push({k:'Sarrow',x,y,vx:ax*900,vy:ay*900,r:40,dmg:D*6,life:4,hit:new Set(),rot:a});S.shoot();S.zap()}
   else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:24,dmg:D*2.5,hm:new Map(),rot:0,life:2.6});S.shoot()}
   else if(id==='pulse'){const Rr=380*am;rings.push({x,y,r:0,max:Rr,t:0,dur:0.6,c:'#8ff6ff'});rings.push({x,y,r:0,max:Rr*0.65,t:0,dur:0.45,c:'#ffffff'});
     buildGrid();query(x,y,Rr,(e,dx,dy)=>{hurtEnemy(e,D*4,0,0,0);skPush(e,x,y)});burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
@@ -2002,7 +2003,11 @@ function skPush(e,x,y){if(e.dead||e.type==='raidboss')return;let dx=e.x-x,dy=e.y
   const boss=e.type==='boss',ex=Math.min(W*0.5/VS/(Math.abs(dx)||1e-6),H*0.5/VS/(Math.abs(dy)||1e-6))*0.92,dist=boss?70:Math.max(260,ex-Math.max(d,0)),T=1.2,k=3.2,v0=dist*k/(1-Math.exp(-k*T));
   e.pT=T;e.pvx=dx*v0;e.pvy=dy*v0;e.kbx=e.kby=0}
 function skProj(p,dt){
-  if(p.k==='Sarrow'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(Math.random()<0.8)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.3,max:0.3,c:'#4df3ff',s:6});
+  if(p.k==='Sarrow'&&p.stuck){p.life-=dt}
+  else if(p.k==='Sarrow'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;{const v=viewHalf(),sd=Math.hypot(v.w,v.h)+60;if((p.x-P.x)**2+(p.y-P.y)**2>=sd*sd){p.stuck=1;p.life=10;
+      NOSP.push({x:p.x,y:p.y,r:320,until:G.t+10,g:G});rings.push({x:p.x,y:p.y,r:0,max:320,t:0,dur:0.6,c:'#4df3ff'});burst(p.x,p.y,'#4df3ff',40,380,0.6,4);skShake(6);
+      query(p.x,p.y,320,e=>{hurtEnemy(e,p.dmg*0.7,e.x-p.x,e.y-p.y,e.type==='boss'?120:700)})}}
+    if(p.stuck){}else if(Math.random()<0.8)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.3,max:0.3,c:'#4df3ff',s:6});
     query(p.x,p.y,p.r,e=>{if(p.hit.has(e))return;p.hit.add(e);hurtEnemy(e,p.dmg,p.vx,p.vy,260);burst(e.x,e.y,'#4df3ff',4,140,0.25,2.5)})}
   else if(p.k==='Sblade'){p.t+=dt;p.life-=dt;const OT=1.2,REV=2.5;
     if(p.t<OT){const an=p.a0+p.t/OT*REV*TAU,Rr=Math.min(130,40+p.t*600);p.x=P.x+Math.cos(an)*Rr;p.y=P.y+Math.sin(an)*Rr;p.rot=an+Math.PI/2;p.ox=p.x-P.x;p.oy=p.y-P.y;
@@ -2031,6 +2036,7 @@ function skProj(p,dt){
 }
 // ---------- 그리기 (월드 좌표) ----------
 function drawSkillWorld(){ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const z of NOSP){if(z.g!==G||G.t>=z.until)continue;const al=Math.min(1,(z.until-G.t)/1.5);ctx.globalAlpha=0.18*al;ctx.fillStyle='#4df3ff';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,TAU);ctx.fill();ctx.globalAlpha=0.6*al;ctx.strokeStyle='#4df3ff';ctx.lineWidth=3;ctx.setLineDash([14,10]);ctx.stroke();ctx.setLineDash([])}ctx.globalAlpha=1;
   for(const p of projs){if(p.k[0]!=='S')continue;
     if(p.k==='Sarrow'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.scale(1.4,1.4);
       fxSprite('Sarrow',-262,-22,328,44,34,(g,bl)=>{
