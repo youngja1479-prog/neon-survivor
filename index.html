@@ -2180,7 +2180,7 @@ const ITEMS={
  c:[['pink','분홍','#ff6ad5'],['green','초록','#5dff8a'],['gold','금색','#ffd84d'],['orange','주황','#ff8c3a'],['violet','보라','#b46bff'],['white','순백','#ffffff'],['red','진홍','#ff4d6d']].map(a=>({id:'c_'+a[0],k:'c',n:a[1],col:a[2],p:30})),
  t:[['spark','불꽃 입자'],['bubble','물방울 링'],['star','별가루'],['pixel','네온 픽셀'],['rainbow','무지개 띠']].map(a=>({id:'t_'+a[0],k:'t',n:a[1],tk:a[0],p:60})),
  s:[['star','별'],['skull','해골'],['robot','로봇'],['cat','고양이'],['ghost','유령'],['gem','다이아']].map(a=>({id:'s_'+a[0],k:'s',n:a[1],sk:a[0],p:100})),
- m:[{id:'mayday',k:'m',n:'메이데이',p:300}]};
+ m:[{id:'mayday',k:'m',n:'메이데이',p:1000}]};
 const ALL={};for(const k in ITEMS)for(const it of ITEMS[k])ALL[it.id]=it;
 let PF=(()=>{const d={cry:0,own:[],eq:{c:null,t:null,s:null},dev:false,used:[]};try{const o=JSON.parse(localStorage.getItem(KEY));if(o)return Object.assign(d,o,{eq:Object.assign(d.eq,o.eq||{})})}catch(e){}return d})();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(PF))}catch(e){}}
