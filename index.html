@@ -1528,7 +1528,7 @@ function passiveOnlyOpts(){const opts=[];for(const id in PASSIVES)if((P.passives
   const pick=[];while(pick.length<3&&opts.length){let s=0;for(const o of opts)s+=o.w;let r=Math.random()*s,idx=0;for(;idx<opts.length;idx++){r-=opts[idx].w;if(r<=0)break}
     pick.push(opts.splice(Math.min(idx,opts.length-1),1)[0])}return pick.map(o=>({kind:o.kind,id:o.id}))}
 function storyBeginPick(){if(!R||!R.host)return;storyHide();
-  for(const p of RP){if(p.dead||p.left)continue;swapIn(p);const o=passiveOnlyOpts();swapOut(p);if(o.length){p.opts=o;p.chooseT=120;p.storyPick=1}}
+  for(const p of RP){if(p.dead||p.left)continue;swapIn(p);const o=passiveOnlyOpts();swapOut(p);if(o.length){p.opts=o;p.chooseT=NUM.chooseInv;p.storyPick=1}}
   R.phase='wave1';R.storyI=STORY_DL.length;rbanner('패시브를 선택하세요!','#c77dff',3)}
 function storyAdvance(){if(!R||!R.host)return;
   if(storyActive()){R.storyI++;if(R.storyI>=1)R.ringTween=1;bcast({t:'story',i:R.storyI});
@@ -1616,7 +1616,7 @@ function alive(){return RP.filter(p=>!p.dead)}
 function cryTo(pid,n,w){if(pid===myId){if(window.__cry)__cry.add(n,w)}else{const c=conns.find(c=>c.pid===pid&&c.open);if(c)try{c.send({t:'cry',n,w})}catch(e){}}}
 function trailSnap(p){if(p.dead||!p.trail)return 0;const o=[];for(const q of p.trail)o.push(r1(q.x),r1(q.y),Math.round(q.a*20));return o}
 function nearestP(x,y){let b=null,bd=1e18;for(const p of RP){if(p.dead)continue;const d=(p.x-x)**2+(p.y-y)**2;if(d<bd){bd=d;b=p}}return b}
-function hurtP(p,d){if(p.dead||p.inv>0||p.chooseT>0||R.god||(R&&(R.phase==='story'||R.phase==='storyBoss'||R.phase==='story4'))||p.storyPick)return;const prev=P;P=p;d=Math.max(1,Math.round(d*(1-0.07*pl('armor'))));P=prev;p.hp-=d;p.inv=0.5;
+function hurtP(p,d){if(p.dead||p.inv>0||p.chooseT>0||R.god||(R&&(R.phase==='story'||R.phase==='storyBoss'||R.phase==='story4')))return;const prev=P;P=p;d=Math.max(1,Math.round(d*(1-0.07*pl('armor'))));P=prev;p.hp-=d;p.inv=0.5;
   dmgText(p.x,p.y-20,d,'#ff4d6d',18);burst(p.x,p.y,'#ff4d6d',10,160,0.4,3);if(p.id===myId){hurtFlash=0.35;addShake(7);S.hurt()}
   if(p.hp<=0){p.hp=0;p.dead=true;burst(p.x,p.y,p.col,60,320,1,4);if(RP.length>1){p.reviveT=NUM.reviveT||30;rbanner(p.name+' 쓰러짐! '+Math.ceil(p.reviveT)+'초 후 부활','#ff8c8c',2)}else rbanner(p.name+' 쓰러짐!','#ff8c8c',2)}}
 function reviveP(p){const ps=alive();if(!ps.length)return;const t=ps[(Math.random()*ps.length)|0];const a=Math.random()*Math.PI*2;p.x=t.x+Math.cos(a)*50;p.y=t.y+Math.sin(a)*50;p.dead=false;p.reviveT=0;p.hp=Math.max(1,Math.round(p.maxHp*0.5));p.inv=3;p.trail=[];rings.push({x:p.x,y:p.y,r:0,max:120,t:0,dur:0.5,c:p.col});burst(p.x,p.y,p.col,40,260,0.8,4);rbanner(p.name+' 부활!','#7dffb0',2)}
@@ -1726,13 +1726,13 @@ function hostUpdate(dt){
     const a=projs.length,b=mines.length,c=meteors.length,r0=rings.length;buildGrid();updateWeapons(dt);updateTrail(dt);trailWire();for(let i=r0;i<rings.length;i++)if(rings[i].follow){rings[i].follow=false;rings[i].fo=p}
     for(let i=a;i<projs.length;i++)owners.set(projs[i],p.id);for(let i=b;i<mines.length;i++)owners.set(mines[i],p.id);for(let i=c;i<meteors.length;i++)owners.set(meteors[i],p.id);
     swapOut(p)}
-  if(alive().length&&!storyPicksPending())raidSpawner(dt);
+  if(alive().length)raidSpawner(dt);
   if(G.tip||G.tipQ&&G.tipQ.length){G.tip=null;G.tipQ=[]}
   updateBeat(dt);G.beatFlash=Math.max(0,G.beatFlash-dt*4);
   raidEvents(dt);
   buildGrid();
   const v=viewHalf();const farD=Math.max(v.w,v.h)*1.25+350;
-  for(const e of enemies){if(e.dead||e.type==='raidboss')continue;e.flash-=dt;if(e.storyRing&&storyPicksPending())continue;const tp=nearestP(e.x,e.y);if(!tp)break;
+  for(const e of enemies){if(e.dead||e.type==='raidboss')continue;e.flash-=dt;const tp=nearestP(e.x,e.y);if(!tp)break;
     let dx=tp.x-e.x,dy=tp.y-e.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
     const es=e.spd*(blackout()?0.85:1)*(magnetStorm()?1.08:1)*(e.slowT>0?0.45:1);if(e.slowT>0)e.slowT-=dt;let vx=dx*es,vy=dy*es;
     if(e.type==='spitter'){if(d<230){vx=-dx*e.spd;vy=-dy*e.spd}else if(d<330){vx=-dy*e.spd*0.6;vy=dx*e.spd*0.6}
