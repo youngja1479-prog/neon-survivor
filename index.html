@@ -455,7 +455,7 @@ function spawnEnemy(type,x,y){
   const e={type,x,y,r:T.r,hp:T.hp*m,maxHp:T.hp*m,spd:T.spd*spdM,dmg:T.dmg*(1+dtv/(isHard()?300:420))*(isHard()?1.4:1)*UPD(),xp:Math.round(T.xp*(1+dtv/600)*(isHard()?0.82:1)),flash:0,kbx:0,kby:0,kbRes:T.kb||1,
     orbT:-9,auraT:-9,slowT:0,shootT:rand(1,2.5)*(isHard()?0.8:1),st:0,stT:rand(2,4),dx:0,dy:0,rot:0,dead:false};
   if(type==='boss'){G.bossN++;const cz=isCrazy();e.r=T.r*(cz?1.9:1);e.hp=e.maxHp=T.hp*Math.pow(2.3,G.bossN-1)*(1+diffT()/900)*(isHard()?1.85:1)*(cz?18:bossLvMul())*UPD();e.dmg=T.dmg*(1+G.bossN*0.25)*(isHard()?1.45:1)*(cz?4.5:1);e.shootT=cz?0.8:isHard()?1.7:2.5;e.dashT=cz?1.6:isHard()?3.4:5;G.boss=e}
-  {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff==='story'&&type!=='boss'){const m=_r.storyHard?2.0:1.25;e.hp=e.maxHp=e.hp*m;e.dmg*=m}}
+  {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff==='story'&&type!=='boss'){const m=_r.storyHard?3.5:1.25;e.hp=e.maxHp=e.hp*m;e.dmg*=m}}
   enemies.push(e);return e;
 }
 let NOSP=[];function noSpAt(x,y){NOSP=NOSP.filter(z=>z.g===G&&G.t<z.until);for(const z of NOSP)if((x-z.x)**2+(y-z.y)**2<z.r*z.r)return true;return false}
@@ -1674,7 +1674,7 @@ function hurtP(p,d){if(p.dead||p.inv>0||p.chooseT>0||R.god||(R&&(R.phase==='stor
 function reviveP(p){const ps=alive();if(!ps.length)return;const t=ps[(Math.random()*ps.length)|0];const a=Math.random()*Math.PI*2;p.x=t.x+Math.cos(a)*50;p.y=t.y+Math.sin(a)*50;p.dead=false;p.reviveT=0;p.hp=Math.max(1,Math.round(p.maxHp*0.5));p.inv=3;p.trail=[];rings.push({x:p.x,y:p.y,r:0,max:120,t:0,dur:0.5,c:p.col});burst(p.x,p.y,p.col,40,260,0.8,4);rbanner(p.name+' 부활!','#7dffb0',2)}
 function addTele(o){o.t=0;R.tele.push(o)}
 function makeBoss(kind,opt){const N=NUM[kind];const ps=alive();const c=ps[0]||{x:0,y:0};let hp=N.hp*NUM.scale(R.n)*(H_()?NUM.hard.bossHp:1)*1.3;
-  if(R.diff==='story')hp*=(R.storyHard?1.75:1.3);
+  if(R.diff==='story')hp*=(R.storyHard?3.0:1.3);
   const b={type:'raidboss',kind,name:kind==='gozara'?'고자라':(R.diff==='story'?'강산':'차박후 강똥원 원비 강산'),x:clamp(c.x+520,-WH+200,WH-200),y:clamp(c.y-200,-WH+200,WH-200),r:N.r,hp,maxHp:hp,mode:'chase',mt:2.5,face:-1,flash:0,kbx:0,kby:0,kbRes:0,xp:0,
     orbT:-9,slowT:0,dead:false,enr:false,z:0,cyc:0,spd:0,dmg:0};
   R.boss=b;enemies.push(b);QM=Math.max(58,N.r+10);
@@ -1719,7 +1719,7 @@ function applyPick(p,i){if(!p.opts||!p.opts[i]||p.dead)return;const o=p.opts[i];
 function vote(p){if(R.phase!=='inter'||p.dead)return;R.votes[p.id]=1;if(alive().every(q=>R.votes[q.id])){R.phase='wave2';R.boss2At=R.t+NUM.boss2Delay;R.nextElite=R.t+60;rbanner('몹 웨이브 재개! 5분 뒤 두 번째 보스가 온다…','#ffd84d',4)}}
 // 일반 모드 스폰 공식 재사용 (pickType/spawnEnemy/offscreenPos 원본 그대로)
 function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;let rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*NUM.mobRateMul*(0.75+0.25*R.n)*1.2;
-  if(R.diff==='story')rate*=(R.storyHard?1.65:1.15);if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6;
+  if(R.diff==='story')rate*=(R.storyHard?2.5:1.15);if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6;
   const cap=Math.min(isHard()?640:520,((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5);
   R.spawnAcc+=rate*dt;const ps=alive();if(!ps.length)return;
   while(R.spawnAcc>=1){R.spawnAcc-=1;if(enemies.length>=cap)continue;const tp=ps[Math.random()*ps.length|0];P=tp;
@@ -2456,7 +2456,7 @@ const MDV={meteor:{n:'유성우',ic:'☄️',c:'#ff9a5d'},bolt:{n:'번개',ic:'�
 if(!MDV[SET.mdV])SET.mdV='meteor';
 let mdUsed=false,mdSir=0,MDE=[],MDS=mdSt();
 // 번개=연쇄 번개(30타, 타당 시작 1 + 점프 5) · 지뢰=맵 전체 낙하→바닥 대기→접촉 폭발, 시작 10초 후 남은 지뢰 자동 폭발
-const MDB={jumps:5,jr:240,mines:3,mcap:120,xcap:200,trig:46,aoe:110,life:10,ccap:16};
+const MDB={jumps:9,jr:300,mines:5,mcap:180,xcap:260,trig:60,aoe:300,life:10,ccap:16};
 function mdSt(){return {X:[],M:[],C:[]}}
 function mdRng(s){return()=>{s=(s+0x6D2B79F5)|0;let t=Math.imul(s^(s>>>15),1|s);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296}}
 function mdPerm(n,r){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=(r()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -2464,19 +2464,19 @@ function mdTime(){const R=rR();return state==='raid'&&R?R.t:G?G.t:0}
 function mdReady(){if(!owns('mayday')||!inSkillGame())return false;const _R=rR();if(_R&&_R.skLockT>0)return false;const me=myP();if(!me||me.dead)return false;if(state==='raid'){me.mdUses=me.mdUses|0;me.mdMax=me.mdMax||1;if(me.mdUses>=me.mdMax)return false}else if(mdUsed)return false;return mdTime()>=180&&me.hp/me.maxHp<0.3}
 function mdStart(v,seed,pid,auth){if(!MDV[v])v='meteor';if(MDE.length>=6)return;const r=mdRng((seed|0)^0x1f3d);MDE.push({v,seed:seed|0,pid,auth,t:0,w:0,hit:new Set(),p9:mdPerm(9,r),p90:mdPerm(90,r)});
   showBanner('🚨 메이데이! '+MDV[v].ic+' '+MDV[v].n+' 폭격','#ff4d6d');addShake(10);S.boom()}
-function mdHitList(pid,list){if(!list.length)return;const raid=state==='raid';const p=raid?rRP().find(q=>q.id===pid):P;if(!p)return;if(raid)RB.swapIn(p);
+function mdHitList(pid,list,v){if(!list.length)return;const F=v==='bolt'?3:v==='mine'?15:1;const raid=state==='raid';const p=raid?rRP().find(q=>q.id===pid):P;if(!p)return;if(raid)RB.swapIn(p);
   try{for(const en of list){if(en.dead)continue;
-    if(en.type==='boss'||en.type==='raidboss')hurtEnemy(en,en.maxHp*MD.bossF/dmgMul(),0,0,0);else if(en.type==='elite')hurtEnemy(en,en.maxHp*MD.eliteF/dmgMul(),0,0,0);else hurtEnemy(en,MD.dmg*hpMul(),0,0,0)}}
+    if(en.type==='boss'||en.type==='raidboss')hurtEnemy(en,F*en.maxHp*MD.bossF/dmgMul(),0,0,0);else if(en.type==='elite')hurtEnemy(en,F*en.maxHp*MD.eliteF/dmgMul(),0,0,0);else hurtEnemy(en,F*MD.dmg*hpMul(),0,0,0)}}
   finally{if(raid)RB.swapOut(p)}}
 let mdGC={t:-1,l:[]};
 function mdGuestEnts(){const now=performance.now();if(now-mdGC.t>100){mdGC.t=now;mdGC.l=(RB.ePos?RB.ePos():[]).map(a=>({x:a[0],y:a[1]}))}return mdGC.l}
 function mdEnv(e){const vh=viewHalf();const base={view:{x:camX,y:camY,w:vh.w,h:vh.h},map:{x0:-WH+40,y0:-WH+40,x1:WH-40,y1:WH-40},top:H/VS,burst:(x,y,c)=>burst(x,y,c,5,220,0.4,3),shake:addShake};
-  if(e.auth)return Object.assign(base,{auth:true,ents:()=>enemies.filter(q=>!q.dead),hit:l=>mdHitList(e.pid,l)});
+  if(e.auth)return Object.assign(base,{auth:true,ents:()=>enemies.filter(q=>!q.dead),hit:l=>mdHitList(e.pid,l,e.v)});
   return Object.assign(base,{auth:false,ents:state==='raid'?mdGuestEnts:()=>[],hit:()=>{}})}
 function mdNear(ents,x,y,skip,hitSet,rad){let b=null,bd=Infinity;for(const q of ents){if(skip&&skip.has(q))continue;const d=Math.hypot(q.x-x,q.y-y);if(rad&&d>rad)continue;const s=d+(hitSet&&hitSet.has(q)?(rad||3000):0);if(s<bd){bd=s;b=q}}return b}
 function mdWave(st,e,env,i){const r=mdRng(e.seed*31+i),c=MDV[e.v].c,m=env.map;
   if(e.v==='meteor'){const v=env.view;for(let k=0;k<MD.vis&&st.X.length<MD.cap;k++)st.X.push({v:'meteor',x:v.x+(r()*2-1)*v.w,y:v.y+(r()*2-1)*v.h,t:-k*0.04,hit:false,k});if(env.auth)env.hit(env.ents());return}
-  if(e.v==='bolt'){const ents=env.ents(),sec=e.p9[i%9],sw=(m.x1-m.x0)/3,sh=(m.y1-m.y0)/3,sx=m.x0+(sec%3)*sw,sy=m.y0+((sec/3)|0)*sh,px=sx+r()*sw,py=sy+r()*sh;
+  if(e.v==='bolt'){if(env.auth){const ents=env.ents(),sw=(m.x1-m.x0)/3,sh=(m.y1-m.y0)/3,all=[];for(let j=0;j<3;j++){const sc=e.p9[(i*3+j)%9],sx=m.x0+(sc%3)*sw,sy=m.y0+((sc/3)|0)*sh;for(const q of ents)if(q.x>=sx&&q.x<sx+sw&&q.y>=sy&&q.y<sy+sh)all.push(q)}const _h=env.hit;env=Object.assign({},env,{hit:()=>{}});_h(all)}const ents=env.ents(),sec=e.p9[i%9],sw=(m.x1-m.x0)/3,sh=(m.y1-m.y0)/3,sx=m.x0+(sec%3)*sw,sy=m.y0+((sec/3)|0)*sh,px=sx+r()*sw,py=sy+r()*sh;
     let s=null;const inSec=ents.filter(q=>q.x>=sx&&q.x<sx+sw&&q.y>=sy&&q.y<sy+sh);
     s=mdNear(inSec,px,py,null,e.hit)||mdNear(ents,px,py,null,e.hit);const pts=[];
     if(s){const nodes=[s],used=new Set([s]);let cur=s;for(let j=0;j<MDB.jumps;j++){const n=mdNear(ents,cur.x,cur.y,used,e.hit,MDB.jr);if(!n)break;nodes.push(n);used.add(n);cur=n}
