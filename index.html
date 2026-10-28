@@ -1354,6 +1354,8 @@ const NUM={
 };
 ETYPES.raidboss={r:150,hp:1,spd:0,dmg:0,xp:0,color:'#3dffc8',kb:0};
 let R=null,RP=[];
+const RDIFF={normal:{label:'일반',col:'#4df3ff',mode:'normal',hud:{name:'레이드 · 일반',col:'#ff8c3a'}}}; // 스토리 등 추가 가능
+const rDiffOf=d=>RDIFF[d]||RDIFF.normal;
 let peer=null,conns=[],hostConn=null,net={role:null,code:null},lobby={players:[],diff:'normal'},myId='p0',sendT=0,inT=0,savedMode='normal';
 const $=id=>document.getElementById(id);
 const msg=t=>{$('rMsg').textContent=t||''};
@@ -1386,12 +1388,13 @@ addEventListener('keydown',e=>{if(state==='raid'&&e.key==='Enter'&&!chatOpen&&do
 setInterval(()=>{if(state==='raid')renderChat()},500);
 // ---------- 로비 ----------
 function openLobby(){cleanupNet();R=null;state='raidlobby';$('pbtn').style.display='none';$('raidLvl').classList.remove('show');setRaidUI(false);
-  lobby={players:[],diff:lobby.diff||'normal'};$('rHome').style.display='';$('rRoom').style.display='none';msg('');showOv('raidLobby');refreshPub()}
+  lobby={players:[],diff:RDIFF[lobby.diff]?lobby.diff:'normal'};$('rHome').style.display='';$('rRoom').style.display='none';msg('');showOv('raidLobby');refreshPub()}
 function renderLobby(){const L=$('rPlist');L.innerHTML='';lobby.players.forEach((p,i)=>{const d=document.createElement('div');d.style.borderColor=p.col;d.innerHTML=`<span style="color:${p.col}">●</span> ${p.name}${p.id===myId?' (나)':''}${i===0?' 👑':''}`;const W0=WEAPONS[p.w]||WEAPONS.bolt;const t=document.createElement('span');t.className='rwn';t.appendChild(wIcon(p.w in WEAPONS?p.w:'bolt',22));t.appendChild(document.createTextNode(W0.name));t.style.color=W0.color;d.prepend(t);L.appendChild(d)});renderWpick();
   const host=net.role==='host'||net.role==='offline';
-  $('rDiff').innerHTML=host?`난이도: <button class="btn sec" id="rDN" style="margin:4px;${lobby.diff==='normal'?'border:2px solid #4df3ff':''}">노멀</button><button class="btn sec" id="rDH" style="margin:4px;${lobby.diff==='hard'?'border:2px solid #ff4d9d':''}">하드</button>`
-    :`난이도: <b style="color:${lobby.diff==='hard'?'#ff4d9d':'#4df3ff'}">${lobby.diff==='hard'?'하드':'노멀'}</b> (호스트가 선택)`;
-  if(host){$('rDN').onclick=()=>{lobby.diff='normal';syncLobby()};$('rDH').onclick=()=>{lobby.diff='hard';syncLobby()}}
+  lobby.diff=RDIFF[lobby.diff]?lobby.diff:'normal';
+  $('rDiff').innerHTML=host?('난이도: '+Object.keys(RDIFF).map(k=>{const D=RDIFF[k];return `<button class="btn sec" id="rD_${k}" style="margin:4px;${lobby.diff===k?'border:2px solid '+D.col:''}">${D.label}</button>`}).join(''))
+    :`난이도: <b style="color:${rDiffOf(lobby.diff).col}">${rDiffOf(lobby.diff).label}</b> (호스트가 선택)`;
+  if(host)for(const k of Object.keys(RDIFF)){const b=$('rD_'+k);if(b)b.onclick=()=>{lobby.diff=k;syncLobby()}}
   $('rStartBtn').style.display=host?'':'none'}
 function wIcon(id,sz){const c=makeCanvas(sz*2,sz*2);const g=c.getContext('2d');g.translate(sz,sz);drawIcon(g,id,sz*1.7);return c}
 function myW(){const me=lobby.players.find(p=>p.id===myId);return me&&me.w||'bolt'}
@@ -1451,14 +1454,14 @@ function refreshPub(){stopProbe();const L=$('rPubList');L.textContent='공개방
 function renderPub(res,partial){const L=$('rPubList');L.innerHTML='';const ks=Object.keys(res).map(Number).sort((a,b)=>a-b);
   for(const s of ks){const d=res[s];const n=Math.max(0,Math.min(4,d.n|0));const ok=d.st==='wait'&&n<4;
     const row=document.createElement('div');row.className='prow';const t=document.createElement('span');
-    t.textContent=`#${s} ${String(d.name||'P1').slice(0,12)}의 방 · ${n}/4 · ${d.diff==='hard'?'하드':'노멀'} · ${d.st==='game'?'게임중':'대기중'}`;row.appendChild(t);
+    t.textContent=`#${s} ${String(d.name||'P1').slice(0,12)}의 방 · ${n}/4 · ${(RDIFF[d.diff]||RDIFF.normal).label} · ${d.st==='game'?'게임중':'대기중'}`;row.appendChild(t);
     const b=document.createElement('button');b.className='btn sec';b.textContent=ok?'참가':'참가 불가';b.disabled=!ok;if(ok)b.onclick=()=>joinRoom('공개 #'+s,PREFIX+'pub-'+s);row.appendChild(b);L.appendChild(row)}
   if(!ks.length)L.textContent=partial?'공개방 찾는 중…':'열린 공개방이 없어요. 새로고침하거나 직접 만들어 보세요!'}
 addEventListener('beforeunload',()=>{try{cleanupNet();stopProbe()}catch(e){}});
 function onClientData(d){
   if(d.t==='full'){msg('방이 가득 찼거나 이미 시작했어요.');return}
   if(d.t==='hello'){myId=d.id;enterRoom(net.code);const pw=prefW();if(pw!=='bolt')hostConn.send({t:'wpick',w:pw});if(window.__cry)hostConn.send({t:'cos',c:__cry.eq()});msg('호스트가 시작하기를 기다리는 중…');return}
-  if(d.t==='lobby'){lobby.players=d.players;lobby.diff=d.diff;renderLobby();return}
+  if(d.t==='lobby'){lobby.players=d.players;lobby.diff=RDIFF[d.diff]?d.diff:'normal';renderLobby();return}
   if(d.t==='chat'){addChat(d.n,d.c,d.m);return}
   if(d.t==='mdv'){if(window.__md)__md.fx(d);return}
   if(d.t==='cry'){if(window.__cry)__cry.add(d.n|0,String(d.w||''));return}
@@ -1478,7 +1481,7 @@ function onHostData(c,d){
   else if(d.t==='aim')p.aim=d.off?null:[+d.x||0,+d.y||0]}
 function setRaidUI(on){$('rChatBtn').style.display=on?'flex':'none';if(!on){closeChat();$('rChatOv').innerHTML=''}}
 // ---------- 엔진 시작/종료 ----------
-function beginEngine(diff){window.__raidMd=diff==='hard'?{name:'레이드 · 하드',col:'#ff4d6d'}:{name:'레이드 · 노멀',col:'#ff8c3a'};savedMode=gameMode;gameMode=diff==='hard'?'hard':'normal';startWeapon='bolt';newGame();banner=null;G.tip=null;G.tipQ=[];G.tipFlags={loop:1,loop2:1,elite:1};
+function beginEngine(diff){const D=rDiffOf(diff);window.__raidMd=D.hud;savedMode=gameMode;gameMode=D.mode;startWeapon='bolt';newGame();banner=null;G.tip=null;G.tipQ=[];G.tipFlags={loop:1,loop2:1,elite:1};
   window.__raidDrawPlayers=drawRaidWorld;for(const k of ['gozara','kangsan'])for(const f of [0,1])for(const e of [0,1])bossSprite(k,f,e)}
 function endRaid(){rjoy=null;joy=null;window.__raidDrawPlayers=null;QM=58;if(R)gameMode=savedMode;R=null;RP=[];state='raidlobby';setRaidUI(false);$('raidLvl').classList.remove('show')}
 function mkPlayer(lp,i){const hp0=isHard()?80:100;return {id:lp.id,name:lp.name,col:lp.col,x:Math.cos(i*TAU/4)*70,y:Math.sin(i*TAU/4)*70,r:14,hp:hp0,maxHp:hp0,baseSpd:isHard()?198:210,inv:0,fx:1,fy:0,
@@ -1487,11 +1490,11 @@ function mkPlayer(lp,i){const hp0=isHard()?80:100;return {id:lp.id,name:lp.name,
 function swapIn(p){P=p;if(p.trail){G.trail=p.trail;G.combo=p.combo|0}G.level=p.level;G.xp=p.xp;G.need=p.need;G.pendingLv=p.pendingLv;G.timers=p.timers;G.auraT=p.auraT}
 function swapOut(p){if(p.trail){p.trail=G.trail;p.combo=G.combo}p.level=G.level;p.xp=G.xp;p.need=G.need;p.pendingLv=G.pendingLv;p.timers=G.timers;p.auraT=G.auraT}
 function tryStart(){if(lobby.players.length<=1){$('raidConfirm').classList.add('show');return}hostStart()}
-function hostStart(){showOv(null);beginEngine(lobby.diff);const n=lobby.players.length;
+function hostStart(){lobby.diff=RDIFF[lobby.diff]?lobby.diff:'normal';showOv(null);beginEngine(lobby.diff);const n=lobby.players.length;
   RP=lobby.players.map(mkPlayer);
   R={host:true,t:0,phase:'wave1',diff:lobby.diff,n,spawnAcc:0,bossAt:300,boss2At:null,boss:null,tele:[],waves:[],banner:null,votes:{},nextElite:NUM.eliteEvery,lastElite:-1e9,evI:0};
   swapIn(RP[0]);bcast({t:'start',diff:R.diff});state='raid';setRaidUI(true);rbanner('레이드 시작! 5분을 버티세요','#4df3ff')}
-const H_=()=>R.diff==='hard';
+const H_=()=>false; // 레이드 하드 제거 · 분기 유지(확장용)
 function rbanner(txt,col,dur){R.banner={txt,col,t:dur||3}}
 function alive(){return RP.filter(p=>!p.dead)}
 function cryTo(pid,n,w){if(pid===myId){if(window.__cry)__cry.add(n,w)}else{const c=conns.find(c=>c.pid===pid&&c.open);if(c)try{c.send({t:'cry',n,w})}catch(e){}}}
@@ -1806,7 +1809,7 @@ function updUI(){const me=RP.find(p=>p.id===myId);const lv=$('raidLvl');
     if(ph==='inter'||ph==='clear'||ph==='fail'){lv.classList.remove('show');lvKey='';
       $('rEndTitle').textContent=ph==='inter'?'고자라 처치! (중간 결과)':ph==='clear'?'레이드 클리어!':'레이드 실패…';
       $('rEndTitle').style.color=ph==='fail'?'#ff4d6d':'#ffd84d';
-      let s=`난이도: <span>${R.diff==='hard'?'하드':'노멀'}</span> · 시간: <span>${fmtTime(R.t)}</span> · 처치: <span>${G.kills}</span><br>`+RP.map(p=>`<span style="color:${p.col}">●</span> ${p.name} 레벨 ${p.level}${p.dead?' 💀':''}`+(ph==='inter'&&!p.dead?(R.votes[p.id]?' ✅ 계속':' ⏳ 대기'):'')).join('<br>');
+      let s=`난이도: <span>${rDiffOf(R.diff).label}</span> · 시간: <span>${fmtTime(R.t)}</span> · 처치: <span>${G.kills}</span><br>`+RP.map(p=>`<span style="color:${p.col}">●</span> ${p.name} 레벨 ${p.level}${p.dead?' 💀':''}`+(ph==='inter'&&!p.dead?(R.votes[p.id]?' ✅ 계속':' ⏳ 대기'):'')).join('<br>');
       if(ph==='inter')s+='<br><small style="color:#cfd3ff">살아있는 모든 플레이어가 「계속」을 눌러야 진행됩니다. 5분 뒤 두 번째 보스!</small><br><button class="btn" id="rContBtn">계속</button>';
       $('rEndStats').innerHTML=s;const cb=$('rContBtn');if(cb){if(!me||me.dead||R.votes[myId]){cb.disabled=true;cb.style.opacity=.5;cb.textContent=me&&me.dead?'관전 중':'대기 중…'}cb.onclick=pressCont}
       E.querySelector('.row').style.display=ph==='inter'?'none':'';E.classList.add('show')}
@@ -1893,7 +1896,7 @@ function raidHUD(){const ph=R.phase;ctx.textAlign='center';
   if(R.boss){const b=R.boss,bw=Math.min(W-40,760),x=(W-bw)/2,y=76;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x-4,y-4,bw+8,34);ctx.fillStyle=b.kind==='gozara'?'#3dffc8':b.enr?'#ff2e63':'#ff8c3a';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=14;ctx.fillRect(x,y,bw*Math.max(0,b.hp)/b.maxHp,26);ctx.shadowBlur=0;
     ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(x,y,bw,26);ctx.fillStyle='#fff';ctx.font='bold 16px '+FONT;ctx.fillText(`${b.name}${b.enr?' (격노)':''}  ${Math.max(0,b.hp)|0} / ${b.maxHp|0}`,W/2,y+19);ctx.font='bold 12px '+FONT;ctx.fillText(RP.length+'인 체력 보정',W/2,y+44)}
   ctx.textAlign='right';ctx.font='bold 14px '+FONT;RP.forEach((p,i)=>{ctx.fillStyle=p.col;ctx.fillText(`● ${p.name}${p.id===myId?'(나)':''} Lv${p.level} ${p.dead?'💀'+(p.reviveT>0?' '+Math.ceil(p.reviveT)+'s':''):Math.ceil(p.hp)+'HP'}`,W-12,H-14-(RP.length-1-i)*18)});
-  ctx.textAlign='left';ctx.fillStyle=R.diff==='hard'?'#ff4d9d':'#4df3ff';ctx.font='900 13px '+FONT;ctx.fillText('레이드 · '+(R.diff==='hard'?'하드':'노멀'),12,H-14);
+  ctx.textAlign='left';ctx.fillStyle=rDiffOf(R.diff).col;ctx.font='900 13px '+FONT;ctx.fillText('레이드 · '+rDiffOf(R.diff).label,12,H-14);
   const me=RP.find(p=>p.id===myId);
   if(me&&me.dead&&camP&&camP!==me){ctx.textAlign='center';ctx.fillStyle='#ff8c8c';ctx.font='bold 20px '+FONT;ctx.fillText('👻 관전 중: '+camP.name,W/2,H-60)}
   if(me&&me.dead&&me.reviveT>0){ctx.textAlign='center';ctx.font='900 34px '+FONT;ctx.lineWidth=6;ctx.strokeStyle='#000';const rt='부활까지 '+Math.ceil(me.reviveT)+'초';ctx.strokeText(rt,W/2,H*0.6);ctx.fillStyle='#7dffb0';ctx.shadowColor='#7dffb0';ctx.shadowBlur=16;ctx.fillText(rt,W/2,H*0.6);ctx.shadowBlur=0}
