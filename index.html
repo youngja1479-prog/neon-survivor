@@ -1472,7 +1472,7 @@ function onClientData(d){
   if(d.t==='chat'){addChat(d.n,d.c,d.m);return}
   if(d.t==='mdv'){if(window.__md)__md.fx(d);return}
   if(d.t==='cry'){if(window.__cry)__cry.add(d.n|0,String(d.w||''));return}
-  if(d.t==='start'){showOv(null);beginEngine(d.diff);R={host:false,t:0,phase:d.diff==='story'?'story':'wave1',diff:d.diff,boss:null,tele:[],waves:[],banner:null,votes:{},kills:0,storyI:d.diff==='story'?(d.si|0):null};RP=[];guestReset();state='raid';setRaidUI(true);if(R.phase==='story')storyOpen();return}
+  if(d.t==='start'){showOv(null);beginEngine(d.diff);R={host:false,t:0,phase:d.diff==='story'?'story':'wave1',diff:d.diff,boss:null,tele:[],waves:[],banner:null,votes:{},kills:0,storyI:d.diff==='story'?(d.si|0):null,bossAt:d.ba||(d.diff==='story'?180:300)};RP=[];guestReset();state='raid';setRaidUI(true);if(R.phase==='story')storyOpen();return}
   if(d.t==='story'){storyOnMsg(d.i);return}
   if(d.t==='s'&&R){onSnap(d)}
 }
@@ -1501,9 +1501,9 @@ function swapOut(p){if(p.trail){p.trail=G.trail;p.combo=G.combo}p.level=G.level;
 function tryStart(){if(lobby.players.length<=1){$('raidConfirm').classList.add('show');return}hostStart()}
 function hostStart(){lobby.diff=RDIFF[lobby.diff]?lobby.diff:'normal';showOv(null);beginEngine(lobby.diff);const n=lobby.players.length;
   RP=lobby.players.map(mkPlayer);
-  R={host:true,t:0,phase:lobby.diff==='story'?'story':'wave1',diff:lobby.diff,n,spawnAcc:0,bossAt:300,boss2At:null,boss:null,tele:[],waves:[],banner:null,votes:{},nextElite:NUM.eliteEvery,lastElite:-1e9,evI:0,storyI:lobby.diff==='story'?0:null};
-  swapIn(RP[0]);bcast({t:'start',diff:R.diff,si:R.storyI});state='raid';setRaidUI(true);
-  if(R.phase==='story')storyOpen();else rbanner('레이드 시작! 5분을 버티세요','#4df3ff')}
+  const story=lobby.diff==='story';R={host:true,t:0,phase:story?'story':'wave1',diff:lobby.diff,n,spawnAcc:0,bossAt:story?180:300,boss2At:null,boss:null,tele:[],waves:[],banner:null,votes:{},nextElite:NUM.eliteEvery,lastElite:-1e9,evI:0,storyI:story?0:null};
+  swapIn(RP[0]);bcast({t:'start',diff:R.diff,si:R.storyI,ba:R.bossAt});state='raid';setRaidUI(true);
+  if(R.phase==='story'){storyOpen();rbanner('레이드 시작! 3분을 버티세요','#c77dff')}else rbanner('레이드 시작! 5분을 버티세요','#4df3ff')}
 const H_=()=>false; // 레이드 하드 제거 · 분기 유지(확장용)
 const STORY_DL=[
   {sp:'네온 생존자',t:'여기가 차박후 강똥원 원비 강산이 숨어있는 곳이라 들었는데?'},
@@ -1518,16 +1518,28 @@ function storyRender(){const el=$('storyDlg');if(!el||!R)return;if(!storyActive(
   sp.style.display=nar?'none':'block';sp.textContent=L.sp||'';
   tx.style.fontStyle=nar?'italic':'normal';tx.style.color=nar?'#a8add8':'#fff';tx.textContent=L.t;
   hn.textContent=R.host?'탭 / 클릭하여 계속':'호스트가 넘기는 중'}
-function storyOpen(){if(!R)return;R.storyI=R.storyI|0;storyRender()}
+function storyOpen(){if(!R)return;R.storyI=R.storyI|0;if(R.host)storySpawnRing();if(R.storyI>=1)R.ringTween=1;storyRender()}
 function passiveOnlyOpts(){const opts=[];for(const id in PASSIVES)if((P.passives[id]||0)<maxLv())opts.push({kind:'p',id,w:2});
   const pick=[];while(pick.length<3&&opts.length){let s=0;for(const o of opts)s+=o.w;let r=Math.random()*s,idx=0;for(;idx<opts.length;idx++){r-=opts[idx].w;if(r<=0)break}
     pick.push(opts.splice(Math.min(idx,opts.length-1),1)[0])}return pick.map(o=>({kind:o.kind,id:o.id}))}
 function storyBeginPick(){if(!R||!R.host)return;storyHide();
   for(const p of RP){if(p.dead||p.left)continue;swapIn(p);const o=passiveOnlyOpts();swapOut(p);if(o.length){p.opts=o;p.chooseT=120;p.storyPick=1}}
   R.phase='wave1';R.storyI=STORY_DL.length;rbanner('패시브를 선택하세요!','#c77dff',3)}
-function storyAdvance(){if(!R||!R.host||!storyActive())return;R.storyI++;bcast({t:'story',i:R.storyI});
+function storyAdvance(){if(!R||!R.host||!storyActive())return;R.storyI++;if(R.storyI>=1)R.ringTween=1;bcast({t:'story',i:R.storyI});
   if(storyActive())storyRender();else storyBeginPick()}
-function storyOnMsg(i){if(!R||R.diff!=='story')return;R.storyI=i|0;if(storyActive())storyRender();else{storyHide();if(R.phase==='story')R.phase='wave1'}}
+function storyOnMsg(i){if(!R||R.diff!=='story')return;R.storyI=i|0;if(R.storyI>=1)R.ringTween=1;if(storyActive())storyRender();else{storyHide();if(R.phase==='story')R.phase='wave1'}}
+function storyPicksPending(){return !!(R&&RP.some(p=>!p.dead&&!p.left&&p.storyPick))}
+function storyRingR(){const v=viewHalf();return Math.max(110,Math.min(Math.min(v.w,v.h)*0.48,175))}
+function storySpawnRing(){if(!R||!R.host||R.ringSpawned)return;R.ringSpawned=1;
+  const ps=alive();if(!ps.length)return;let cx=0,cy=0;for(const p of ps){cx+=p.x;cy+=p.y}cx/=ps.length;cy/=ps.length;
+  const ringR=storyRingR(),outerR=ringR+Math.min(viewHalf().w,viewHalf().h)*0.62,n=20;
+  for(let i=0;i<n;i++){const a=i/n*Math.PI*2+0.08,ox=cx+Math.cos(a)*outerR,oy=cy+Math.sin(a)*outerR;
+    const e=spawnEnemy('grunt',ox,oy);e.storyRing=1;e.ringFromX=ox;e.ringFromY=oy;e.ringTx=cx+Math.cos(a)*ringR;e.ringTy=cy+Math.sin(a)*ringR;e.ringT=0;
+    e.dx=-Math.cos(a);e.dy=-Math.sin(a)}}
+function storyTick(dt){if(!R||!R.host||R.diff!=='story')return;if(!R.ringSpawned)storySpawnRing();
+  if(R.storyI>=1)R.ringTween=1;if(!R.ringTween)return;
+  for(const e of enemies){if(!e.storyRing||e.dead)continue;e.ringT=Math.min(1,(e.ringT||0)+dt/0.9);
+    const k=e.ringT*e.ringT*(3-2*e.ringT);e.x=e.ringFromX+(e.ringTx-e.ringFromX)*k;e.y=e.ringFromY+(e.ringTy-e.ringFromY)*k}}
 function rbanner(txt,col,dur){R.banner={txt,col,t:dur||3}}
 function alive(){return RP.filter(p=>!p.dead)}
 function cryTo(pid,n,w){if(pid===myId){if(window.__cry)__cry.add(n,w)}else{const c=conns.find(c=>c.pid===pid&&c.open);if(c)try{c.send({t:'cry',n,w})}catch(e){}}}
@@ -1623,7 +1635,8 @@ const owners=new Map(); // 발사체·지뢰·유성 → 주인
 function own(o){const id=owners.get(o);return id&&RP.find(p=>p.id===id)||null}
 function withOwner(o,fn){const p=own(o);if(p){swapIn(p);fn();swapOut(p)}else fn()}
 function hostUpdate(dt){
-  if(R.phase==='clear'||R.phase==='fail'||R.phase==='inter'||R.phase==='story')return;
+  if(R.phase==='story'){storyTick(dt);return}
+  if(R.phase==='clear'||R.phase==='fail'||R.phase==='inter')return;
   if(R.phase==='ending'){R.endT-=dt;if(R.banner)R.banner.t-=dt;if(R.endT<=0){R.phase='clear';R.banner=null}return}
   for(const r of rings)if(r.fo){r.x=r.fo.x;r.y=r.fo.y}
   R.t+=dt;G.t=R.t;G.dropCd-=dt;G.healCd-=dt;
@@ -1637,13 +1650,13 @@ function hostUpdate(dt){
     const a=projs.length,b=mines.length,c=meteors.length,r0=rings.length;buildGrid();updateWeapons(dt);updateTrail(dt);trailWire();for(let i=r0;i<rings.length;i++)if(rings[i].follow){rings[i].follow=false;rings[i].fo=p}
     for(let i=a;i<projs.length;i++)owners.set(projs[i],p.id);for(let i=b;i<mines.length;i++)owners.set(mines[i],p.id);for(let i=c;i<meteors.length;i++)owners.set(meteors[i],p.id);
     swapOut(p)}
-  if(alive().length)raidSpawner(dt);
+  if(alive().length&&!storyPicksPending())raidSpawner(dt);
   if(G.tip||G.tipQ&&G.tipQ.length){G.tip=null;G.tipQ=[]}
   updateBeat(dt);G.beatFlash=Math.max(0,G.beatFlash-dt*4);
   raidEvents(dt);
   buildGrid();
   const v=viewHalf();const farD=Math.max(v.w,v.h)*1.25+350;
-  for(const e of enemies){if(e.dead||e.type==='raidboss')continue;e.flash-=dt;const tp=nearestP(e.x,e.y);if(!tp)break;
+  for(const e of enemies){if(e.dead||e.type==='raidboss')continue;e.flash-=dt;if(e.storyRing&&storyPicksPending())continue;const tp=nearestP(e.x,e.y);if(!tp)break;
     let dx=tp.x-e.x,dy=tp.y-e.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
     const es=e.spd*(blackout()?0.85:1)*(magnetStorm()?1.08:1)*(e.slowT>0?0.45:1);if(e.slowT>0)e.slowT-=dt;let vx=dx*es,vy=dy*es;
     if(e.type==='spitter'){if(d<230){vx=-dx*e.spd;vy=-dy*e.spd}else if(d<330){vx=-dy*e.spd*0.6;vy=dx*e.spd*0.6}
@@ -1755,7 +1768,7 @@ function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||
   let PJ='',np=0;for(const p of projs){if(np>=300)break;if(!inV(p.x,p.y,40))continue;np++;const n=nid(p);PJ+=B64[n>>6]+B64[n&63]+e1(PK.indexOf(p.k))+e2(p.x-ox)+e2(p.y-oy)+e2(wrapA(p.rot||0)*600)+e1(r1(p.r))}
   const PL=RP.map(p=>{const fast=[p.id,r1(p.x),r1(p.y),r1(p.hp),r2(p.fx),r2(p.fy),p.moving?1:0,r2(p.walk),r2(p.inv),p.dead?1:0,p.level,r1(p.xp),r2(Math.max(0,p.chooseT))];
     const heavy=[p.name,p.col,p.maxHp,p.weapons,p.passives,p.wOrder,p.pOrder,p.need,p.opts];const hk=JSON.stringify(heavy);if(full||pk[p.id]!==hk){pk[p.id]=hk;fast.push(heavy)}return fast});
-  const o={t:'s',T:r2(R.t),ph:R.phase,diff:R.diff,si:R.storyI,k:G.kills,sh:r1(shake),b2:R.boss2At,v:R.votes,bn:R.banner,gb:banner&&banner.t>0.05?[banner.txt,banner.col,r2(banner.t)]:null,
+  const o={t:'s',T:r2(R.t),ph:R.phase,diff:R.diff,si:R.storyI,ba:R.bossAt,k:G.kills,sh:r1(shake),b2:R.boss2At,v:R.votes,bn:R.banner,gb:banner&&banner.t>0.05?[banner.txt,banner.col,r2(banner.t)]:null,
   O:[ox,oy],AQ:me?me.ack|0:0,P:PL,TR:RP.map(p=>{const t=trailSnap(p);let S='';if(t)for(let j=0;j<t.length;j+=3)S+=e3(t[j])+e3(t[j+1])+e1(t[j+2]);return [S,p.combo|0]}),RV:RP.map(p=>p.dead&&!p.left&&p.reviveT>0?r1(p.reviveT):0),BT:Math.round(G.beatPh*1000)/1000,LF:G.loopFx.map(f=>[f.perfect?1:0,r2(f.t),f.poly.filter((q,i)=>i%2===0||i===f.poly.length-1).flatMap(q=>[r1(q.x),r1(q.y)])]),CL:G.calls.map(c=>[r1(c.x),r1(c.y),c.txt,c.c,r2(c.life),c.s]),E,PJ,EB,
   EV:evSnap(),MT:meteors.map(m=>[r1(m.x),r1(m.y),r2(m.t),m.warn,r1(m.rad)]),RG:rings.map(r=>[r1(r.x),r1(r.y),r1(r.max),r2(r.t),r.dur,r.c]),
   ZP:zaps.filter(z=>z.pts.length&&inV(z.pts[0].x,z.pts[0].y,300)).map(z=>[z.pts.map(q=>[r1(q.x),r1(q.y)]),r2(z.t)]),BM:beams.map(b=>[r1(b.x1),r1(b.y1),r1(b.x2),r1(b.y2),r2(b.t),b.dur,r2(b.w)]),
@@ -1767,7 +1780,7 @@ function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||
   return o}
 function sendSnaps(){for(const c of conns)if(c.open&&!(c.metadata&&c.metadata.probe))try{c.send(snapFor(c))}catch(e){}}
 let lastMyHp=null;
-function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;if(d.si!=null){R.storyI=d.si;if(R.diff==='story'){if(storyActive())storyRender();else storyHide()}}G.kills=R.kills=d.k;shake=Math.max(shake,d.sh);R.boss2At=d.b2;R.votes=d.v||{};R.banner=d.bn;
+function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;if(d.ba!=null)R.bossAt=d.ba;if(d.si!=null){R.storyI=d.si;if(R.diff==='story'){if(storyActive())storyRender();else storyHide()}}G.kills=R.kills=d.k;shake=Math.max(shake,d.sh);R.boss2At=d.b2;R.votes=d.v||{};R.banner=d.bn;
   if(d.gb&&(!banner||banner.txt!==d.gb[0]))banner={txt:d.gb[0],col:d.gb[1],t:d.gb[2]};
   const old={};for(const p of RP)old[p.id]=p;const OX=d.O?d.O[0]:0,OY=d.O?d.O[1]:0;
   RP=d.P.map(a=>{const p=old[a[0]]||{r:14,baseSpd:210,hurtT:0,name:'?',col:'#fff',maxHp:100,weapons:{},passives:{},wOrder:[],pOrder:[],need:1,opts:null};Object.assign(p,{id:a[0],x:a[1],y:a[2],hp:a[3],fx:a[4],fy:a[5],moving:!!a[6],walk:a[7],inv:a[8],dead:!!a[9],level:a[10],xp:a[11],chooseT:a[12]});
@@ -1924,7 +1937,7 @@ function drawRaidWorld(){drawTele();
     ctx.fillStyle=p.col;ctx.font='900 13px '+FONT;ctx.textAlign='center';ctx.fillText(p.name+(p.id===myId?' (나)':''),p.x,p.y-32)}
   P=cam}
 function raidHUD(){const ph=R.phase;ctx.textAlign='center';
-  let tl='';if(ph==='wave1')tl='보스까지 '+fmtTime(Math.max(0,300-R.t));else if(ph==='wave2'&&R.boss2At)tl='두 번째 보스까지 '+fmtTime(Math.max(0,R.boss2At-R.t));
+  let tl='';if(ph==='wave1')tl='보스까지 '+fmtTime(Math.max(0,(R.bossAt||300)-R.t));else if(ph==='wave2'&&R.boss2At)tl='두 번째 보스까지 '+fmtTime(Math.max(0,R.boss2At-R.t));
   if(tl){ctx.font='800 14px '+FONT;ctx.fillStyle='#ffd84d';ctx.fillText(tl,W/2,84)}
   if(R.boss){const b=R.boss,bw=Math.min(W-40,760),x=(W-bw)/2,y=76;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x-4,y-4,bw+8,34);ctx.fillStyle=b.kind==='gozara'?'#3dffc8':b.enr?'#ff2e63':'#ff8c3a';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=14;ctx.fillRect(x,y,bw*Math.max(0,b.hp)/b.maxHp,26);ctx.shadowBlur=0;
     ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(x,y,bw,26);ctx.fillStyle='#fff';ctx.font='bold 16px '+FONT;ctx.fillText(`${b.name}${b.enr?' (격노)':''}  ${Math.max(0,b.hp)|0} / ${b.maxHp|0}`,W/2,y+19);ctx.font='bold 12px '+FONT;ctx.fillText(RP.length+'인 체력 보정',W/2,y+44)}
