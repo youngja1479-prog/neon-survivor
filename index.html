@@ -1595,7 +1595,7 @@ function story3OnMsg(d){if(!R||R.diff!=='story'||!d)return;R.s3=R.s3||{};R.s3.st
   else if(d.stage==='mayday')storyHide();
   else if(d.stage==='after')story3Show(STORY3_AFTER[0],'auto');
   else if(d.stage==='bossdlg'){R.phase='storyBoss';story3Show(STORY3_BOSS[d.i|0],'tap')}
-  else if(d.stage==='done'){storyHide();R.phase='boss1';R.s3.done=1}}
+  else if(d.stage==='done'){storyHide();R.s3.done=1;if(R.phase==='storyBoss')R.phase='boss1'}}
 const STORY4_DL=[
   {sp:'네온 생존자',t:'진짜 큰일날 뻔 했네.'},
   {sp:'차박후 강똥원 원비 강산',t:'아직 살아있구나.'},
