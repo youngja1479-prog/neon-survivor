@@ -454,7 +454,7 @@ function spawnEnemy(type,x,y){
   const e={type,x,y,r:T.r,hp:T.hp*m,maxHp:T.hp*m,spd:T.spd*spdM,dmg:T.dmg*(1+dtv/(isHard()?300:420))*(isHard()?1.4:1)*UPD(),xp:Math.round(T.xp*(1+dtv/600)*(isHard()?0.82:1)),flash:0,kbx:0,kby:0,kbRes:T.kb||1,
     orbT:-9,auraT:-9,slowT:0,shootT:rand(1,2.5)*(isHard()?0.8:1),st:0,stT:rand(2,4),dx:0,dy:0,rot:0,dead:false};
   if(type==='boss'){G.bossN++;const cz=isCrazy();e.r=T.r*(cz?1.9:1);e.hp=e.maxHp=T.hp*Math.pow(2.3,G.bossN-1)*(1+diffT()/900)*(isHard()?1.85:1)*(cz?18:bossLvMul())*UPD();e.dmg=T.dmg*(1+G.bossN*0.25)*(isHard()?1.45:1)*(cz?4.5:1);e.shootT=cz?0.8:isHard()?1.7:2.5;e.dashT=cz?1.6:isHard()?3.4:5;G.boss=e}
-  {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff==='story'&&type!=='boss'){const m=_r.storyHard?1.8:1.25;e.hp=e.maxHp=e.hp*m;e.dmg*=m}}
+  {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff==='story'&&type!=='boss'){const m=_r.storyHard?2.0:1.25;e.hp=e.maxHp=e.hp*m;e.dmg*=m}}
   enemies.push(e);return e;
 }
 let NOSP=[];function noSpAt(x,y){NOSP=NOSP.filter(z=>z.g===G&&G.t<z.until);for(const z of NOSP)if((x-z.x)**2+(y-z.y)**2<z.r*z.r)return true;return false}
@@ -1604,13 +1604,16 @@ function story4Begin(){if(!R||(R.s4&&R.s4.done))return;R.s4={stage:'dlg',i:0,don
   story3Show(STORY4_DL[0],'tap');bcast({t:'s4',stage:'dlg',i:0})}
 function story4BoostPassives(){for(const p of RP){if(p.left)continue;for(const id in PASSIVES){const was=p.passives[id]|0;p.passives[id]=was+1;
     if(!was&&!p.pOrder.includes(id))p.pOrder.push(id);if(id==='heart'){p.maxHp+=20;p.hp=Math.min(p.maxHp,p.hp+20)}}}}
-function story4Resume(){if(!R||!R.s4)return;storyHide();story4BoostPassives();R.pMax6=1;R.storyHard=1;R.skLockT=30;
+function story4ClearLocal(){ebullets=[];R.tele=[];R.waves=[];}
+function story4KillAll(){for(let n=0;n<8;n++){const list=enemies.filter(e=>!e.dead&&e.type!=='raidboss');if(!list.length)break;for(const e of list)killEnemy(e)}
+  for(const e of enemies)if(e.type==='raidboss')e.dead=true;enemies=[];G.elite=null;story4ClearLocal()}
+function story4Resume(){if(!R||!R.s4)return;storyHide();story4KillAll();story4BoostPassives();R.pMax6=1;R.storyHard=1;R.skLockT=30;
   rbanner('⚠ 적들이 강해졌다!','#ff2e63',4);R.s4.stage='done';R.s4.done=1;
-  bcast({t:'s4',stage:'done',pMax6:1,hard:1,skLock:30});R.phase='inter';R.votes={}}
+  bcast({t:'s4',stage:'done',pMax6:1,hard:1,skLock:30,clr:1});R.phase='inter';R.votes={}}
 function story4OnMsg(d){if(!R||R.diff!=='story'||!d)return;R.s4=R.s4||{};R.s4.stage=d.stage;R.s4.i=d.i|0;
   if(d.pMax6)R.pMax6=1;if(d.hard)R.storyHard=1;if(d.skLock!=null)R.skLockT=+d.skLock;
   if(d.stage==='dlg'){R.phase='story4';story3Show(STORY4_DL[d.i|0],'tap')}
-  else if(d.stage==='done'){storyHide();R.s4.done=1;if(R.phase==='story4')R.phase='inter'}}
+  else if(d.stage==='done'){storyHide();R.s4.done=1;story4ClearLocal();if(R.phase==='story4')R.phase='inter'}}
 function rbanner(txt,col,dur){R.banner={txt,col,t:dur||3}}
 function alive(){return RP.filter(p=>!p.dead)}
 function cryTo(pid,n,w){if(pid===myId){if(window.__cry)__cry.add(n,w)}else{const c=conns.find(c=>c.pid===pid&&c.open);if(c)try{c.send({t:'cry',n,w})}catch(e){}}}
@@ -1622,7 +1625,7 @@ function hurtP(p,d){if(p.dead||p.inv>0||p.chooseT>0||R.god||(R&&(R.phase==='stor
 function reviveP(p){const ps=alive();if(!ps.length)return;const t=ps[(Math.random()*ps.length)|0];const a=Math.random()*Math.PI*2;p.x=t.x+Math.cos(a)*50;p.y=t.y+Math.sin(a)*50;p.dead=false;p.reviveT=0;p.hp=Math.max(1,Math.round(p.maxHp*0.5));p.inv=3;p.trail=[];rings.push({x:p.x,y:p.y,r:0,max:120,t:0,dur:0.5,c:p.col});burst(p.x,p.y,p.col,40,260,0.8,4);rbanner(p.name+' 부활!','#7dffb0',2)}
 function addTele(o){o.t=0;R.tele.push(o)}
 function makeBoss(kind,opt){const N=NUM[kind];const ps=alive();const c=ps[0]||{x:0,y:0};let hp=N.hp*NUM.scale(R.n)*(H_()?NUM.hard.bossHp:1)*1.3;
-  if(R.diff==='story')hp*=(R.storyHard?1.6:1.3);
+  if(R.diff==='story')hp*=(R.storyHard?1.75:1.3);
   const b={type:'raidboss',kind,name:kind==='gozara'?'고자라':'차박후 강똥원 원비 강산',x:clamp(c.x+520,-WH+200,WH-200),y:clamp(c.y-200,-WH+200,WH-200),r:N.r,hp,maxHp:hp,mode:'chase',mt:2.5,face:-1,flash:0,kbx:0,kby:0,kbRes:0,xp:0,
     orbT:-9,slowT:0,dead:false,enr:false,z:0,cyc:0,spd:0,dmg:0};
   R.boss=b;enemies.push(b);QM=Math.max(58,N.r+10);
@@ -1667,7 +1670,7 @@ function applyPick(p,i){if(!p.opts||!p.opts[i]||p.dead)return;const o=p.opts[i];
 function vote(p){if(R.phase!=='inter'||p.dead)return;R.votes[p.id]=1;if(alive().every(q=>R.votes[q.id])){R.phase='wave2';R.boss2At=R.t+NUM.boss2Delay;R.nextElite=R.t+60;rbanner('몹 웨이브 재개! 5분 뒤 두 번째 보스가 온다…','#ffd84d',4)}}
 // 일반 모드 스폰 공식 재사용 (pickType/spawnEnemy/offscreenPos 원본 그대로)
 function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;let rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*NUM.mobRateMul*(0.75+0.25*R.n)*1.2;
-  if(R.diff==='story')rate*=(R.storyHard?1.5:1.15);if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6;
+  if(R.diff==='story')rate*=(R.storyHard?1.65:1.15);if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6;
   const cap=Math.min(isHard()?640:520,((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5);
   R.spawnAcc+=rate*dt;const ps=alive();if(!ps.length)return;
   while(R.spawnAcc>=1){R.spawnAcc-=1;if(enemies.length>=cap)continue;const tp=ps[Math.random()*ps.length|0];P=tp;
