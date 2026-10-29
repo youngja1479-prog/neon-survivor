@@ -1350,6 +1350,15 @@ requestAnimationFrame(frame);
 <div id="rChatOv"></div>
 <div id="rChatBtn" title="채팅">💬</div>
 <div id="rChatBar"><input id="rChatIn2" maxlength="60" placeholder="메시지 (최대 60자)" autocomplete="off" enterkeyhint="send"><button class="btn sec" id="rChatSend2">전송</button></div>
+<style>
+#vsReadyWrap{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9;display:none;flex-direction:column;align-items:center;gap:8px;width:min(92vw,340px);pointer-events:none}
+#vsReadyWrap.show{display:flex}
+#vsReadyCnt{font-weight:900;font-size:clamp(14px,3.6vw,18px);color:#ffd84d;text-shadow:0 0 10px #000,0 0 4px #ff4d9d;pointer-events:none}
+#vsReadyBtn{pointer-events:auto;margin-top:0;width:100%;min-height:56px;padding:14px 22px;font-size:clamp(17px,4.4vw,22px);touch-action:manipulation;-webkit-user-select:none;user-select:none;border-radius:40px}
+#vsReadyBtn.on{background:linear-gradient(90deg,#1f8a55,#4dff9d);box-shadow:0 0 22px rgba(77,255,157,.55)}
+@media (max-height:560px){#vsReadyWrap{bottom:8px;gap:4px}#vsReadyBtn{min-height:48px;padding:10px 18px;font-size:16px}}
+</style>
+<div id="vsReadyWrap"><div id="vsReadyCnt">0/1 준비</div><button type="button" class="btn" id="vsReadyBtn">준비 완료</button></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
@@ -1484,7 +1493,7 @@ function onClientData(d){
   if(d.t==='cry'){if(window.__cry)__cry.add(d.n|0,String(d.w||''));return}
   if(d.t==='start'){showOv(null);if(d.diff==='vs'){vsClientStart(d);return}
     beginEngine(d.diff);R={host:false,t:0,phase:d.diff==='story'?'story':'wave1',diff:d.diff,boss:null,tele:[],waves:[],banner:null,votes:{},kills:0,storyI:d.diff==='story'?(d.si|0):null,bossAt:d.ba||(d.diff==='story'?180:300)};RP=[];guestReset();state='raid';setRaidUI(true);if(R.phase==='story')storyOpen();return}
-  if(d.t==='vsclock'){if(R&&R.diff==='vs'){R.prepLeft=d.left;R.vsElim=d.elim||R.vsElim||{}}return}
+  if(d.t==='vsclock'){if(R&&R.diff==='vs'){R.prepLeft=d.left;R.vsElim=d.elim||R.vsElim||{};if(d.ready)R.vsReadyMap=d.ready;if(d.rn!=null)R.vsRn=d.rn|0;if(d.rt!=null)R.vsRt=d.rt|0;vsUpdateReadyUI()}return}
   if(d.t==='vsarena'){vsApplyArena(d);return}
   if(d.t==='vsend'){vsShowEnd(d.winId);return}
   if(d.t==='story'){storyOnMsg(d.i);return}
@@ -1497,6 +1506,7 @@ function onHostData(c,d){
   if(d.t==='cos'){const lp=lobby.players.find(p=>p.id===c.pid);if(lp&&window.__cry){lp.cos=__cry.clean(d.c);syncLobby()}return}
   if(d.t==='wpick'){const lp=lobby.players.find(p=>p.id===c.pid);if(lp&&WEAPONS[d.w]&&!SUB_W.has(d.w)&&!R){lp.w=d.w;syncLobby()}return}
   if(d.t==='chat'){const lp=lobby.players.find(p=>p.id===c.pid);if(!lp)return;const m=String(d.m||'').slice(0,60);addChat(lp.name,lp.col,m);bcast({t:'chat',n:lp.name,c:lp.col,m});return}
+  if(d.t==='vsready'&&R&&R.diff==='vs'&&R.phase==='vsprep'){if(!R.vsElim[c.pid]){R.vsReadyMap[c.pid]=!!d.ready;vsAfterReadyChange()}return}
   if(d.t==='vsstat'&&R&&R.diff==='vs'){vsHostRecvStat(c.pid,d);return}
   if(!R)return;const p=RP.find(p=>p.id===c.pid);if(!p)return;
   if(d.t==='in'){p.mx=clamp(+d.mx||0,-1,1);p.my=clamp(+d.my||0,-1,1);if(d.sq)p.ack=d.sq|0;if(d.vw)p.vw=clamp(d.vw|0,200,1500);if(d.vh)p.vh=clamp(d.vh|0,150,1100)}
@@ -1510,7 +1520,7 @@ function setRaidUI(on){$('rChatBtn').style.display=on?'flex':'none';if(!on){clos
 // ---------- 엔진 시작/종료 ----------
 function beginEngine(diff){const D=rDiffOf(diff);window.__raidMd=D.hud;savedMode=gameMode;gameMode=D.mode;startWeapon='bolt';newGame();banner=null;G.tip=null;G.tipQ=[];G.tipFlags={loop:1,loop2:1,elite:1};
   window.__raidDrawPlayers=drawRaidWorld;for(const k of ['gozara','kangsan'])for(const f of [0,1])for(const e of [0,1])bossSprite(k,f,e)}
-function endRaid(){rjoy=null;joy=null;window.__raidDrawPlayers=null;QM=58;if(R)gameMode=savedMode;R=null;RP=[];state='raidlobby';setRaidUI(false);$('raidLvl').classList.remove('show')}
+function endRaid(){vsHideReadyUI();rjoy=null;joy=null;window.__raidDrawPlayers=null;QM=58;if(R)gameMode=savedMode;R=null;RP=[];state='raidlobby';setRaidUI(false);$('raidLvl').classList.remove('show')}
 function mkPlayer(lp,i){const hp0=isHard()?80:100;return {id:lp.id,name:lp.name,col:lp.col,x:Math.cos(i*TAU/4)*70,y:Math.sin(i*TAU/4)*70,r:14,hp:hp0,maxHp:hp0,baseSpd:isHard()?198:210,inv:0,fx:1,fy:0,
   weapons:{[WEAPONS[lp.w]&&!SUB_W.has(lp.w)?lp.w:'bolt']:1},passives:{},wOrder:[WEAPONS[lp.w]&&!SUB_W.has(lp.w)?lp.w:'bolt'],pOrder:[],hurtT:0,moving:false,walk:0,mx:0,my:0,dead:false,
   level:1,xp:0,need:xpNeed(1),pendingLv:0,timers:{},auraT:0,opts:null,chooseT:0,dmgDone:0,trail:[],combo:0}}
@@ -1534,26 +1544,38 @@ function vsStartLocalPrep(){const lp=lobby.players.find(p=>p.id===myId);const w=
   banner=null;showBanner('준비 시간! 성장하세요','#ff4d9d');R.vsDead=false;R.vsLocal=true}
 function hostStartVs(){showOv(null);const prep=vsPrepDur();beginEngine('vs');
   RP=lobby.players.map(mkPlayer);const n=RP.length;
-  R={host:true,t:0,phase:'vsprep',diff:'vs',n,prepDur:prep,prepLeft:prep,boss:null,bossAt:null,boss2At:null,tele:[],waves:[],banner:null,votes:{},vsElim:{},vsBuilds:{},vsDead:false,vsLocal:true,solo:n<=1,storyI:null,s3:null,s4:null,s5:null};
+  R={host:true,t:0,phase:'vsprep',diff:'vs',n,prepDur:prep,prepLeft:prep,boss:null,bossAt:null,boss2At:null,tele:[],waves:[],banner:null,votes:{},vsElim:{},vsBuilds:{},vsReadyMap:{},vsMeReady:false,vsRn:0,vsRt:n,vsDead:false,vsLocal:true,solo:n<=1,storyI:null,s3:null,s4:null,s5:null};
   for(const p of RP)R.vsBuilds[p.id]=null;
   vsStartLocalPrep();R.vsBuilds[myId]=vsSnapBuild();
-  bcast({t:'start',diff:'vs',prep});state='play';setRaidUI(false);window.__raidDrawPlayers=null;
-  showBanner('준비 시간 '+fmtTime(prep),'#ff4d9d')}
+  bcast({t:'start',diff:'vs',prep,n});state='play';setRaidUI(false);window.__raidDrawPlayers=null;
+  showBanner('준비 시간 '+fmtTime(prep),'#ff4d9d');vsUpdateReadyUI()}
 function vsClientStart(d){const prep=d.prep||vsPrepDur();
   RP=[];beginEngine('vs');
-  R={host:false,t:0,phase:'vsprep',diff:'vs',n:0,prepDur:prep,prepLeft:prep,boss:null,bossAt:null,boss2At:null,tele:[],waves:[],banner:null,votes:{},vsElim:{},vsBuilds:{},vsDead:false,vsLocal:true,storyI:null,s3:null,s4:null,s5:null};
+  R={host:false,t:0,phase:'vsprep',diff:'vs',n:d.n|0,prepDur:prep,prepLeft:prep,boss:null,bossAt:null,boss2At:null,tele:[],waves:[],banner:null,votes:{},vsElim:{},vsBuilds:{},vsReadyMap:{},vsMeReady:false,vsRn:0,vsRt:d.n|0,vsDead:false,vsLocal:true,storyI:null,s3:null,s4:null,s5:null};
   vsStartLocalPrep();guestReset();state='play';setRaidUI(false);window.__raidDrawPlayers=null;
-  showBanner('준비 시간 '+fmtTime(prep),'#ff4d9d')}
+  showBanner('준비 시간 '+fmtTime(prep),'#ff4d9d');vsUpdateReadyUI()}
 function vsSendStat(force){if(!R||R.diff!=='vs'||R.phase!=='vsprep')return;const b=vsSnapBuild();b.dead=!!R.vsDead;
   if(R.host){R.vsBuilds[myId]=b;if(b.dead)R.vsElim[myId]=1}
   else if(hostConn&&hostConn.open)try{hostConn.send(Object.assign({t:'vsstat'},b))}catch(e){}}
 function vsHostRecvStat(pid,d){if(!R||!R.host)return;const b={dead:!!d.dead,level:d.level|0,xp:d.xp|0,need:d.need|0,hp:d.hp,maxHp:d.maxHp,weapons:d.weapons||{},passives:d.passives||{},wOrder:d.wOrder||[],pOrder:d.pOrder||[],baseSpd:d.baseSpd};
-  R.vsBuilds[pid]=b;if(b.dead)R.vsElim[pid]=1;const p=RP.find(q=>q.id===pid);if(p&&b.dead){p.dead=true;p.hp=0}}
+  R.vsBuilds[pid]=b;if(b.dead){R.vsElim[pid]=1;if(R.vsReadyMap)delete R.vsReadyMap[pid]}const p=RP.find(q=>q.id===pid);if(p&&b.dead){p.dead=true;p.hp=0}if(b.dead&&R.phase==='vsprep')vsAfterReadyChange()}
 function vsPrepTick(dt){if(!R||R.diff!=='vs'||R.phase!=='vsprep')return;
-  if(R.host){R.prepLeft-=dt;R.t+=dt;vsClockT-=dt;if(vsClockT<=0){vsClockT=0.5;bcast({t:'vsclock',left:R.prepLeft,elim:R.vsElim})}
+  if(R.host){R.prepLeft-=dt;R.t+=dt;vsClockT-=dt;if(vsClockT<=0){vsClockT=0.5;vsBcastClock()}
     vsStatT-=dt;if(vsStatT<=0){vsStatT=1;vsSendStat()}
     if(R.prepLeft<=0)vsEnterArena()}
   else{vsStatT-=dt;if(vsStatT<=0){vsStatT=1;vsSendStat()}}}
+function vsReadyCounts(){if(!R)return{n:0,t:0};if(!R.host)return{n:R.vsRn|0,t:R.vsRt|0};const alive=RP.filter(p=>!p.isAi&&!R.vsElim[p.id]);const tt=alive.length;const nn=alive.filter(p=>!!R.vsReadyMap[p.id]).length;R.vsRn=nn;R.vsRt=tt;return{n:nn,t:tt}}
+function vsBcastClock(){if(!R||!R.host)return;const c=vsReadyCounts();bcast({t:'vsclock',left:R.prepLeft,elim:R.vsElim,ready:Object.assign({},R.vsReadyMap||{}),rn:c.n,rt:c.t})}
+function vsHideReadyUI(){const w=$('vsReadyWrap');if(w)w.classList.remove('show')}
+function vsUpdateReadyUI(){const wrap=$('vsReadyWrap'),btn=$('vsReadyBtn'),cnt=$('vsReadyCnt');if(!wrap||!btn||!cnt)return;
+  if(!R||R.diff!=='vs'||R.phase!=='vsprep'||R.vsDead){wrap.classList.remove('show');return}
+  wrap.classList.add('show');const c=vsReadyCounts();cnt.textContent=c.n+'/'+c.t+' 준비';
+  const on=!!R.vsMeReady;btn.textContent=on?'준비 취소':'준비 완료';btn.classList.toggle('on',on)}
+function vsAfterReadyChange(){if(!R||!R.host||R.phase!=='vsprep')return;vsBcastClock();vsUpdateReadyUI();const c=vsReadyCounts();if(c.t>0&&c.n>=c.t)vsEnterArena()}
+function vsSetReady(on){if(!R||R.diff!=='vs'||R.phase!=='vsprep'||R.vsDead)return;on=!!on;R.vsMeReady=on;
+  if(R.host){if(on)R.vsReadyMap[myId]=1;else delete R.vsReadyMap[myId];vsAfterReadyChange()}
+  else{if(hostConn&&hostConn.open)try{hostConn.send({t:'vsready',ready:on})}catch(e){}vsUpdateReadyUI()}}
+function vsToggleReady(){if(!R||R.phase!=='vsprep'||R.vsDead)return;vsSetReady(!R.vsMeReady)}
 function vsPrepDraw(){if(!R||R.diff!=='vs'||R.phase!=='vsprep')return;
   const left=Math.max(0,R.prepLeft||0);ctx.save();ctx.setTransform(DPR,0,0,DPR,0,0);ctx.textAlign='center';
   ctx.font='900 22px '+FONT;ctx.lineWidth=5;ctx.strokeStyle='#000';const t='준비 시간 '+fmtTime(left);
@@ -1562,9 +1584,9 @@ function vsPrepDraw(){if(!R||R.diff!=='vs'||R.phase!=='vsprep')return;
     ctx.font='700 16px '+FONT;ctx.fillStyle='#cfd3ff';ctx.fillText('준비 중 탈락 — 전투에서 제외됩니다',W/2,H*0.42+36)}
   ctx.restore()}
 function onVsPrepDeath(){if(!R||R.diff!=='vs'||R.phase!=='vsprep')return false;
-  R.vsDead=true;R.vsElim[myId]=1;vsSendStat(true);state='play'; // stay connected; freeze local world
+  R.vsDead=true;R.vsElim[myId]=1;R.vsMeReady=false;if(R.vsReadyMap)delete R.vsReadyMap[myId];vsSendStat(true);state='play'; // stay connected; freeze local world
   P.hp=0;P.inv=999;enemies=[];projs=[];ebullets=[];gems=[];pickups=[];mines=[];meteors=[];
-  showBanner('탈락… 전투에서 제외됩니다','#ff4d6d');return true}
+  showBanner('탈락… 전투에서 제외됩니다','#ff4d6d');vsUpdateReadyUI();if(R.host)vsAfterReadyChange();return true}
 function vsMakeAi(ref){const ai=mkPlayer({id:'ai',name:'AI',col:'#ff6b8b',w:'bolt'},1);ai.isAi=true;
   const lv=Math.max(8,(ref&&ref.level)|0);ai.level=lv;ai.need=lvNeed(lv);ai.xp=0;
   const wsrc=(ref&&ref.weapons)||{bolt:1};ai.weapons={};ai.wOrder=[];
@@ -1584,6 +1606,7 @@ function vsAttachProxies(owner){enemies=enemies.filter(e=>!e._vsP);if(!R||R.diff
 function vsClearProxies(){enemies=enemies.filter(e=>!e._vsP)}
 function vsPackPlayers(){return RP.map(p=>({id:p.id,name:p.name,col:p.col,x:p.x,y:p.y,r:p.r,hp:p.hp,maxHp:p.maxHp,baseSpd:p.baseSpd,fx:p.fx,fy:p.fy,weapons:p.weapons,passives:p.passives,wOrder:p.wOrder,pOrder:p.pOrder,level:p.level,xp:p.xp,need:p.need,dead:!!p.dead,isAi:!!p.isAi}))}
 function vsEnterArena(){if(!R||!R.host||R.phase!=='vsprep')return;
+  vsHideReadyUI();
   try{$('levelup').classList.remove('show');$('pause').classList.remove('show')}catch(e){}
   vsSendStat(true); // host build
   // Apply builds onto RP
@@ -1601,7 +1624,7 @@ function vsEnterArena(){if(!R||!R.host||R.phase!=='vsprep')return;
   R.phase='vsarena';R.t=0;G.t=0;state='raid';setRaidUI(true);window.__raidDrawPlayers=drawRaidWorld;
   const me=RP.find(p=>p.id===myId);if(me)swapIn(me);
   bcast({t:'vsarena',players:vsPackPlayers()});rbanner('VS 전투 시작! 최후의 1인!','#ff4d9d',3)}
-function vsApplyArena(d){if(!R)return;$('levelup').classList.remove('show');
+function vsApplyArena(d){if(!R)return;vsHideReadyUI();$('levelup').classList.remove('show');
   enemies=[];projs=[];ebullets=[];gems=[];pickups=[];mines=[];meteors=[];parts=[];texts=[];rings=[];zaps=[];beams=[];G.ev=null;G.hole=null;G.strikes=[];G.rainZones=[];G.rainDrops=[];
   R.phase='vsarena';R.t=0;G.t=0;R.boss=null;R.tele=[];R.waves=[];
   RP=(d.players||[]).map((lp,i)=>{const p=mkPlayer(lp,i);vsApplyBuild(p,lp);p.x=lp.x;p.y=lp.y;p.name=lp.name;p.col=lp.col;p.isAi=!!lp.isAi;p.dead=!!lp.dead;if(p.dead)p.hp=0;return p});
@@ -2259,7 +2282,8 @@ $('rEndLobbyBtn').onclick=()=>{$('raidEnd').classList.remove('show');endShown=''
 $('rEndMenuBtn').onclick=()=>{$('raidEnd').classList.remove('show');endShown='';endRaid();cleanupNet();showOv(null);toTitle()};
 // ---------- 디버그 ----------
 window.__rsk={get R(){return R},get RP(){return RP},get myId(){return myId},get hostConn(){return hostConn},get chatOpen(){return chatOpen},get lobby(){return lobby},bcast,ePos:()=>gMerged&&gMerged.E?[...nextMaps(gMerged).E.values()]:[],cryAll(n,w){for(const q of RP)if(!q.left)cryTo(q.id,n,w)},owners,swapIn,swapOut}; // A/B 스킬 스크립트용 브리지
-window.__raid={NUM,get R(){return R},get RP(){return RP},get myId(){return myId},get net(){return net},get lobby(){return lobby},pMaxLv,wMaxLv,chat:sendChat,hurtP,vsPrepTick,vsPrepDraw,onVsPrepDeath,
+{const _vrb=$('vsReadyBtn');if(_vrb)_vrb.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();vsToggleReady()})}
+window.__raid={NUM,get R(){return R},get RP(){return RP},get myId(){return myId},get net(){return net},get lobby(){return lobby},pMaxLv,wMaxLv,chat:sendChat,hurtP,vsPrepTick,vsPrepDraw,onVsPrepDeath,vsToggleReady,vsSetReady,
   reviveFF(sec){if(!R||!R.host)return false;for(const p of RP)if(p.dead&&p.reviveT>0)p.reviveT=Math.min(p.reviveT,sec==null?0.05:sec);return true},
   killP(id){if(!R||!R.host)return false;const p=RP.find(q=>q.id===id);if(!p||p.dead)return false;p.inv=0;p.chooseT=0;const g=R.god;R.god=false;hurtP(p,1e9);R.god=g;return true},
   skipTo(s){if(!R||!R.host)return false;R.t=s;G.t=s;return true},
