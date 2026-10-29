@@ -662,13 +662,16 @@ function addShake(v){shake=Math.min(18,Math.max(shake,v))}
 
 // ================== 피해 처리 ==================
 function hurtEnemy(e,dmg,kx,ky,kb){
-  if(e.dead)return;const crit=Math.random()<0.1;dmg*=dmgMul()*(crit?2:1)*rand(0.9,1.1);
+  if(!e||e.dead)return;
+  if(e._vsP){const rr=window.__raid;if(rr&&rr.R&&rr.R.host&&rr.R.diff==='vs'&&rr.hurtP){const crit=Math.random()<0.1;dmg=Math.max(1,Math.round(dmg*dmgMul()*(crit?2:1)*rand(0.9,1.1)));rr.hurtP(e._vsP,dmg);if(crit)dmgText(e.x,e.y-e.r,dmg,'#ffd84d',20)}return}
+  const crit=Math.random()<0.1;dmg*=dmgMul()*(crit?2:1)*rand(0.9,1.1);
   e.hp-=dmg;e.flash=0.1;
   if(kb){const l=Math.hypot(kx,ky)||1;e.kbx+=kx/l*kb*e.kbRes;e.kby+=ky/l*kb*e.kbRes}
   dmgText(e.x,e.y-e.r,dmg,crit?'#ffd84d':'#ffffff',crit?20:14);
   if(e.hp<=0)killEnemy(e);else S.hit();
 }
 function killEnemy(e){
+  if(e&&e._vsP){const rr=window.__raid;if(rr&&rr.R&&rr.R.host&&rr.hurtP)rr.hurtP(e._vsP,1e9);return}
   e.dead=true;G.kills++;const T=ETYPES[e.type];
   burst(e.x,e.y,T.color,e.type==='boss'?80:(e.type==='brute'?18:9),e.type==='boss'?400:180,0.5,e.type==='boss'?5:3);
   S.kill();
@@ -1273,11 +1276,12 @@ function frame(now){
   let dt=(now-last)/1000;last=now;const w0=performance.now();fpsAcc+=dt;fpsN++;if(fpsAcc>=0.5){fps=fpsN/fpsAcc;fpsAcc=0;fpsN=0}
   dt=Math.min(dt,0.05);
   try{
+    if(window.__raid&&__raid.vsPrepTick)__raid.vsPrepTick(dt);
     if(state==='raid'){if(window.__raidFrame)window.__raidFrame(dt);requestAnimationFrame(frame);return}
-    if(state==='play')gameUpdate(dt);
-    else if(state==='dying'){gameUpdate(dt*0.3);G.dyingT-=dt;if(G.dyingT<=0&&!(window.__rv&&__rv.offer()))openGameOver()}
+    if(state==='play'){if(!(window.__raid&&__raid.R&&__raid.R.diff==='vs'&&__raid.R.vsDead&&__raid.R.phase==='vsprep'))gameUpdate(dt)}
+    else if(state==='dying'){gameUpdate(dt*0.3);G.dyingT-=dt;if(G.dyingT<=0){if(window.__raid&&__raid.onVsPrepDeath&&__raid.onVsPrepDeath()){}else if(!(window.__rv&&__rv.offer()))openGameOver()}}
     if(state!=='paused'&&state!=='levelup'&&state!=='victory')fxUpdate(state==='dying'?dt*0.5:dt);
-    render();workMs=workMs*0.9+(performance.now()-w0)*0.1;
+    render();if(window.__raid&&__raid.vsPrepDraw)__raid.vsPrepDraw();workMs=workMs*0.9+(performance.now()-w0)*0.1;
   }catch(err){onFrameError(err)}
   requestAnimationFrame(frame);
 }
@@ -1365,7 +1369,9 @@ const NUM={
 };
 ETYPES.raidboss={r:150,hp:1,spd:0,dmg:0,xp:0,color:'#3dffc8',kb:0};
 let R=null,RP=[];
-const RDIFF={normal:{label:'일반',col:'#4df3ff',mode:'normal',hud:{name:'레이드 · 일반',col:'#ff8c3a'}},story:{label:'스토리',col:'#c77dff',mode:'normal',hud:{name:'레이드 · 스토리',col:'#c77dff'}}};
+const RDIFF={normal:{label:'일반',col:'#4df3ff',mode:'normal',hud:{name:'레이드 · 일반',col:'#ff8c3a'}},story:{label:'스토리',col:'#c77dff',mode:'normal',hud:{name:'레이드 · 스토리',col:'#c77dff'}},vs:{label:'VS',col:'#ff4d9d',mode:'normal',hud:{name:'VS 모드',col:'#ff4d9d'}}};
+const VS_PREP_DEFAULT=300;window.__vsPrep=null; // 테스트용 준비시간(초). null이면 300
+const vsPrepDur=()=>{const v=window.__vsPrep;return v!=null&&isFinite(+v)?Math.max(1,+v):VS_PREP_DEFAULT};
 const rDiffOf=d=>RDIFF[d]||RDIFF.normal;
 let peer=null,conns=[],hostConn=null,net={role:null,code:null},lobby={players:[],diff:'normal'},myId='p0',sendT=0,inT=0,savedMode='normal';
 const $=id=>document.getElementById(id);
@@ -1403,10 +1409,9 @@ function openLobby(){cleanupNet();R=null;state='raidlobby';$('pbtn').style.displ
 function renderLobby(){const L=$('rPlist');L.innerHTML='';lobby.players.forEach((p,i)=>{const d=document.createElement('div');d.style.borderColor=p.col;d.innerHTML=`<span style="color:${p.col}">●</span> ${p.name}${p.id===myId?' (나)':''}${i===0?' 👑':''}`;const W0=WEAPONS[p.w]||WEAPONS.bolt;const t=document.createElement('span');t.className='rwn';t.appendChild(wIcon(p.w in WEAPONS?p.w:'bolt',22));t.appendChild(document.createTextNode(W0.name));t.style.color=W0.color;d.prepend(t);L.appendChild(d)});renderWpick();
   const host=net.role==='host'||net.role==='offline';
   lobby.diff=RDIFF[lobby.diff]?lobby.diff:'normal';
-  $('rDiff').innerHTML=host?('난이도: '+Object.keys(RDIFF).map(k=>{const D=RDIFF[k];return `<button class="btn sec" id="rD_${k}" style="margin:4px;${lobby.diff===k?'border:2px solid '+D.col:''}">${D.label}</button>`}).join('')+`<button class="btn sec" id="rD_vs" style="margin:4px">VS</button>`)
+  $('rDiff').innerHTML=host?('난이도: '+Object.keys(RDIFF).map(k=>{const D=RDIFF[k];return `<button class="btn sec" id="rD_${k}" style="margin:4px;${lobby.diff===k?'border:2px solid '+D.col:''}">${D.label}</button>`}).join(''))
     :`난이도: <b style="color:${rDiffOf(lobby.diff).col}">${rDiffOf(lobby.diff).label}</b> (호스트가 선택)`;
   if(host)for(const k of Object.keys(RDIFF)){const b=$('rD_'+k);if(b)b.onclick=()=>{lobby.diff=k;syncLobby()}}
-  if(host&&$('rD_vs'))$('rD_vs').onclick=()=>{$('rMsg').textContent='VS 모드는 준비 중입니다'};
   $('rStartBtn').style.display=host?'':'none'}
 function wIcon(id,sz){const c=makeCanvas(sz*2,sz*2);const g=c.getContext('2d');g.translate(sz,sz);drawIcon(g,id,sz*1.7);return c}
 function myW(){const me=lobby.players.find(p=>p.id===myId);return me&&me.w||'bolt'}
@@ -1477,7 +1482,11 @@ function onClientData(d){
   if(d.t==='chat'){addChat(d.n,d.c,d.m);return}
   if(d.t==='mdv'){if(window.__md)__md.fx(d);return}
   if(d.t==='cry'){if(window.__cry)__cry.add(d.n|0,String(d.w||''));return}
-  if(d.t==='start'){showOv(null);beginEngine(d.diff);R={host:false,t:0,phase:d.diff==='story'?'story':'wave1',diff:d.diff,boss:null,tele:[],waves:[],banner:null,votes:{},kills:0,storyI:d.diff==='story'?(d.si|0):null,bossAt:d.ba||(d.diff==='story'?180:300)};RP=[];guestReset();state='raid';setRaidUI(true);if(R.phase==='story')storyOpen();return}
+  if(d.t==='start'){showOv(null);if(d.diff==='vs'){vsClientStart(d);return}
+    beginEngine(d.diff);R={host:false,t:0,phase:d.diff==='story'?'story':'wave1',diff:d.diff,boss:null,tele:[],waves:[],banner:null,votes:{},kills:0,storyI:d.diff==='story'?(d.si|0):null,bossAt:d.ba||(d.diff==='story'?180:300)};RP=[];guestReset();state='raid';setRaidUI(true);if(R.phase==='story')storyOpen();return}
+  if(d.t==='vsclock'){if(R&&R.diff==='vs'){R.prepLeft=d.left;R.vsElim=d.elim||R.vsElim||{}}return}
+  if(d.t==='vsarena'){vsApplyArena(d);return}
+  if(d.t==='vsend'){vsShowEnd(d.winId);return}
   if(d.t==='story'){storyOnMsg(d.i);return}
   if(d.t==='s3'){story3OnMsg(d);return}
   if(d.t==='s4'){story4OnMsg(d);return}
@@ -1488,6 +1497,7 @@ function onHostData(c,d){
   if(d.t==='cos'){const lp=lobby.players.find(p=>p.id===c.pid);if(lp&&window.__cry){lp.cos=__cry.clean(d.c);syncLobby()}return}
   if(d.t==='wpick'){const lp=lobby.players.find(p=>p.id===c.pid);if(lp&&WEAPONS[d.w]&&!SUB_W.has(d.w)&&!R){lp.w=d.w;syncLobby()}return}
   if(d.t==='chat'){const lp=lobby.players.find(p=>p.id===c.pid);if(!lp)return;const m=String(d.m||'').slice(0,60);addChat(lp.name,lp.col,m);bcast({t:'chat',n:lp.name,c:lp.col,m});return}
+  if(d.t==='vsstat'&&R&&R.diff==='vs'){vsHostRecvStat(c.pid,d);return}
   if(!R)return;const p=RP.find(p=>p.id===c.pid);if(!p)return;
   if(d.t==='in'){p.mx=clamp(+d.mx||0,-1,1);p.my=clamp(+d.my||0,-1,1);if(d.sq)p.ack=d.sq|0;if(d.vw)p.vw=clamp(d.vw|0,200,1500);if(d.vh)p.vh=clamp(d.vh|0,150,1100)}
   else if(d.t==='pick')applyPick(p,d.i);
@@ -1506,12 +1516,145 @@ function mkPlayer(lp,i){const hp0=isHard()?80:100;return {id:lp.id,name:lp.name,
   level:1,xp:0,need:xpNeed(1),pendingLv:0,timers:{},auraT:0,opts:null,chooseT:0,dmgDone:0,trail:[],combo:0}}
 function swapIn(p){P=p;if(p.trail){G.trail=p.trail;G.combo=p.combo|0}G.level=p.level;G.xp=p.xp;G.need=p.need;G.pendingLv=p.pendingLv;G.timers=p.timers;G.auraT=p.auraT}
 function swapOut(p){if(p.trail){p.trail=G.trail;p.combo=G.combo}p.level=G.level;p.xp=G.xp;p.need=G.need;p.pendingLv=G.pendingLv;p.timers=G.timers;p.auraT=G.auraT}
-function tryStart(){if(lobby.players.length<=1){$('raidConfirm').classList.add('show');return}hostStart()}
-function hostStart(){lobby.diff=RDIFF[lobby.diff]?lobby.diff:'normal';showOv(null);beginEngine(lobby.diff);const n=lobby.players.length;
+function tryStart(){if(lobby.diff==='vs'){hostStart();return}if(lobby.players.length<=1){$('raidConfirm').classList.add('show');return}hostStart()}
+function hostStart(){lobby.diff=RDIFF[lobby.diff]?lobby.diff:'normal';if(lobby.diff==='vs'){hostStartVs();return}
+  showOv(null);beginEngine(lobby.diff);const n=lobby.players.length;
   RP=lobby.players.map(mkPlayer);
   const story=lobby.diff==='story';R={host:true,t:0,phase:story?'story':'wave1',diff:lobby.diff,n,spawnAcc:0,bossAt:story?180:300,boss2At:null,boss:null,tele:[],waves:[],banner:null,votes:{},nextElite:NUM.eliteEvery,lastElite:-1e9,evI:0,storyI:story?0:null};
   swapIn(RP[0]);bcast({t:'start',diff:R.diff,si:R.storyI,ba:R.bossAt});state='raid';setRaidUI(true);
   if(R.phase==='story'){storyOpen();rbanner('레이드 시작! 3분을 버티세요','#c77dff')}else rbanner('레이드 시작! 5분을 버티세요','#4df3ff')}
+
+// ---------- VS 모드 ----------
+let vsStatT=0,vsClockT=0;
+function vsSnapBuild(){return {dead:!!(R&&R.vsDead),level:G.level|0,xp:G.xp|0,need:G.need|0,hp:P.hp,maxHp:P.maxHp,weapons:Object.assign({},P.weapons),passives:Object.assign({},P.passives),wOrder:P.wOrder.slice(),pOrder:P.pOrder.slice(),baseSpd:P.baseSpd,col:P.col||'#4df3ff'}}
+function vsApplyBuild(p,b){if(!b)return;p.level=b.level|1;p.xp=b.xp|0;p.need=b.need||lvNeed(p.level);p.maxHp=b.maxHp||100;p.hp=b.dead?0:Math.max(1,b.maxHp||p.maxHp);p.weapons=Object.assign({},b.weapons||{bolt:1});p.passives=Object.assign({},b.passives||{});p.wOrder=(b.wOrder&&b.wOrder.length)?b.wOrder.slice():Object.keys(p.weapons);p.pOrder=(b.pOrder||[]).slice();if(b.baseSpd)p.baseSpd=b.baseSpd;p.dead=!!b.dead;p.pendingLv=0;p.opts=null;p.chooseT=0;p.timers={};p.auraT=0;p.trail=[];p.combo=0;p.inv=2}
+function vsStartLocalPrep(){const lp=lobby.players.find(p=>p.id===myId);const w=(lp&&WEAPONS[lp.w]&&!SUB_W.has(lp.w))?lp.w:'bolt';
+  startWeapon=w;gameMode='normal';newGame();G.bossSpawned=true; // 준비 중 보스 미출현
+  if(G.events)for(const e of G.events)e.done=true;
+  banner=null;showBanner('준비 시간! 성장하세요','#ff4d9d');R.vsDead=false;R.vsLocal=true}
+function hostStartVs(){showOv(null);const prep=vsPrepDur();beginEngine('vs');
+  RP=lobby.players.map(mkPlayer);const n=RP.length;
+  R={host:true,t:0,phase:'vsprep',diff:'vs',n,prepDur:prep,prepLeft:prep,boss:null,bossAt:null,boss2At:null,tele:[],waves:[],banner:null,votes:{},vsElim:{},vsBuilds:{},vsDead:false,vsLocal:true,solo:n<=1,storyI:null,s3:null,s4:null,s5:null};
+  for(const p of RP)R.vsBuilds[p.id]=null;
+  vsStartLocalPrep();R.vsBuilds[myId]=vsSnapBuild();
+  bcast({t:'start',diff:'vs',prep});state='play';setRaidUI(false);window.__raidDrawPlayers=null;
+  showBanner('준비 시간 '+fmtTime(prep),'#ff4d9d')}
+function vsClientStart(d){const prep=d.prep||vsPrepDur();
+  RP=[];beginEngine('vs');
+  R={host:false,t:0,phase:'vsprep',diff:'vs',n:0,prepDur:prep,prepLeft:prep,boss:null,bossAt:null,boss2At:null,tele:[],waves:[],banner:null,votes:{},vsElim:{},vsBuilds:{},vsDead:false,vsLocal:true,storyI:null,s3:null,s4:null,s5:null};
+  vsStartLocalPrep();guestReset();state='play';setRaidUI(false);window.__raidDrawPlayers=null;
+  showBanner('준비 시간 '+fmtTime(prep),'#ff4d9d')}
+function vsSendStat(force){if(!R||R.diff!=='vs'||R.phase!=='vsprep')return;const b=vsSnapBuild();b.dead=!!R.vsDead;
+  if(R.host){R.vsBuilds[myId]=b;if(b.dead)R.vsElim[myId]=1}
+  else if(hostConn&&hostConn.open)try{hostConn.send(Object.assign({t:'vsstat'},b))}catch(e){}}
+function vsHostRecvStat(pid,d){if(!R||!R.host)return;const b={dead:!!d.dead,level:d.level|0,xp:d.xp|0,need:d.need|0,hp:d.hp,maxHp:d.maxHp,weapons:d.weapons||{},passives:d.passives||{},wOrder:d.wOrder||[],pOrder:d.pOrder||[],baseSpd:d.baseSpd};
+  R.vsBuilds[pid]=b;if(b.dead)R.vsElim[pid]=1;const p=RP.find(q=>q.id===pid);if(p&&b.dead){p.dead=true;p.hp=0}}
+function vsPrepTick(dt){if(!R||R.diff!=='vs'||R.phase!=='vsprep')return;
+  if(R.host){R.prepLeft-=dt;R.t+=dt;vsClockT-=dt;if(vsClockT<=0){vsClockT=0.5;bcast({t:'vsclock',left:R.prepLeft,elim:R.vsElim})}
+    vsStatT-=dt;if(vsStatT<=0){vsStatT=1;vsSendStat()}
+    if(R.prepLeft<=0)vsEnterArena()}
+  else{vsStatT-=dt;if(vsStatT<=0){vsStatT=1;vsSendStat()}}}
+function vsPrepDraw(){if(!R||R.diff!=='vs'||R.phase!=='vsprep')return;
+  const left=Math.max(0,R.prepLeft||0);ctx.save();ctx.setTransform(DPR,0,0,DPR,0,0);ctx.textAlign='center';
+  ctx.font='900 22px '+FONT;ctx.lineWidth=5;ctx.strokeStyle='#000';const t='준비 시간 '+fmtTime(left);
+  ctx.strokeText(t,W/2,56);ctx.fillStyle='#ff4d9d';ctx.shadowColor='#ff4d9d';ctx.shadowBlur=12;ctx.fillText(t,W/2,56);ctx.shadowBlur=0;
+  if(R.vsDead){ctx.font='900 40px '+FONT;ctx.strokeText('패배',W/2,H*0.42);ctx.fillStyle='#ff4d6d';ctx.fillText('패배',W/2,H*0.42);
+    ctx.font='700 16px '+FONT;ctx.fillStyle='#cfd3ff';ctx.fillText('준비 중 탈락 — 전투에서 제외됩니다',W/2,H*0.42+36)}
+  ctx.restore()}
+function onVsPrepDeath(){if(!R||R.diff!=='vs'||R.phase!=='vsprep')return false;
+  R.vsDead=true;R.vsElim[myId]=1;vsSendStat(true);state='play'; // stay connected; freeze local world
+  P.hp=0;P.inv=999;enemies=[];projs=[];ebullets=[];gems=[];pickups=[];mines=[];meteors=[];
+  showBanner('탈락… 전투에서 제외됩니다','#ff4d6d');return true}
+function vsMakeAi(ref){const ai=mkPlayer({id:'ai',name:'AI',col:'#ff6b8b',w:'bolt'},1);ai.isAi=true;
+  const lv=Math.max(8,(ref&&ref.level)|0);ai.level=lv;ai.need=lvNeed(lv);ai.xp=0;
+  const wsrc=(ref&&ref.weapons)||{bolt:1};ai.weapons={};ai.wOrder=[];
+  for(const id of (ref&&ref.wOrder)||Object.keys(wsrc)){if(!WEAPONS[id]||SUB_W.has(id))continue;ai.weapons[id]=Math.max(1,Math.min(maxLv(),(wsrc[id]|0)||1));ai.wOrder.push(id)}
+  if(!ai.wOrder.length){ai.weapons={bolt:Math.min(maxLv(),3),pulse:2,orbit:2};ai.wOrder=['bolt','pulse','orbit']}
+  while(ai.wOrder.length<3){for(const id of Object.keys(WEAPONS)){if(SUB_W.has(id)||ai.weapons[id])continue;ai.weapons[id]=2;ai.wOrder.push(id);if(ai.wOrder.length>=3)break}}
+  ai.passives=Object.assign({},(ref&&ref.passives)||{});ai.pOrder=((ref&&ref.pOrder)||[]).slice();
+  if(!ai.pOrder.length){for(const id of ['power','haste','armor','speed']){ai.passives[id]=2;ai.pOrder.push(id)}}
+  const hp=Math.max(120,(ref&&ref.maxHp)|0);ai.maxHp=hp;ai.hp=hp;ai.baseSpd=(ref&&ref.baseSpd)||210;ai.dead=false;ai.inv=1.5;return ai}
+function vsAiInput(p,dt){const tg=RP.find(q=>!q.dead&&!q.isAi&&q.id!==p.id)||RP.find(q=>!q.dead&&q.id!==p.id);if(!tg){p.mx=p.my=0;return}
+  const dx=tg.x-p.x,dy=tg.y-p.y,d=Math.hypot(dx,dy)||1;const ang=Math.atan2(dy,dx)+Math.sin((R.t||0)*2.2+p.x*0.01)*0.95;
+  let mx=Math.cos(ang),my=Math.sin(ang);if(d<90){mx=-dx/d;my=-dy/d}else if(d>280){mx=dx/d;my=dy/d}
+  p.mx=mx;p.my=my;p.fx=dx/d;p.fy=dy/d}
+function vsAttachProxies(owner){enemies=enemies.filter(e=>!e._vsP);if(!R||R.diff!=='vs'||R.phase!=='vsarena')return;
+  for(const q of RP){if(q.dead||q.id===owner.id)continue;
+    enemies.push({type:'grunt',x:q.x,y:q.y,r:q.r,hp:1e9,maxHp:1e9,spd:0,dmg:0,xp:0,flash:0,kbx:0,kby:0,kbRes:0,orbT:-9,auraT:-9,slowT:0,shootT:99,st:0,stT:99,dx:0,dy:0,rot:0,dead:false,_vsP:q})}}
+function vsClearProxies(){enemies=enemies.filter(e=>!e._vsP)}
+function vsPackPlayers(){return RP.map(p=>({id:p.id,name:p.name,col:p.col,x:p.x,y:p.y,r:p.r,hp:p.hp,maxHp:p.maxHp,baseSpd:p.baseSpd,fx:p.fx,fy:p.fy,weapons:p.weapons,passives:p.passives,wOrder:p.wOrder,pOrder:p.pOrder,level:p.level,xp:p.xp,need:p.need,dead:!!p.dead,isAi:!!p.isAi}))}
+function vsEnterArena(){if(!R||!R.host||R.phase!=='vsprep')return;
+  try{$('levelup').classList.remove('show');$('pause').classList.remove('show')}catch(e){}
+  vsSendStat(true); // host build
+  // Apply builds onto RP
+  for(const p of RP){const b=R.vsBuilds[p.id];if(b)vsApplyBuild(p,b);if(R.vsElim[p.id]){p.dead=true;p.hp=0}}
+  // Solo → AI
+  const humans=RP.filter(p=>!p.isAi);
+  if(humans.length<=1){const hum=humans.find(p=>!p.dead)||humans[0];
+    if(!hum||hum.dead){R.phase='vsend';vsShowEnd(null);bcast({t:'vsend',winId:null});return}
+    if(!RP.some(p=>p.isAi))RP.push(vsMakeAi({level:hum.level,weapons:hum.weapons,wOrder:hum.wOrder,passives:hum.passives,pOrder:hum.pOrder,maxHp:hum.maxHp,baseSpd:hum.baseSpd}))}
+  const living=RP.filter(p=>!p.dead);
+  if(living.length<=1){const w=living[0]||null;R.phase='vsend';vsShowEnd(w?w.id:null);bcast({t:'vsend',winId:w?w.id:null});return}
+  // Place in arena
+  enemies=[];projs=[];ebullets=[];gems=[];pickups=[];mines=[];meteors=[];parts=[];texts=[];rings=[];zaps=[];beams=[];G.ev=null;G.hole=null;G.strikes=[];G.rainZones=[];G.rainDrops=[];G.elite=null;R.boss=null;R.tele=[];R.waves=[];
+  const n=RP.length;RP.forEach((p,i)=>{const a=i/n*TAU;p.x=Math.cos(a)*140;p.y=Math.sin(a)*140;p.mx=0;p.my=0;p.inv=p.dead?0:2;p.opts=null;p.chooseT=0;p.pendingLv=0;p.trail=[];p.reviveT=0});
+  R.phase='vsarena';R.t=0;G.t=0;state='raid';setRaidUI(true);window.__raidDrawPlayers=drawRaidWorld;
+  const me=RP.find(p=>p.id===myId);if(me)swapIn(me);
+  bcast({t:'vsarena',players:vsPackPlayers()});rbanner('VS 전투 시작! 최후의 1인!','#ff4d9d',3)}
+function vsApplyArena(d){if(!R)return;$('levelup').classList.remove('show');
+  enemies=[];projs=[];ebullets=[];gems=[];pickups=[];mines=[];meteors=[];parts=[];texts=[];rings=[];zaps=[];beams=[];G.ev=null;G.hole=null;G.strikes=[];G.rainZones=[];G.rainDrops=[];
+  R.phase='vsarena';R.t=0;G.t=0;R.boss=null;R.tele=[];R.waves=[];
+  RP=(d.players||[]).map((lp,i)=>{const p=mkPlayer(lp,i);vsApplyBuild(p,lp);p.x=lp.x;p.y=lp.y;p.name=lp.name;p.col=lp.col;p.isAi=!!lp.isAi;p.dead=!!lp.dead;if(p.dead)p.hp=0;return p});
+  guestReset();state='raid';setRaidUI(true);window.__raidDrawPlayers=drawRaidWorld;
+  const me=RP.find(p=>p.id===myId);if(me&&!me.dead)swapIn(me);rbanner('VS 전투 시작! 최후의 1인!','#ff4d9d',3)}
+function vsCheckWin(){if(!R||!R.host||R.phase!=='vsarena')return;const live=alive();
+  if(live.length<=1){const w=live[0]||null;R.phase='vsend';bcast({t:'vsend',winId:w?w.id:null});vsShowEnd(w?w.id:null)}}
+function vsShowEnd(winId){if(!R)return;R.phase='vsend';R.vsWinId=winId;endShown='';
+  const meWin=winId&&winId===myId;const title=meWin?'승리!':(winId?'패배':'패배');
+  const E=$('raidEnd');$('rEndTitle').textContent=title;$('rEndTitle').style.color=meWin?'#ffd84d':'#ff4d6d';
+  let s=`VS 결과<br>`+RP.map(p=>`<span style="color:${p.col}">●</span> ${p.name}${p.isAi?' (AI)':''} Lv${p.level}${p.id===winId?' 🏆':(p.dead?' 💀':'')}`).join('<br>');
+  $('rEndStats').innerHTML=s;E.querySelector('.row').style.display='';E.classList.add('show');
+  state='raid';setRaidUI(false)}
+function vsArenaUpdate(dt){if(!R)return;
+  if(R.phase==='vsend'){if(R.banner)R.banner.t-=dt;return}
+  R.t+=dt;G.t=R.t;
+  for(const p of RP){if(p.dead)continue;if(p.isAi&&R.host)vsAiInput(p,dt);
+    swapIn(p);let mx=p.mx,my=p.my;const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml}
+    p.moving=ml>0.05;if(p.moving){p.fx=mx/(ml||1);p.fy=my/(ml||1);p.walk+=dt*10}
+    const sp=p.baseSpd*spdMul();p.x=clamp(p.x+mx*sp*dt,-WH+p.r,WH-p.r);p.y=clamp(p.y+my*sp*dt,-WH+p.r,WH-p.r);
+    p.inv-=dt;if(pl('regen')&&p.hp>0)p.hp=Math.min(p.maxHp,p.hp+0.4*pl('regen')*dt);
+    vsAttachProxies(p);const a=projs.length,b=mines.length,c=meteors.length,r0=rings.length;buildGrid();updateWeapons(dt);updateTrail(dt);
+    for(let i=r0;i<rings.length;i++)if(rings[i].follow){rings[i].follow=false;rings[i].fo=p}
+    for(let i=a;i<projs.length;i++)owners.set(projs[i],p.id);for(let i=b;i<mines.length;i++)owners.set(mines[i],p.id);for(let i=c;i<meteors.length;i++)owners.set(meteors[i],p.id);
+    vsClearProxies();swapOut(p)}
+  updateBeat(dt);G.beatFlash=Math.max(0,G.beatFlash-dt*4);buildGrid();
+  // 발사체 PvP
+  for(const pr of projs)withOwner(pr,()=>{vsAttachProxies(P);buildGrid();
+    if(pr.k[0]==='S'){skProj(pr,dt);vsClearProxies();return}
+    if(pr.k==='bolt'){pr.x+=pr.vx*dt;pr.y+=pr.vy*dt;pr.life-=dt;
+      query(pr.x,pr.y,pr.r,(e)=>{if(pr.life<=0||pr.hit.has(e))return;pr.hit.add(e);hurtEnemy(e,pr.dmg,pr.vx,pr.vy,110);if(pr.pierce--<=0)pr.life=0})}
+    else if(pr.k==='boom'){pr.t+=dt;pr.rot+=dt*18;
+      if(pr.t<0.8){const sp=560*(1-pr.t/0.8)+30;pr.x+=pr.dx*sp*dt;pr.y+=pr.dy*sp*dt}
+      else{const dx=P.x-pr.x,dy=P.y-pr.y,l=Math.hypot(dx,dy)||1;const sp=Math.min(750,80+(pr.t-0.8)*1000);pr.x+=dx/l*sp*dt;pr.y+=dy/l*sp*dt;if(l<P.r+12)pr.dead=true}
+      if(pr.t>5)pr.dead=true;query(pr.x,pr.y,pr.r,(e)=>{const last=pr.hm.get(e);if(last===undefined||G.t-last>0.35){pr.hm.set(e,G.t);hurtEnemy(e,pr.dmg,e.x-pr.x,e.y-pr.y,120)}})}
+    else if(pr.k==='seek'){if(!pr.tgt||pr.tgt.dead||(pr.tgt._vsP&&pr.tgt._vsP.dead)){const n=nearestN(pr.x,pr.y,1,560);pr.tgt=n[0]||null}
+      if(pr.tgt){const dx=pr.tgt.x-pr.x,dy=pr.tgt.y-pr.y,l=Math.hypot(dx,dy)||1,sp=300;pr.vx+=(dx/l*sp-pr.vx)*Math.min(1,dt*4.2);pr.vy+=(dy/l*sp-pr.vy)*Math.min(1,dt*4.2)}
+      pr.x+=pr.vx*dt;pr.y+=pr.vy*dt;pr.life-=dt;pr.rot+=dt*12;
+      query(pr.x,pr.y,pr.r,(e)=>{if(pr.life<=0||pr.hit.has(e))return;pr.hit.add(e);hurtEnemy(e,pr.dmg,pr.vx,pr.vy,90);pr.life=0})}
+    vsClearProxies()});
+  projs=projs.filter(p=>!p.dead&&(p.life===undefined||p.life>0));
+  for(const m of mines)withOwner(m,()=>{m.t+=dt;m.life-=dt;if(m.t<0.4)return;vsAttachProxies(P);buildGrid();let trig=false;query(m.x,m.y,10,()=>{trig=true});
+    if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,250));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});S.boom()}vsClearProxies()});
+  mines=mines.filter(m=>!m.dead&&m.life>0);
+  for(const m of meteors)withOwner(m,()=>{m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;vsAttachProxies(P);buildGrid();query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,200));vsClearProxies();rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});S.boom()}});
+  meteors=meteors.filter(m=>m.t<m.warn+0.05);
+  enemies=enemies.filter(e=>!e.dead&&!e._vsP);
+  // 접촉 데미지 (약하게, 무적 중 무시)
+  for(const a of RP){if(a.dead)continue;for(const b of RP){if(b.dead||b.id===a.id||b.inv>0)continue;const rr=a.r+b.r-6;if((a.x-b.x)**2+(a.y-b.y)**2<rr*rr){hurtP(b,Math.round(3+a.level*0.25))}}}
+  for(const p of RP){if(p.dead)continue;while(p.xp>=p.need){p.xp-=p.need;p.level++;p.need=lvNeed(p.level)}}
+  if(R.banner){R.banner.t-=dt;if(R.banner.t<=0)R.banner=null}
+  vsCheckWin()}
+
 const H_=()=>false; // 레이드 하드 제거 · 분기 유지(확장용)
 const STORY_DL=[
   {sp:'네온 생존자',t:'여기가 차박후 강똥원 원비 강산이 숨어있는 곳이라 들었는데?'},
@@ -1669,9 +1812,11 @@ function alive(){return RP.filter(p=>!p.dead)}
 function cryTo(pid,n,w){if(pid===myId){if(window.__cry)__cry.add(n,w)}else{const c=conns.find(c=>c.pid===pid&&c.open);if(c)try{c.send({t:'cry',n,w})}catch(e){}}}
 function trailSnap(p){if(p.dead||!p.trail)return 0;const o=[];for(const q of p.trail)o.push(r1(q.x),r1(q.y),Math.round(q.a*20));return o}
 function nearestP(x,y){let b=null,bd=1e18;for(const p of RP){if(p.dead)continue;const d=(p.x-x)**2+(p.y-y)**2;if(d<bd){bd=d;b=p}}return b}
-function hurtP(p,d){if(p.dead||p.inv>0||p.chooseT>0||R.god||(R&&(R.phase==='story'||R.phase==='storyBoss'||R.phase==='story4'||R.phase==='story5')))return;const prev=P;P=p;d=Math.max(1,Math.round(d*(1-0.07*pl('armor'))));P=prev;p.hp-=d;p.inv=0.5;
+function hurtP(p,d){if(p.dead||p.inv>0||p.chooseT>0||R.god||(R&&(R.phase==='story'||R.phase==='storyBoss'||R.phase==='story4'||R.phase==='story5'||R.phase==='vsend')))return;const prev=P;P=p;d=Math.max(1,Math.round(d*(1-0.07*pl('armor'))));P=prev;p.hp-=d;p.inv=0.5;
   dmgText(p.x,p.y-20,d,'#ff4d6d',18);burst(p.x,p.y,'#ff4d6d',10,160,0.4,3);if(p.id===myId){hurtFlash=0.35;addShake(7);S.hurt()}
-  if(p.hp<=0){p.hp=0;p.dead=true;burst(p.x,p.y,p.col,60,320,1,4);if(RP.length>1){p.reviveT=NUM.reviveT||30;rbanner(p.name+' 쓰러짐! '+Math.ceil(p.reviveT)+'초 후 부활','#ff8c8c',2)}else rbanner(p.name+' 쓰러짐!','#ff8c8c',2)}}
+  if(p.hp<=0){p.hp=0;p.dead=true;burst(p.x,p.y,p.col,60,320,1,4);
+    if(R&&R.diff==='vs'){rbanner(p.name+' 탈락!','#ff8c8c',2);vsCheckWin();return}
+    if(RP.length>1){p.reviveT=NUM.reviveT||30;rbanner(p.name+' 쓰러짐! '+Math.ceil(p.reviveT)+'초 후 부활','#ff8c8c',2)}else rbanner(p.name+' 쓰러짐!','#ff8c8c',2)}}
 function reviveP(p){const ps=alive();if(!ps.length)return;const t=ps[(Math.random()*ps.length)|0];const a=Math.random()*Math.PI*2;p.x=t.x+Math.cos(a)*50;p.y=t.y+Math.sin(a)*50;p.dead=false;p.reviveT=0;p.hp=Math.max(1,Math.round(p.maxHp*0.5));p.inv=3;p.trail=[];rings.push({x:p.x,y:p.y,r:0,max:120,t:0,dur:0.5,c:p.col});burst(p.x,p.y,p.col,40,260,0.8,4);rbanner(p.name+' 부활!','#7dffb0',2)}
 function addTele(o){o.t=0;R.tele.push(o)}
 function makeBoss(kind,opt){const N=NUM[kind];const ps=alive();const c=ps[0]||{x:0,y:0};let hp=N.hp*NUM.scale(R.n)*(H_()?NUM.hard.bossHp:1)*1.3;
@@ -1983,8 +2128,9 @@ function updUI(){const me=RP.find(p=>p.id===myId);const lv=$('raidLvl');
         b.appendChild(ic);b.insertAdjacentHTML('beforeend',`<span class="tag ${d.tag}">${d.tagT}</span><br>${i+1}. ${d.name}<br><small style="color:#ffd84d">${d.lv}</small>`);b.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();if(rjoy&&e.pointerId===rjoy.id)return;pick(i)});b.addEventListener('click',e=>{if(e.detail===0)pick(i)});lv.appendChild(b)});
       P=prev;lv.classList.add('show')}else lv.classList.remove('show')}
   if(opts){const el=$('rLvInv');if(el)el.textContent=me.chooseT>0?`선택 중 무적 ${me.chooseT.toFixed(1)}초`:''}
-  const ph=R.phase;let k=ph;if(ph==='story')k='story'+R.storyI;if(ph==='storyBoss'&&R.s3)k='s3b'+R.s3.i;if(ph==='story4'&&R.s4)k='s4b'+R.s4.i;if(ph==='story5'&&R.s5)k='s5b'+R.s5.i;if(ph==='inter')k='inter'+JSON.stringify(R.votes)+alive().length;
-  if(k!==endShown){endShown=k;const E=$('raidEnd');
+  const ph=R.phase;let k=ph;if(ph==='story')k='story'+R.storyI;if(ph==='storyBoss'&&R.s3)k='s3b'+R.s3.i;if(ph==='story4'&&R.s4)k='s4b'+R.s4.i;if(ph==='story5'&&R.s5)k='s5b'+R.s5.i;if(ph==='inter')k='inter'+JSON.stringify(R.votes)+alive().length;if(ph==='vsend')k='vsend'+(R.vsWinId||'');
+  if(ph==='vsprep'||ph==='vsarena'||ph==='vsend'){/* VS는 vsShowEnd가 결과창을 담당 */if(ph==='vsend')endShown=k}
+  else if(k!==endShown){endShown=k;const E=$('raidEnd');
     if(ph==='inter'||ph==='clear'||ph==='fail'){lv.classList.remove('show');lvKey='';
       $('rEndTitle').textContent=ph==='inter'?'고자라 처치! (중간 결과)':ph==='clear'?'레이드 클리어!':'레이드 실패…';
       $('rEndTitle').style.color=ph==='fail'?'#ff4d6d':'#ffd84d';
@@ -2077,7 +2223,8 @@ function raidHUD(){const ph=R.phase;ctx.textAlign='center';
   if(R.boss){const b=R.boss,bw=Math.min(W-40,760),x=(W-bw)/2,y=76;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x-4,y-4,bw+8,34);ctx.fillStyle=b.kind==='gozara'?'#3dffc8':b.enr?'#ff2e63':'#ff8c3a';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=14;ctx.fillRect(x,y,bw*Math.max(0,b.hp)/b.maxHp,26);ctx.shadowBlur=0;
     ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(x,y,bw,26);ctx.fillStyle='#fff';ctx.font='bold 16px '+FONT;ctx.fillText(`${b.name}${b.enr?' (격노)':''}  ${Math.max(0,b.hp)|0} / ${b.maxHp|0}`,W/2,y+19);ctx.font='bold 12px '+FONT;ctx.fillText(RP.length+'인 체력 보정',W/2,y+44)}
   ctx.textAlign='right';ctx.font='bold 14px '+FONT;RP.forEach((p,i)=>{ctx.fillStyle=p.col;ctx.fillText(`● ${p.name}${p.id===myId?'(나)':''} Lv${p.level} ${p.dead?'💀'+(p.reviveT>0?' '+Math.ceil(p.reviveT)+'s':''):Math.ceil(p.hp)+'HP'}`,W-12,H-14-(RP.length-1-i)*18)});
-  ctx.textAlign='left';ctx.fillStyle=rDiffOf(R.diff).col;ctx.font='900 13px '+FONT;ctx.fillText('레이드 · '+rDiffOf(R.diff).label,12,H-14);
+  ctx.textAlign='left';ctx.fillStyle=rDiffOf(R.diff).col;ctx.font='900 13px '+FONT;ctx.fillText((R.diff==='vs'?'VS':'레이드 · '+rDiffOf(R.diff).label),12,H-14);
+  if(R.diff==='vs'&&R.phase==='vsarena'){ctx.textAlign='center';ctx.font='800 14px '+FONT;ctx.fillStyle='#ff4d9d';ctx.fillText('최후의 1인!',W/2,84)}
   const me=RP.find(p=>p.id===myId);
   if(me&&me.dead&&camP&&camP!==me){ctx.textAlign='center';ctx.fillStyle='#ff8c8c';ctx.font='bold 20px '+FONT;ctx.fillText('👻 관전 중: '+camP.name,W/2,H-60)}
   if(me&&me.dead&&me.reviveT>0){ctx.textAlign='center';ctx.font='900 34px '+FONT;ctx.lineWidth=6;ctx.strokeStyle='#000';const rt='부활까지 '+Math.ceil(me.reviveT)+'초';ctx.strokeText(rt,W/2,H*0.6);ctx.fillStyle='#7dffb0';ctx.shadowColor='#7dffb0';ctx.shadowBlur=16;ctx.fillText(rt,W/2,H*0.6);ctx.shadowBlur=0}
@@ -2088,7 +2235,14 @@ function raidRender(){const me=RP.find(p=>p.id===myId);camP=me&&!me.dead?me:RP.f
   const all=enemies;enemies=all.filter(e=>e.type!=='raidboss');try{render()}finally{enemies=all;G.trail=svT;G.combo=svC}
   raidHUD()}
 // ---------- 프레임 ----------
-window.__raidFrame=function(dt){if(!R)return;const inp=myInput();
+window.__raidFrame=function(dt){if(!R)return;
+  if(R.diff==='vs'&&(R.phase==='vsarena'||R.phase==='vsend')){const inp=myInput();
+    if(R.host){const me=RP.find(p=>p.id===myId);if(me&&!me.isAi){me.mx=inp.x;me.my=inp.y}vsArenaUpdate(dt);
+      sendT-=dt;if(sendT<=0&&conns.length){sendT+=1/15;if(sendT<0)sendT=1/15;sendSnaps()}}
+    else{updateBeat(dt);G.beatFlash=Math.max(0,G.beatFlash-dt*4);inT-=dt;guestSendInput(inp);guestTick(dt,inp);if(R.banner)R.banner.t-=dt}
+    fxUpdate(dt);const pc=R.host?PART_CAP:320;if(parts.length>pc)parts.splice(0,parts.length-pc);if(texts.length>110)texts.splice(0,texts.length-110);
+    updUI();raidRender();return}
+  const inp=myInput();
   if(R.host){const me=RP.find(p=>p.id===myId);if(me){me.mx=inp.x;me.my=inp.y}const r0=rings.length;hostUpdate(dt);
     sendT-=dt;if(sendT<=0&&conns.length){sendT+=1/15;if(sendT<0)sendT=1/15;sendSnaps()}}
   else{updateBeat(dt);G.beatFlash=Math.max(0,G.beatFlash-dt*4);inT-=dt;guestSendInput(inp);guestTick(dt,inp);if(R.banner)R.banner.t-=dt}
@@ -2105,7 +2259,7 @@ $('rEndLobbyBtn').onclick=()=>{$('raidEnd').classList.remove('show');endShown=''
 $('rEndMenuBtn').onclick=()=>{$('raidEnd').classList.remove('show');endShown='';endRaid();cleanupNet();showOv(null);toTitle()};
 // ---------- 디버그 ----------
 window.__rsk={get R(){return R},get RP(){return RP},get myId(){return myId},get hostConn(){return hostConn},get chatOpen(){return chatOpen},get lobby(){return lobby},bcast,ePos:()=>gMerged&&gMerged.E?[...nextMaps(gMerged).E.values()]:[],cryAll(n,w){for(const q of RP)if(!q.left)cryTo(q.id,n,w)},owners,swapIn,swapOut}; // A/B 스킬 스크립트용 브리지
-window.__raid={NUM,get R(){return R},get RP(){return RP},get myId(){return myId},get net(){return net},get lobby(){return lobby},pMaxLv,wMaxLv,chat:sendChat,
+window.__raid={NUM,get R(){return R},get RP(){return RP},get myId(){return myId},get net(){return net},get lobby(){return lobby},pMaxLv,wMaxLv,chat:sendChat,hurtP,vsPrepTick,vsPrepDraw,onVsPrepDeath,
   reviveFF(sec){if(!R||!R.host)return false;for(const p of RP)if(p.dead&&p.reviveT>0)p.reviveT=Math.min(p.reviveT,sec==null?0.05:sec);return true},
   killP(id){if(!R||!R.host)return false;const p=RP.find(q=>q.id===id);if(!p||p.dead)return false;p.inv=0;p.chooseT=0;const g=R.god;R.god=false;hurtP(p,1e9);R.god=g;return true},
   skipTo(s){if(!R||!R.host)return false;R.t=s;G.t=s;return true},
@@ -2115,7 +2269,9 @@ window.__raid={NUM,get R(){return R},get RP(){return RP},get myId(){return myId}
   killBoss(){if(R&&R.boss)R.boss.hp=0},startEv(k){if(!R||!R.host)return false;if(G.ev)endEvent();P=alive()[0]||P;const pv=G.ev;startEvent(k);evGuard(pv);return true},get G(){return G},
 hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false},
   giveXp(id,n){const p=RP.find(p=>p.id===(id||myId));if(p)p.xp+=n},
-  killAll(){if(R)for(const p of RP){p.hp=0;p.dead=true}},forceMode(m){if(R&&R.boss){R.boss.mode='chase';R.boss.mt=0;R.boss.cyc=({slam:0,wave:2,breath:3,dash:0,slam3:1,barrage:2})[m]??0}}};
+  killAll(){if(R)for(const p of RP){p.hp=0;p.dead=true}},
+  skipVsPrep(){if(R&&R.host&&R.diff==='vs'&&R.phase==='vsprep'){R.prepLeft=0;return true}return false},
+  forceMode(m){if(R&&R.boss){R.boss.mode='chase';R.boss.mt=0;R.boss.cyc=({slam:0,wave:2,breath:3,dash:0,slam3:1,barrage:2})[m]??0}}};
 })();
 
 </script>
