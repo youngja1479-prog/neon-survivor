@@ -468,13 +468,13 @@ function pickType(){const t=diffT();const w=[['grunt',10]];
   if(t>splT)w.push(['splitter',Math.min(isHard()?4:3,1+(t-splT)/70)]);
   let s=0;for(const x of w)s+=x[1];let r=Math.random()*s;for(const x of w){r-=x[1];if(r<=0)return x[0]}return 'grunt'}
 function spawner(dt){
-  const t=G.t;const st=diffT();const hm=isHard()?1.55:1;const rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*UPD(); const cap=Math.min(isHard()?640:520,(isHard()?46:30)+st*(isHard()?1.3:1.0));
+  const t=G.t;const st=diffT();const hm=isHard()?1.55:1;const rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*UPD()*(isCrazy()?2:1); const cap=Math.min(isHard()?640:520,(isHard()?46:30)+st*(isHard()?1.3:1.0));
   G.spawnAcc+=rate*dt*(magnetStorm()?1.5:1);
   while(G.spawnAcc>=1){G.spawnAcc-=1;if(enemies.length>=cap)continue;
     const type=pickType();const p=offscreenPos();
     // 가끔 무리 지어 등장
-    if(type==='grunt'&&Math.random()<Math.min(isHard()?0.4:0.25,st/(isHard()?380:600))){const n=isHard()?7:5;for(let i=0;i<n;i++)spawnEnemy('grunt',p.x+rand(-40,40),p.y+rand(-40,40))}
-    else spawnEnemy(type,p.x,p.y)}
+    if(type==='grunt'&&Math.random()<Math.min(isHard()?0.4:0.25,st/(isHard()?380:600))){const n=(isHard()?7:5)*(isCrazy()?2:1);for(let i=0;i<n;i++)spawnEnemy('grunt',p.x+rand(-40,40),p.y+rand(-40,40))}
+    else{spawnEnemy(type,p.x,p.y);if(isCrazy())spawnEnemy(type,p.x+rand(-40,40),p.y+rand(-40,40))}}
   // 보스: 일반/하드 5분, 크레이지는 30초. 무한 모드면 이후 5분마다
   const bossAt=isCrazy()?30:300;
   if(!G.bossSpawned&&t>=bossAt){G.bossSpawned=true;G.nextBoss=t+300;const p=offscreenPos();spawnEnemy('boss',p.x,p.y);showBanner(isCrazy()?'⚠ 크레이지 보스! 처치하면 클리어! ⚠':(isHard()?'⚠ 하드 보스! 처치하면 클리어! ⚠':'⚠ 보스 출현! 처치하면 클리어! ⚠'),'#ff2e63');S.boss();shake=Math.max(shake,10)}
