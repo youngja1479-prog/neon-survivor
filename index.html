@@ -1403,9 +1403,10 @@ function openLobby(){cleanupNet();R=null;state='raidlobby';$('pbtn').style.displ
 function renderLobby(){const L=$('rPlist');L.innerHTML='';lobby.players.forEach((p,i)=>{const d=document.createElement('div');d.style.borderColor=p.col;d.innerHTML=`<span style="color:${p.col}">●</span> ${p.name}${p.id===myId?' (나)':''}${i===0?' 👑':''}`;const W0=WEAPONS[p.w]||WEAPONS.bolt;const t=document.createElement('span');t.className='rwn';t.appendChild(wIcon(p.w in WEAPONS?p.w:'bolt',22));t.appendChild(document.createTextNode(W0.name));t.style.color=W0.color;d.prepend(t);L.appendChild(d)});renderWpick();
   const host=net.role==='host'||net.role==='offline';
   lobby.diff=RDIFF[lobby.diff]?lobby.diff:'normal';
-  $('rDiff').innerHTML=host?('난이도: '+Object.keys(RDIFF).map(k=>{const D=RDIFF[k];return `<button class="btn sec" id="rD_${k}" style="margin:4px;${lobby.diff===k?'border:2px solid '+D.col:''}">${D.label}</button>`}).join(''))
+  $('rDiff').innerHTML=host?('난이도: '+Object.keys(RDIFF).map(k=>{const D=RDIFF[k];return `<button class="btn sec" id="rD_${k}" style="margin:4px;${lobby.diff===k?'border:2px solid '+D.col:''}">${D.label}</button>`}).join('')+`<button class="btn sec" id="rD_vs" style="margin:4px">VS</button>`)
     :`난이도: <b style="color:${rDiffOf(lobby.diff).col}">${rDiffOf(lobby.diff).label}</b> (호스트가 선택)`;
   if(host)for(const k of Object.keys(RDIFF)){const b=$('rD_'+k);if(b)b.onclick=()=>{lobby.diff=k;syncLobby()}}
+  if(host&&$('rD_vs'))$('rD_vs').onclick=()=>{$('rMsg').textContent='VS 모드는 준비 중입니다'};
   $('rStartBtn').style.display=host?'':'none'}
 function wIcon(id,sz){const c=makeCanvas(sz*2,sz*2);const g=c.getContext('2d');g.translate(sz,sz);drawIcon(g,id,sz*1.7);return c}
 function myW(){const me=lobby.players.find(p=>p.id===myId);return me&&me.w||'bolt'}
