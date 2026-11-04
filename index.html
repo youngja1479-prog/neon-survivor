@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v61</title>
+<title>네온 생존자 - NEON SURVIVOR v62</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -72,7 +72,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v61</div>
+  <div class="sub">NEON SURVIVOR v62</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -868,7 +868,7 @@ function gameUpdate(dt){
       burst(m.x,m.y,'#ff9a3c',18,260,0.45,3.5);burst(m.x,m.y,'#fff27a',8,150,0.3,3);addShake(3);S.boom()}}
   mines=mines.filter(m=>!m.dead&&m.life>0);
   // 유성우
-  for(const m of meteors){m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);
+  for(const m of meteors){m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);
     burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}}
   meteors=meteors.filter(m=>m.t<m.warn+0.05);
   // 적 탄환
@@ -2045,7 +2045,7 @@ function hostUpdate(dt){
     if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,250));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});
       burst(m.x,m.y,'#ff9a3c',18,260,0.45,3.5);burst(m.x,m.y,'#fff27a',8,150,0.3,3);addShake(3);S.boom()}});
   mines=mines.filter(m=>!m.dead&&m.life>0);
-  for(const m of meteors)withOwner(m,()=>{m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);
+  for(const m of meteors)withOwner(m,()=>{m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);
     burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}});
   meteors=meteors.filter(m=>m.t<m.warn+0.05);
   for(const b of ebullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;for(const p of alive()){const rr=b.r+p.r-4;if((b.x-p.x)**2+(b.y-p.y)**2<rr*rr){b.life=0;hurtP(p,Math.round(b.dmg));break}}}
@@ -2415,7 +2415,7 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
   else if(id==='aura'){const Rr=Math.min(650,st.rad*3.3*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:10,tick:0,dmg:D*2.4,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
   else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
     meteors.push({x:mx,y:my,t:0,warn:1.1,dmg:D*10,rad:st.rad*1.4*am,hit:false,big:1});S.pulse()}
-  else if(id==='beam'){projs.push({k:'Slaser',x,y,r:0,t:0,life:10,tick:0,dmg:D*1.6,ax,ay,rot:a,len:760*am});S.zap()}
+  else if(id==='beam'){projs.push({k:'Slaser',x,y,r:Math.min(63,Math.round(760*am/20)),t:0,life:10,tick:0,dmg:D*1.5,ax,ay,rot:a,len:760*am});S.zap()}
 }
 // 충격파 밀어내기: kbRes 무시, 감속(ease-out) 속도, 밀리는 동안(1.2초) 자체 이동 없음
 function skPush(e,x,y){if(e.dead||e.type==='raidboss')return;let dx=e.x-x,dy=e.y-y;const d=Math.hypot(dx,dy);if(d<1){const b=rand(0,TAU);dx=Math.cos(b);dy=Math.sin(b)}else{dx/=d;dy/=d}
@@ -2448,13 +2448,26 @@ function skProj(p,dt){
     if(p.n<=0)p.dead=true}
   else if(p.k==='Saura'){p.x=P.x;p.y=P.y;p.life-=dt;p.tick-=dt;if(p.tick<=0){p.tick=0.3;query(p.x,p.y,p.R,e=>{hurtEnemy(e,p.dmg,e.x-p.x,e.y-p.y,40);if(Math.random()<0.3)burst(e.x,e.y,'#ff7a3c',2,60,0.4,2.5)})}}
   else if(p.k==='Slaser'){p.x=P.x;p.y=P.y;p.life-=dt;if(P.dead||state==='dying'){p.dead=true;return}
-    const fx=P.fx||0,fy=P.fy||0;if(fx||fy){let ta=Math.atan2(fy,fx),da=Math.atan2(Math.sin(ta-p.rot),Math.cos(ta-p.rot));p.rot+=da*Math.min(1,dt*8)}
-    const L=p.len,x2=p.x+Math.cos(p.rot)*L,y2=p.y+Math.sin(p.rot)*L,half=22;beams.push({x1:p.x,y1:p.y,x2,y2,t:0,dur:0.09,w:half});
+    const fx=P.fx||0,fy=P.fy||0;if(fx||fy){let ta=Math.atan2(fy,fx),da=Math.atan2(Math.sin(ta-p.rot),Math.cos(ta-p.rot));p.rot+=da*(1-Math.exp(-14*dt))}
+    const L=p.len,x2=p.x+Math.cos(p.rot)*L,y2=p.y+Math.sin(p.rot)*L,half=22;
     p.tick-=dt;if(p.tick<=0){p.tick=0.15;const vx=x2-p.x,vy=y2-p.y,l2=vx*vx+vy*vy||1;
       query((p.x+x2)/2,(p.y+y2)/2,L*0.5+50,e=>{let t=((e.x-p.x)*vx+(e.y-p.y)*vy)/l2;t=t<0?0:t>1?1:t;const dx=p.x+vx*t-e.x,dy=p.y+vy*t-e.y,rr=e.r+half;if(dx*dx+dy*dy<rr*rr)hurtEnemy(e,p.dmg,e.x-p.x,e.y-p.y,60)})}}
 }
 // ---------- 그리기 (월드 좌표) ----------
-function drawSkillWorld(){ctx.save();ctx.globalCompositeOperation='lighter';
+// 레이저 부드러운 렌더: 표시 각도 보간(최단각, 프레임 독립) + 굵기 이즈 인/아웃, 랜덤 지터 없음
+const LZS=new Map();let lzT=0,lzDt=0,lzF=0;
+function lzKey(p){return p._n!=null?p._n:p}
+function lzFrame(){const n=performance.now();lzDt=lzT?Math.min(0.1,(n-lzT)/1000):0;lzT=n;lzF++;for(const [k,s] of LZS)if(lzF-s.f>2)LZS.delete(k)}
+function drawLaser(p){const k=lzKey(p);let s=LZS.get(k);if(!s){s={a:p.rot||0,age:0,f:lzF};LZS.set(k,s)}
+  s.f=lzF;s.age+=lzDt;const da=Math.atan2(Math.sin((p.rot||0)-s.a),Math.cos((p.rot||0)-s.a));s.a+=da*(1-Math.exp(-22*lzDt));
+  const L=p.len||(p.r?p.r*20:760),c=Math.cos(s.a),sn=Math.sin(s.a),x2=p.x+c*L,y2=p.y+sn*L;
+  const ein=Math.min(1,s.age/0.18),eout=p.life!=null?Math.min(1,Math.max(0,p.life)/0.25):1,e0=Math.min(ein,eout),e=e0*e0*(3-2*e0);if(e<=0)return;
+  const pul=1+0.06*Math.sin(G.t*10),w=22*e*pul;ctx.lineCap='round';
+  ctx.globalAlpha=0.35*e;ctx.strokeStyle='#ff6ad5';ctx.lineWidth=w*2.4+6;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.globalAlpha=0.6*e;ctx.lineWidth=w*1.2+3;ctx.stroke();
+  ctx.globalAlpha=0.85*e;ctx.strokeStyle='#ffe6ff';ctx.lineWidth=w*0.5+2;ctx.stroke();
+  ctx.globalAlpha=1;ctx.lineCap='butt'}
+function drawSkillWorld(){lzFrame();ctx.save();ctx.globalCompositeOperation='lighter';
   for(const z of NOSP){if(z.g!==G||G.t>=z.until)continue;const al=Math.min(1,(z.until-G.t)/1.5);ctx.globalAlpha=0.18*al;ctx.fillStyle='#4df3ff';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,TAU);ctx.fill();ctx.globalAlpha=0.6*al;ctx.strokeStyle='#4df3ff';ctx.lineWidth=3;ctx.setLineDash([14,10]);ctx.stroke();ctx.setLineDash([])}ctx.globalAlpha=1;
   for(const p of projs){if(p.k[0]!=='S')continue;
     if(p.k==='Sarrow'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.scale(1.4,1.4);
@@ -2468,6 +2481,7 @@ function drawSkillWorld(){ctx.save();ctx.globalCompositeOperation='lighter';
       ctx.restore()}
     else if(p.k==='Sblade'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot+G.t*14);ctx.scale(2.2,2.2);fxBlade('#e2ccff','#b9f',16);ctx.restore()}
     else if(p.k==='Sboom'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);fxBoom((p.r||42)*2.4);ctx.restore()}
+    else if(p.k==='Slaser')drawLaser(p);
     else if(p.k==='Saura'){const Rr=p.R||p.r*8;const gr=ctx.createRadialGradient(p.x,p.y,Rr*0.15,p.x,p.y,Rr);gr.addColorStop(0,'rgba(255,120,40,0.05)');gr.addColorStop(0.75,'rgba(255,100,40,0.2)');gr.addColorStop(1,'rgba(255,190,80,0.45)');
       ctx.fillStyle=gr;ctx.beginPath();ctx.arc(p.x,p.y,Rr*(1+Math.sin(G.t*9)*0.03),0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,160,60,.7)';ctx.lineWidth=4;ctx.stroke()}}
   ctx.restore();
