@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v63</title>
+<title>네온 생존자 - NEON SURVIVOR v64</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -72,7 +72,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v63</div>
+  <div class="sub">NEON SURVIVOR v64</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -2405,7 +2405,7 @@ $('setBackBtn').onclick=()=>{$('settings').classList.remove('show');toTitle()};
 // ---------- 스킬 발동 (현재 P 기준; 레이드 호스트는 swapIn 후 호출) ----------
 function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=0}else{ax/=l;ay/=l}
   const st=skBase(id),D=st.dmg,am=areaMul(),a=Math.atan2(ay,ax),x=P.x,y=P.y;
-  if(id==='bolt'){for(const q of projs)if(q.k==='Sarrow'&&q.stuck&&q.ow===P){q.life=0;if(q.z)q.z.until=0}projs.push({k:'Sarrow',x,y,vx:ax*1300,vy:ay*1300,r:40,dmg:D*6,life:8,hit:new Set(),rot:a,ow:P});S.shoot();S.zap()}
+  if(id==='bolt'){for(const q of projs)if(q.k==='Sarrow'&&q.stuck&&q.ow===P){q.life=0;if(q.z)q.z.until=0}projs.push({k:'Sarrow',x,y,vx:ax*1300,vy:ay*1300,r:57,dmg:D*10,life:8,hit:new Set(),rot:a,ow:P});S.shoot();S.zap()}
   else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:24,dmg:D*2.5,hm:new Map(),rot:0,life:2.6});S.shoot()}
   else if(id==='pulse'){const Rr=380*am;rings.push({x,y,r:0,max:Rr,t:0,dur:0.6,c:'#8ff6ff'});rings.push({x,y,r:0,max:Rr*0.65,t:0,dur:0.45,c:'#ffffff'});
     buildGrid();query(x,y,Rr,(e,dx,dy)=>{hurtEnemy(e,D*4,0,0,0);skPush(e,x,y)});burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
@@ -2470,7 +2470,7 @@ function drawLaser(p){const k=lzKey(p);let s=LZS.get(k);if(!s){s={a:p.rot||0,age
 function drawSkillWorld(){lzFrame();ctx.save();ctx.globalCompositeOperation='lighter';
   for(const z of NOSP){if(z.g!==G||G.t>=z.until)continue;const al=Math.min(1,(z.until-G.t)/1.5);ctx.globalAlpha=0.18*al;ctx.fillStyle='#4df3ff';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,TAU);ctx.fill();ctx.globalAlpha=0.6*al;ctx.strokeStyle='#4df3ff';ctx.lineWidth=3;ctx.setLineDash([14,10]);ctx.stroke();ctx.setLineDash([])}ctx.globalAlpha=1;
   for(const p of projs){if(p.k[0]!=='S')continue;
-    if(p.k==='Sarrow'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.scale(1.4,1.4);
+    if(p.k==='Sarrow'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.scale(2,2);
       fxSprite('Sarrow',-262,-22,328,44,34,(g,bl)=>{
       const tg=g.createLinearGradient(-260,0,-70,0);tg.addColorStop(0,'rgba(77,243,255,0)');tg.addColorStop(1,'rgba(77,243,255,.45)');g.fillStyle=tg;g.beginPath();g.moveTo(-70,-9);g.lineTo(-260,0);g.lineTo(-70,9);g.closePath();g.fill();
       g.shadowColor='#4df3ff';g.shadowBlur=bl?22:0;g.lineCap='round';g.lineJoin='round';
