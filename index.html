@@ -2415,7 +2415,7 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
   else if(id==='aura'){const Rr=Math.min(650,st.rad*3.3*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:10,tick:0,dmg:D*2.4,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
   else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
     meteors.push({x:mx,y:my,t:0,warn:1.1,dmg:D*10,rad:st.rad*1.4*am,hit:false,big:1});S.pulse()}
-  else if(id==='beam'){projs.push({k:'Slaser',x,y,r:Math.min(63,Math.round(760*am/20)),t:0,life:10,tick:0,dmg:D*1.5,ax,ay,rot:a,len:760*am,hit:new Set()});S.zap()}
+  else if(id==='beam'){projs.push({k:'Slaser',x,y,r:Math.min(63,Math.round(760*am/20)),t:0,life:10,tick:0,dmg:D*1.5,ax,ay,rot:a,len:760*am});S.zap()}
 }
 // 충격파 밀어내기: kbRes 무시, 감속(ease-out) 속도, 밀리는 동안(1.2초) 자체 이동 없음
 function skPush(e,x,y){if(e.dead||e.type==='raidboss')return;let dx=e.x-x,dy=e.y-y;const d=Math.hypot(dx,dy);if(d<1){const b=rand(0,TAU);dx=Math.cos(b);dy=Math.sin(b)}else{dx/=d;dy/=d}
@@ -2450,13 +2450,8 @@ function skProj(p,dt){
   else if(p.k==='Slaser'){p.x=P.x;p.y=P.y;p.life-=dt;if(P.dead||state==='dying'){p.dead=true;return}
     const fx=P.fx||0,fy=P.fy||0;if(fx||fy){let ta=Math.atan2(fy,fx),da=Math.atan2(Math.sin(ta-p.rot),Math.cos(ta-p.rot));p.rot+=da*(1-Math.exp(-14*dt))}
     const L=p.len,x2=p.x+Math.cos(p.rot)*L,y2=p.y+Math.sin(p.rot)*L,half=22;
-    const vx=x2-p.x,vy=y2-p.y,l2=vx*vx+vy*vy||1;
-    query((p.x+x2)/2,(p.y+y2)/2,L*0.5+50,e=>{
-      if(p.hit.has(e))return;
-      let t=((e.x-p.x)*vx+(e.y-p.y)*vy)/l2;t=t<0?0:t>1?1:t;
-      const dx=p.x+vx*t-e.x,dy=p.y+vy*t-e.y,rr=e.r+half;
-      if(dx*dx+dy*dy<rr*rr){p.hit.add(e);hurtEnemy(e,p.dmg,e.x-p.x,e.y-p.y,60)}
-    });}
+    p.tick-=dt;if(p.tick<=0){p.tick=0.15;const vx=x2-p.x,vy=y2-p.y,l2=vx*vx+vy*vy||1;
+      query((p.x+x2)/2,(p.y+y2)/2,L*0.5+50,e=>{let t=((e.x-p.x)*vx+(e.y-p.y)*vy)/l2;t=t<0?0:t>1?1:t;const dx=p.x+vx*t-e.x,dy=p.y+vy*t-e.y,rr=e.r+half;if(dx*dx+dy*dy<rr*rr)hurtEnemy(e,p.dmg,e.x-p.x,e.y-p.y,60)})}}
 }
 // ---------- 그리기 (월드 좌표) ----------
 // 레이저 부드러운 렌더: 표시 각도 보간(최단각, 프레임 독립) + 굵기 이즈 인/아웃, 랜덤 지터 없음
