@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v82</title>
+<title>네온 생존자 - NEON SURVIVOR v83</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -72,7 +72,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v82</div>
+  <div class="sub">NEON SURVIVOR v83</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -390,7 +390,7 @@ try{const sw=localStorage.getItem('neonSurvivorStartW');if(sw&&WEAPONS[sw])start
 try{const md=localStorage.getItem('neonSurvivorMode');if(md&&MODES[md])gameMode=md}catch(e){}
 let G=null, P=null;
 let enemies=[],projs=[],ebullets=[],gems=[],pickups=[],mines=[],parts=[],texts=[],rings=[],zaps=[],beams=[],meteors=[];
-let shake=0, hurtFlash=0, banner=null, titleT=0;
+let shake=0,quakeT=0, hurtFlash=0, banner=null, titleT=0;
 const keys={};
 let joy=null;
 let best=loadBest();
@@ -425,7 +425,7 @@ function newGame(){
     P.maxHp=hp0+20*MAXLV;P.hp=P.maxHp;
     G.level=CRAZY_LV0;G.need=lvNeed(CRAZY_LV0);G.xp=0;G.pendingLv=0; // 레벨 값만 설정 (카드 일괄 지급 없음)
   }
-  enemies=[];projs=[];ebullets=[];gems=[];pickups=[];mines=[];parts=[];texts=[];rings=[];zaps=[];beams=[];meteors=[];shake=0;hurtFlash=0;banner=null;
+  enemies=[];projs=[];ebullets=[];gems=[];pickups=[];mines=[];parts=[];texts=[];rings=[];zaps=[];beams=[];meteors=[];shake=0;quakeT=0;hurtFlash=0;banner=null;
   showBanner(isCrazy()?'크레이지! 만렙 풀로드 · 보스 즉시 출현!':'살아남아라! 보석을 모아 레벨 업!',isCrazy()?'#ff00e5':'#4df3ff');
   if(tipSave.loops<5&&!isCrazy())queueTip('loop');
 }
@@ -686,7 +686,7 @@ function burst(x,y,col,n,spd,life,size){if(lowGfx()){n=Math.ceil(n*0.35)}const c
   parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:life*rand(0.6,1),max:life,c:col,s:size*rand(0.6,1.2)})}}
 function dmgText(x,y,v,col,size,always){if(!always&&!SET.dmgNum)return;if(texts.length>90)texts.shift();texts.push({x:x+rand(-6,6),y:y-8,v:typeof v==='number'?Math.round(v):v,c:col,s:size,life:0.7})}
 function showBanner(txt,col){banner={txt,col,t:2.4}}
-function addShake(v){shake=Math.min(18,Math.max(shake,v))}
+function addShake(v){shake=Math.min(quakeT>0?42:18,Math.max(shake,v))}
 
 // ================== 피해 처리 ==================
 function hurtEnemy(e,dmg,kx,ky,kb){
@@ -870,9 +870,8 @@ function gameUpdate(dt){
       burst(m.x,m.y,'#ff9a3c',18,260,0.45,3.5);burst(m.x,m.y,'#fff27a',8,150,0.3,3);addShake(3);S.boom()}}
   mines=mines.filter(m=>!m.dead&&m.life>0);
   // 유성우
-  for(const m of meteors){m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.all){for(const e of enemies)if(!e._vsP&&e.type!=='boss'&&e.type!=='raidboss'&&!e.dead)killEnemy(e);skShake(30)}if(m.big)skImpact(m);
-    burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}}
-  meteors=meteors.filter(m=>m.t<m.warn+0.05);
+  for(const m of meteors){m.t+=dt;if((m.all||m.warn>=3)&&m.t>0&&!m.hit)addShake(2+(m.t/m.warn)*9);if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));if(m.all){for(const e of enemies)if(!e._vsP&&e.type!=='boss'&&e.type!=='raidboss'&&!e.dead)killEnemy(e);nukeBoom(m)}else{rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}}}
+  meteors=meteors.filter(m=>m.t<m.warn+((m.all||m.warn>=3)?1.4:0.05));
   // 적 탄환
   for(const b of ebullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;const rr=b.r+P.r-4;if((b.x-P.x)**2+(b.y-P.y)**2<rr*rr&&state==='play'){b.life=0;hurtPlayer(Math.round(b.dmg))}}
   ebullets=ebullets.filter(b=>b.life>0);
@@ -907,7 +906,7 @@ function fxUpdate(dt){
   for(const z of zaps)z.t-=dt;zaps=zaps.filter(z=>z.t>0);
   for(const b of beams)b.t+=dt;beams=beams.filter(b=>b.t<b.dur);
   if(G){for(const f of G.loopFx)f.t+=dt;G.loopFx=G.loopFx.filter(f=>f.t<0.6);for(const c of G.calls){c.life-=dt;c.y-=30*dt}G.calls=G.calls.filter(c=>c.life>0)}
-  shake*=Math.exp(-10*dt);if(shake<0.1)shake=0;hurtFlash=Math.max(0,hurtFlash-dt);
+  if(quakeT>0){quakeT=Math.max(0,quakeT-dt);shake=Math.max(shake,10+28*(quakeT/1.8))}shake*=Math.exp(-(quakeT>0?2.4:10)*dt);if(shake<0.1)shake=0;hurtFlash=Math.max(0,hurtFlash-dt);
   if(banner){banner.t-=dt;if(banner.t<=0)banner=null}
 }
 
@@ -933,10 +932,32 @@ function render(){
   // 지뢰
   for(const m of mines){const blink=m.t<0.4?0.4:(Math.sin(G.t*10+m.x)>0?1:0.55);ctx.fillStyle=`rgba(255,93,93,${blink})`;ctx.beginPath();ctx.arc(m.x,m.y,7,0,TAU);ctx.fill();
     ctx.strokeStyle='rgba(255,93,93,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,11,0,TAU);ctx.stroke()}
-  for(const m of meteors){if(m.t<0)continue;const k=Math.min(1,m.t/m.warn);ctx.fillStyle=`rgba(255,154,93,${0.06+0.16*k})`;ctx.beginPath();ctx.arc(m.x,m.y,m.rad,0,TAU);ctx.fill();
-    ctx.strokeStyle='rgba(255,154,93,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,m.rad,0,TAU);ctx.stroke();ctx.fillStyle='rgba(255,200,120,.3)';ctx.beginPath();ctx.arc(m.x,m.y,m.rad*k,0,TAU);ctx.fill();
-    const f=1-k*k,rx=m.x+f*110,ry=m.y-f*330;ctx.strokeStyle='rgba(255,154,93,.55)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+f*70+10,ry-f*210-10);ctx.stroke();
-    ctx.fillStyle='#ffd0a0';ctx.shadowColor='#ff9a5d';ctx.shadowBlur=14;ctx.beginPath();ctx.arc(rx,ry,9,0,TAU);ctx.fill();ctx.shadowBlur=0}
+  for(const m of meteors){if(m.t<0)continue;const k=Math.min(1,Math.max(0,m.t)/m.warn);const nuke=!!(m.all||m.warn>=3);
+    if(!nuke){ctx.fillStyle=`rgba(255,154,93,${0.06+0.16*k})`;ctx.beginPath();ctx.arc(m.x,m.y,m.rad,0,TAU);ctx.fill();
+      ctx.strokeStyle='rgba(255,154,93,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,m.rad,0,TAU);ctx.stroke();ctx.fillStyle='rgba(255,200,120,.3)';ctx.beginPath();ctx.arc(m.x,m.y,m.rad*k,0,TAU);ctx.fill();
+      const f=1-k*k,rx=m.x+f*110,ry=m.y-f*330;ctx.strokeStyle='rgba(255,154,93,.55)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+f*70+10,ry-f*210-10);ctx.stroke();
+      ctx.fillStyle='#ffd0a0';ctx.shadowColor='#ff9a5d';ctx.shadowBlur=14;ctx.beginPath();ctx.arc(rx,ry,9,0,TAU);ctx.fill();ctx.shadowBlur=0;continue}
+    const hit=m.t>=m.warn,e=hit?1:k*k,a=hit?Math.max(0,1-(m.t-m.warn)/1.2):1;
+    const grd=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,m.rad*1.6);
+    grd.addColorStop(0,`rgba(255,90,20,${(0.16+0.32*k)*a})`);grd.addColorStop(0.5,`rgba(255,140,40,${(0.1+0.18*k)*a})`);grd.addColorStop(1,'rgba(255,80,20,0)');
+    ctx.fillStyle=grd;ctx.beginPath();ctx.arc(m.x,m.y,m.rad*1.6,0,TAU);ctx.fill();
+    ctx.strokeStyle=`rgba(255,210,90,${(0.45+0.5*k)*a})`;ctx.lineWidth=5+5*k;ctx.setLineDash([24,14]);ctx.lineDashOffset=-G.t*40;
+    ctx.beginPath();ctx.arc(m.x,m.y,m.rad*(0.88+0.07*Math.sin(G.t*8)),0,TAU);ctx.stroke();ctx.setLineDash([]);
+    const cr=m.rad*0.28;ctx.strokeStyle=`rgba(255,235,160,${(0.55+0.45*k)*a})`;ctx.lineWidth=3;ctx.beginPath();
+    ctx.moveTo(m.x-cr-40,m.y);ctx.lineTo(m.x-cr,m.y);ctx.moveTo(m.x+cr,m.y);ctx.lineTo(m.x+cr+40,m.y);
+    ctx.moveTo(m.x,m.y-cr-40);ctx.lineTo(m.x,m.y-cr);ctx.moveTo(m.x,m.y+cr);ctx.lineTo(m.x,m.y+cr+40);ctx.stroke();
+    if(!hit){const rx=m.x+(1-e)*320,ry=m.y-(1-e)*2400,sz=36+e*170,tx=rx+(1-e)*260+120,ty=ry-(1-e)*700-280;
+      const tr=ctx.createLinearGradient(tx,ty,rx,ry);tr.addColorStop(0,'rgba(255,70,0,0)');tr.addColorStop(0.45,'rgba(255,130,30,.4)');tr.addColorStop(0.78,'rgba(255,220,90,.85)');tr.addColorStop(1,'rgba(255,255,230,.97)');
+      ctx.strokeStyle=tr;ctx.lineCap='round';ctx.lineWidth=sz*1.55;ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(rx,ry);ctx.stroke();
+      ctx.lineWidth=sz*0.5;ctx.strokeStyle='rgba(255,255,245,.9)';ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(rx,ry);ctx.stroke();ctx.lineCap='butt';
+      const gl=ctx.createRadialGradient(rx,ry,sz*0.12,rx,ry,sz*2.4);gl.addColorStop(0,'rgba(255,255,240,.97)');gl.addColorStop(0.22,'rgba(255,200,80,.88)');gl.addColorStop(0.55,'rgba(255,90,20,.5)');gl.addColorStop(1,'rgba(255,40,0,0)');
+      ctx.fillStyle=gl;ctx.beginPath();ctx.arc(rx,ry,sz*2.4,0,TAU);ctx.fill();
+      ctx.fillStyle='#fff8d8';ctx.shadowColor='#ff6a18';ctx.shadowBlur=46;ctx.beginPath();ctx.arc(rx,ry,sz*0.58,0,TAU);ctx.fill();ctx.shadowBlur=0;
+      ctx.fillStyle='#3a2210';ctx.beginPath();ctx.arc(rx-sz*0.08,ry+sz*0.06,sz*0.36,0,TAU);ctx.fill();
+      for(let i=0;i<10;i++){const f=i/10,px=rx+(tx-rx)*f+Math.sin(G.t*22+i*1.7)*22,py=ry+(ty-ry)*f+Math.cos(G.t*18+i*1.3)*22;
+        ctx.fillStyle=`rgba(255,${200-i*12},70,${0.85-f*0.65})`;ctx.beginPath();ctx.arc(px,py,8+12*(1-f),0,TAU);ctx.fill()}}
+    else{const gl=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,m.rad*2.4);gl.addColorStop(0,`rgba(255,245,200,${0.6*a})`);gl.addColorStop(0.3,`rgba(255,130,30,${0.38*a})`);gl.addColorStop(1,'rgba(255,40,0,0)');
+      ctx.fillStyle=gl;ctx.beginPath();ctx.arc(m.x,m.y,m.rad*2.4,0,TAU);ctx.fill()}}
   drawStrikes(false);drawEventWorld();
   // 보석
   for(const g of gems){if(g.x<L||g.x>R||g.y<T||g.y>B)continue;const s=SPR[g.v>=20?'gem3':g.v>=5?'gem2':'gem1'];const sz=s.size*(g.v>=20?1.4:1);ctx.drawImage(s.c,g.x-sz/2,g.y-sz/2,sz,sz)}
@@ -989,6 +1010,8 @@ function render(){
   ctx.lineWidth=5;for(const c of G.calls){ctx.globalAlpha=Math.min(1,c.life*3);ctx.font=`900 ${c.s}px ${FONT}`;ctx.strokeText(c.txt,c.x,c.y);ctx.fillStyle=c.c;ctx.shadowColor=c.c;ctx.shadowBlur=14;ctx.fillText(c.txt,c.x,c.y);ctx.shadowBlur=0}ctx.globalAlpha=1;
   ctx.restore();
   if(blackout())drawBlackout(sx,sy);
+  {let sd=0;for(const m of meteors){if(!(m.all||m.warn>=3)||m.t<0)continue;if(m.t<m.warn)sd=Math.max(sd,0.12+0.58*Math.pow(m.t/m.warn,1.35));else sd=Math.max(sd,0.65*(1-Math.min(1,(m.t-m.warn)/1.2)))}
+    if(sd>0){ctx.fillStyle=`rgba(16,1,0,${sd*0.9})`;ctx.fillRect(0,0,W,H);const gr=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.18,W/2,H/2,Math.max(W,H)*0.78);gr.addColorStop(0,'rgba(255,70,0,0)');gr.addColorStop(1,`rgba(255,50,0,${sd*0.38})`);ctx.fillStyle=gr;ctx.fillRect(0,0,W,H)}}
   // 화면 효과
   if(hurtFlash>0){const gr=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.7);gr.addColorStop(0,'rgba(255,0,40,0)');gr.addColorStop(1,`rgba(255,0,40,${hurtFlash*0.9})`);ctx.fillStyle=gr;ctx.fillRect(0,0,W,H)}
   if(P.hp/P.maxHp<0.3&&state==='play'){const a=0.18+Math.sin(G.t*6)*0.1;const gr=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.max(W,H)*0.75);gr.addColorStop(0,'rgba(255,0,40,0)');gr.addColorStop(1,`rgba(255,0,40,${a})`);ctx.fillStyle=gr;ctx.fillRect(0,0,W,H)}
@@ -1713,7 +1736,7 @@ function vsArenaUpdate(dt){if(!R)return;
     if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,250));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});S.boom()}vsClearProxies()});
   mines=mines.filter(m=>!m.dead&&m.life>0);
   for(const m of meteors)withOwner(m,()=>{m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;vsAttachProxies(P);buildGrid();query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,200));vsClearProxies();rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});S.boom()}});
-  meteors=meteors.filter(m=>m.t<m.warn+0.05);
+  meteors=meteors.filter(m=>m.t<m.warn+((m.all||m.warn>=3)?1.4:0.05));
   enemies=enemies.filter(e=>!e.dead&&!e._vsP);
   // 접촉 데미지 (약하게, 무적 중 무시)
   for(const a of RP){if(a.dead)continue;for(const b of RP){if(b.dead||b.id===a.id||b.inv>0)continue;const rr=a.r+b.r-6;if((a.x-b.x)**2+(a.y-b.y)**2<rr*rr){hurtP(b,Math.round(3+a.level*0.25))}}}
@@ -2049,9 +2072,8 @@ function hostUpdate(dt){
     if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,250));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});
       burst(m.x,m.y,'#ff9a3c',18,260,0.45,3.5);burst(m.x,m.y,'#fff27a',8,150,0.3,3);addShake(3);S.boom()}});
   mines=mines.filter(m=>!m.dead&&m.life>0);
-  for(const m of meteors)withOwner(m,()=>{m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.all){for(const e of enemies)if(!e._vsP&&e.type!=='boss'&&e.type!=='raidboss'&&!e.dead)killEnemy(e);skShake(30)}if(m.big)skImpact(m);
-    burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}});
-  meteors=meteors.filter(m=>m.t<m.warn+0.05);
+  for(const m of meteors)withOwner(m,()=>{m.t+=dt;if((m.all||m.warn>=3)&&m.t>0&&!m.hit)addShake(2+(m.t/m.warn)*9);if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));if(m.all){for(const e of enemies)if(!e._vsP&&e.type!=='boss'&&e.type!=='raidboss'&&!e.dead)killEnemy(e);nukeBoom(m)}else{rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}}});
+  meteors=meteors.filter(m=>m.t<m.warn+((m.all||m.warn>=3)?1.4:0.05));
   for(const b of ebullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;for(const p of alive()){const rr=b.r+p.r-4;if((b.x-p.x)**2+(b.y-p.y)**2<rr*rr){b.life=0;hurtP(p,Math.round(b.dmg));break}}}
   ebullets=ebullets.filter(b=>b.life>0);
   // 보석/아이템: 가장 가까운 플레이어가 획득 (경험치는 개인별)
@@ -2417,7 +2439,7 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
   else if(id==='seek'){const tg=nearestN(x,y,50,1200);for(let i=0;i<50;i++){const b=a+(i/49-0.5)*3.2;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*2,life:5.5,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
   else if(id==='aura'){const Rr=Math.min(690,st.rad*3.5*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:10,tick:0,dmg:D*2.5,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
   else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
-    meteors.push({x:mx,y:my,t:0,warn:1.3,dmg:D*10,rad:Math.max(260,st.rad*2.6*am),hit:false,big:1,all:1});S.pulse()} // v82 맵 전체 전멸
+    meteors.push({x:mx,y:my,t:0,warn:4.2,dmg:D*10,rad:Math.max(260,st.rad*2.6*am),hit:false,big:1,all:1});S.pulse()} // v83 거대 메테오 연출
   else if(id==='beam'){projs.push({k:'Slaser',x,y,r:Math.min(63,Math.round(760*am/20)),t:0,life:10,tick:0,dmg:D*1.5,ax,ay,rot:a,len:760*am});S.zap()}
 }
 // 충격파 밀어내기: kbRes 무시, 감속(ease-out) 속도, 밀리는 동안(1.2초) 자체 이동 없음
@@ -2595,9 +2617,12 @@ addEventListener('keydown',e=>{if(e.repeat||RB.chatOpen)return;if(e.code==='KeyJ
 addEventListener('keyup',e=>{if(e.code==='KeyJ'&&skKb)skRelease('A');else if(e.code==='KeyK'&&skKb)skRelease('B')});
 // 착탄: 화면 흔들림 + 섬광. 레이드 게스트는 동기화된 링(표식 색)으로 감지
 const IMPACT_C='#fff0c8';let flashA=0;const seenImp=new Set();
+function nukeBoom(m){quakeT=1.8;shake=Math.max(shake,36);flashA=1;hurtFlash=Math.max(hurtFlash,0.5);
+  rings.push({x:m.x,y:m.y,r:0,max:m.rad*2.4,t:0,dur:0.75,c:IMPACT_C});rings.push({x:m.x,y:m.y,r:0,max:m.rad*3.8,t:0,dur:1.15,c:'#ff9a5d'});rings.push({x:m.x,y:m.y,r:0,max:m.rad*5.2,t:0,dur:1.5,c:'#ffd080'});
+  burst(m.x,m.y,'#ffe0a0',50,560,1.0,8);burst(m.x,m.y,'#ff9a5d',40,440,0.8,6);burst(m.x,m.y,'#fff27a',24,300,0.6,5);S.boom();if(S.boss)S.boss();impactFx();flashA=1}
 function skImpact(m){rings.push({x:m.x,y:m.y,r:0,max:m.rad*1.6,t:0,dur:0.45,c:IMPACT_C});burst(m.x,m.y,'#ffe0a0',30,340,0.6,4.5);impactFx()}
 function impactFx(){addShake(16);flashA=0.75}
-setInterval(()=>{if(state==='raid'&&rR()&&!rR().host)for(const r of rings)if(r.c===IMPACT_C&&r.t<0.3){const k=Math.round(r.x)+','+Math.round(r.y);if(!seenImp.has(k)){seenImp.add(k);if(seenImp.size>50)seenImp.clear();impactFx()}}},50);
+setInterval(()=>{if(state==='raid'&&rR()&&!rR().host)for(const r of rings)if(r.c===IMPACT_C&&r.t<0.3){const k=Math.round(r.x)+','+Math.round(r.y);if(!seenImp.has(k)){seenImp.add(k);if(seenImp.size>50)seenImp.clear();if(r.max>500){quakeT=1.8;shake=Math.max(shake,36);flashA=1}else impactFx()}}},50);
 (function fl(){const el=$('skFlash');flashA=Math.max(0,flashA-0.03);const v=flashA.toFixed(2);if(el.style.opacity!==v)el.style.opacity=v;requestAnimationFrame(fl)})();
 // ---------- 레이드: 호스트가 요청을 처리 (주인 기준으로 발동 → 피해·효과는 스냅샷으로 모두에게 동기화) ----------
 function hostSkill(p,id,ax,ay,tx,ty){const R=rR();if(!p||p.dead||!skOK(id)||!R||['inter','clear','fail','ending','story','storyBoss','story4','story5'].includes(R.phase)||(R.skLockT>0))return false;p.skcd=p.skcd||{};if(p.skcd[id]>0)return false;if(id==='meteor'&&G&&G.t<SKILLS.meteor.cd-1)return false;
