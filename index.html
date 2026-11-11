@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v66</title>
+<title>네온 생존자 - NEON SURVIVOR v67</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -72,7 +72,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v66</div>
+  <div class="sub">NEON SURVIVOR v67</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -458,6 +458,7 @@ function spawnEnemy(type,x,y){
     orbT:-9,auraT:-9,slowT:0,shootT:rand(1,2.5)*(isHard()?0.8:1),st:0,stT:rand(2,4),dx:0,dy:0,rot:0,dead:false};
   if(type==='boss'){G.bossN++;const cz=isCrazy();e.r=T.r*(cz?1.9:1);e.hp=e.maxHp=T.hp*Math.pow(2.3,G.bossN-1)*(1+diffT()/900)*(isHard()?1.85:1)*(cz?18:bossLvMul())*UPD();e.dmg=T.dmg*(1+G.bossN*0.25)*(isHard()?1.45:1)*(cz?4.5:1);e.shootT=cz?0.8:isHard()?1.7:2.5;e.dashT=cz?1.6:isHard()?3.4:5;G.boss=e}
   {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff==='story'&&type!=='boss'){const m=_r.storyHard?3.5:1.25,md=_r.storyHard?2.5:1.25;e.hp=e.maxHp=e.hp*m;if(_r.storyHard)e.dmg=T.dmg*2.5;else e.dmg*=md}}
+  {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff!=='vs'){e.hp*=1.5;e.maxHp*=1.5}} // v67 레이드 1.5배
   if(soloEasy()){e.hp*=0.8;e.maxHp*=0.8;e.dmg*=0.8} // v65/66 솔로 일반·하드·전사 난이도 완화
   enemies.push(e);return e;
 }
@@ -1877,7 +1878,7 @@ function alive(){return RP.filter(p=>!p.dead)}
 function cryTo(pid,n,w){if(pid===myId){if(window.__cry)__cry.add(n,w)}else{const c=conns.find(c=>c.pid===pid&&c.open);if(c)try{c.send({t:'cry',n,w})}catch(e){}}}
 function trailSnap(p){if(p.dead||!p.trail)return 0;const o=[];for(const q of p.trail)o.push(r1(q.x),r1(q.y),Math.round(q.a*20));return o}
 function nearestP(x,y){let b=null,bd=1e18;for(const p of RP){if(p.dead)continue;const d=(p.x-x)**2+(p.y-y)**2;if(d<bd){bd=d;b=p}}return b}
-function hurtP(p,d){if(p.dead||p.inv>0||p.god||R.god||(R&&(R.phase==='story'||R.phase==='storyBoss'||R.phase==='story4'||R.phase==='story5'||R.phase==='vsend')))return;const prev=P;P=p;d=Math.max(1,Math.round(d*(1-0.07*pl('armor'))));P=prev;p.hp-=d;p.inv=0.5;
+function hurtP(p,d){if(p.dead||p.inv>0||p.god||R.god||(R&&(R.phase==='story'||R.phase==='storyBoss'||R.phase==='story4'||R.phase==='story5'||R.phase==='vsend')))return;if(R&&R.diff!=='vs')d*=1.5;const prev=P;P=p;d=Math.max(1,Math.round(d*(1-0.07*pl('armor'))));P=prev;p.hp-=d;p.inv=0.5;
   dmgText(p.x,p.y-20,d,'#ff4d6d',18);burst(p.x,p.y,'#ff4d6d',10,160,0.4,3);if(p.id===myId){hurtFlash=0.35;addShake(7);S.hurt()}
   if(p.hp<=0){p.hp=0;p.dead=true;burst(p.x,p.y,p.col,60,320,1,4);
     if(R&&R.diff==='vs'){rbanner(p.name+' 탈락!','#ff8c8c',2);vsCheckWin();return}
@@ -1886,6 +1887,7 @@ function reviveP(p){const ps=alive();if(!ps.length)return;const t=ps[(Math.rando
 function addTele(o){o.t=0;R.tele.push(o)}
 function makeBoss(kind,opt){const N=NUM[kind];const ps=alive();const c=ps[0]||{x:0,y:0};let hp=N.hp*NUM.scale(R.n)*(H_()?NUM.hard.bossHp:1)*1.3;
   if(R.diff==='story')hp*=(R.storyHard?3.0:1.3);
+  if(R.diff!=='vs')hp*=1.5; // v67
   const b={type:'raidboss',kind,name:kind==='gozara'?'고자라':(R.diff==='story'?'강산':'차박후 강똥원 원비 강산'),x:clamp(c.x+520,-WH+200,WH-200),y:clamp(c.y-200,-WH+200,WH-200),r:N.r,hp,maxHp:hp,mode:'chase',mt:2.5,face:-1,flash:0,kbx:0,kby:0,kbRes:0,xp:0,
     orbT:-9,slowT:0,dead:false,enr:false,z:0,cyc:0,spd:0,dmg:0};
   R.boss=b;enemies.push(b);QM=Math.max(58,N.r+10);
