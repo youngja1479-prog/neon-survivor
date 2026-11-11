@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v81</title>
+<title>네온 생존자 - NEON SURVIVOR v82</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -72,7 +72,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v81</div>
+  <div class="sub">NEON SURVIVOR v82</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -870,7 +870,7 @@ function gameUpdate(dt){
       burst(m.x,m.y,'#ff9a3c',18,260,0.45,3.5);burst(m.x,m.y,'#fff27a',8,150,0.3,3);addShake(3);S.boom()}}
   mines=mines.filter(m=>!m.dead&&m.life>0);
   // 유성우
-  for(const m of meteors){m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);
+  for(const m of meteors){m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.all){for(const e of enemies)if(!e._vsP&&e.type!=='boss'&&e.type!=='raidboss'&&!e.dead)killEnemy(e);skShake(30)}if(m.big)skImpact(m);
     burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}}
   meteors=meteors.filter(m=>m.t<m.warn+0.05);
   // 적 탄환
@@ -2049,7 +2049,7 @@ function hostUpdate(dt){
     if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,250));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});
       burst(m.x,m.y,'#ff9a3c',18,260,0.45,3.5);burst(m.x,m.y,'#fff27a',8,150,0.3,3);addShake(3);S.boom()}});
   mines=mines.filter(m=>!m.dead&&m.life>0);
-  for(const m of meteors)withOwner(m,()=>{m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);
+  for(const m of meteors)withOwner(m,()=>{m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.all){for(const e of enemies)if(!e._vsP&&e.type!=='boss'&&e.type!=='raidboss'&&!e.dead)killEnemy(e);skShake(30)}if(m.big)skImpact(m);
     burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}});
   meteors=meteors.filter(m=>m.t<m.warn+0.05);
   for(const b of ebullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;for(const p of alive()){const rr=b.r+p.r-4;if((b.x-p.x)**2+(b.y-p.y)**2<rr*rr){b.life=0;hurtP(p,Math.round(b.dmg));break}}}
@@ -2386,7 +2386,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
 const SKILLS={bolt:{cd:15,d:'거대한 화살 8방향 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파 3연속·강한 넉백'},chain:{cd:20,d:'번개 두르고 적진 돌진'},
-  boom:{cd:10,d:'부메랑 5개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:20,d:'지정 위치에 유성 1개 낙하'},beam:{cd:20,dur:10,d:'10초 지속 레이저'}};
+  boom:{cd:10,d:'부메랑 5개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:100,d:'거대 메테오: 보스 제외 맵 전체 적 전멸 (시작 후 100초 뒤 사용 가능)'},beam:{cd:15,dur:10,d:'10초 지속 레이저'}};
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
 const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
 if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
@@ -2417,7 +2417,7 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
   else if(id==='seek'){const tg=nearestN(x,y,50,1200);for(let i=0;i<50;i++){const b=a+(i/49-0.5)*3.2;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*2,life:5.5,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
   else if(id==='aura'){const Rr=Math.min(690,st.rad*3.5*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:10,tick:0,dmg:D*2.5,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
   else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
-    meteors.push({x:mx,y:my,t:0,warn:1.1,dmg:D*10,rad:st.rad*1.4*am,hit:false,big:1});S.pulse()}
+    meteors.push({x:mx,y:my,t:0,warn:1.3,dmg:D*10,rad:Math.max(260,st.rad*2.6*am),hit:false,big:1,all:1});S.pulse()} // v82 맵 전체 전멸
   else if(id==='beam'){projs.push({k:'Slaser',x,y,r:Math.min(63,Math.round(760*am/20)),t:0,life:10,tick:0,dmg:D*1.5,ax,ay,rot:a,len:760*am});S.zap()}
 }
 // 충격파 밀어내기: kbRes 무시, 감속(ease-out) 속도, 밀리는 동안(1.2초) 자체 이동 없음
@@ -2529,7 +2529,7 @@ function drawSkillWorld(){lzFrame();ctx.save();ctx.globalCompositeOperation='lig
   const circ=(cx,cy,r)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.fill();ctx.stroke()};
   if(id==='bolt')line(1100,28);else if(id==='orbit'){circ(x,y,120);line(900,60)}else if(id==='beam')line(760*am,22);else if(id==='boom'){line(950,34);const s0=fx,s1=fy;for(const o of [-0.7,-0.35,0.35,0.7]){const c=Math.cos(o),sn=Math.sin(o);fx=s0*c-s1*sn;fy=s0*sn+s1*c;line(950,34)}fx=s0;fy=s1}
   else if(id==='pulse')circ(x,y,380*am);else if(id==='aura'){const sv=P;P=me;const r=Math.min(650,skBase('aura').rad*3.3*am);P=sv;circ(x,y,r)}
-  else if(id==='meteor'&&skAimP){const sv=P;P=me;const r=skBase('meteor').rad*1.4*am;P=sv;ctx.setLineDash([]);ctx.lineWidth=4;circ(skAimP.x,skAimP.y,r);ctx.beginPath();ctx.moveTo(skAimP.x-r-14,skAimP.y);ctx.lineTo(skAimP.x+r+14,skAimP.y);ctx.moveTo(skAimP.x,skAimP.y-r-14);ctx.lineTo(skAimP.x,skAimP.y+r+14);ctx.stroke()}else if(id==='chain')circ(x,y,480);else if(id==='seek'){circ(x,y,1200);line(200,10)}
+  else if(id==='meteor'&&skAimP){const sv=P;P=me;const r=Math.max(260,skBase('meteor').rad*2.6*am);P=sv;ctx.setLineDash([]);ctx.lineWidth=4;circ(skAimP.x,skAimP.y,r);ctx.beginPath();ctx.moveTo(skAimP.x-r-14,skAimP.y);ctx.lineTo(skAimP.x+r+14,skAimP.y);ctx.moveTo(skAimP.x,skAimP.y-r-14);ctx.lineTo(skAimP.x,skAimP.y+r+14);ctx.stroke()}else if(id==='chain')circ(x,y,480);else if(id==='seek'){circ(x,y,1200);line(200,10)}
   ctx.setLineDash([]);ctx.restore()}
 // ---------- 입력 ----------
 // 조준(유성우) · 취소 구역 · 착탄 연출
@@ -2600,13 +2600,13 @@ function impactFx(){addShake(16);flashA=0.75}
 setInterval(()=>{if(state==='raid'&&rR()&&!rR().host)for(const r of rings)if(r.c===IMPACT_C&&r.t<0.3){const k=Math.round(r.x)+','+Math.round(r.y);if(!seenImp.has(k)){seenImp.add(k);if(seenImp.size>50)seenImp.clear();impactFx()}}},50);
 (function fl(){const el=$('skFlash');flashA=Math.max(0,flashA-0.03);const v=flashA.toFixed(2);if(el.style.opacity!==v)el.style.opacity=v;requestAnimationFrame(fl)})();
 // ---------- 레이드: 호스트가 요청을 처리 (주인 기준으로 발동 → 피해·효과는 스냅샷으로 모두에게 동기화) ----------
-function hostSkill(p,id,ax,ay,tx,ty){const R=rR();if(!p||p.dead||!skOK(id)||!R||['inter','clear','fail','ending','story','storyBoss','story4','story5'].includes(R.phase)||(R.skLockT>0))return false;p.skcd=p.skcd||{};if(p.skcd[id]>0)return false;
+function hostSkill(p,id,ax,ay,tx,ty){const R=rR();if(!p||p.dead||!skOK(id)||!R||['inter','clear','fail','ending','story','storyBoss','story4','story5'].includes(R.phase)||(R.skLockT>0))return false;p.skcd=p.skcd||{};if(p.skcd[id]>0)return false;if(id==='meteor'&&G&&G.t<SKILLS.meteor.cd-1)return false;
   p.skcd[id]=SKILLS[id].cd+(SKILLS[id].dur||0)-0.6;RB.swapIn(p);const a=projs.length,c=meteors.length;buildGrid();fireSkill(id,ax,ay,tx,ty);
   for(let i=a;i<projs.length;i++)RB.owners.set(projs[i],p.id);for(let i=c;i<meteors.length;i++)RB.owners.set(meteors[i],p.id);RB.swapOut(p);return true}
 {const _rf=window.__raidFrame;window.__raidFrame=function(dt){
   const R=rR(),RP=rRP();if(R&&R.host){for(const p of RP){if(p.skcd)for(const k in p.skcd)p.skcd[k]-=dt}while(skQ.length){const q=skQ.shift();hostSkill(RP.find(p=>p.id===q[0]),q[1],q[2],q[3],q[4],q[5])}}else skQ.length=0;
   return _rf(dt)}}
-{const _ng=newGame;newGame=function(){_ng();for(const k in skCD)delete skCD[k];for(const k in skAct)delete skAct[k];skHold=null;skQ.length=0}}
+{const _ng=newGame;newGame=function(){_ng();for(const k in skCD)delete skCD[k];for(const k in skAct)delete skAct[k];skCD.meteor=SKILLS.meteor.cd;skHold=null;skQ.length=0}}
 // ---------- 버튼 UI / 쿨타임 ----------
 let skLast=performance.now();
 function skLoop(now){const dt=Math.min(0.1,(now-skLast)/1000);skLast=now;skAimTick(dt);
