@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v73</title>
+<title>네온 생존자 - NEON SURVIVOR v74</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -72,7 +72,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v73</div>
+  <div class="sub">NEON SURVIVOR v74</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -2435,7 +2435,7 @@ function skProj(p,dt){
   else if(p.k==='Sblade'){p.t+=dt;p.life-=dt;const OT=3.0,RPS=2.1; // v73 원→커짐→작아짐→발사
     if(p.t<OT){const an=p.a0+p.t*RPS*TAU,tt=p.t,Rr=tt<0.6?Math.min(130,40+tt*600):tt<1.8?130+(380-130)*(0.5-0.5*Math.cos((tt-0.6)/1.2*Math.PI)):380-(380-130)*(0.5-0.5*Math.cos((tt-1.8)/1.2*Math.PI));p.x=P.x+Math.cos(an)*Rr;p.y=P.y+Math.sin(an)*Rr;p.rot=an+Math.PI/2;p.ox=p.x-P.x;p.oy=p.y-P.y;
       if(Math.random()<0.5)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.22,max:0.22,c:'#c9a6ff',s:5})}
-    else{if(!p.go){p.go=1;p.hm=new Map();const fl=Math.hypot(P.fx||0,P.fy||0);if(fl>0.01){p.dx=P.fx/fl;p.dy=P.fy/fl}p.cx=P.x;p.cy=P.y}
+    else{if(!p.go){p.go=1;p.hm=new Map();if(p.a0===0){rings.push({x:P.x,y:P.y,r:0,max:260,t:0,dur:0.45,c:'#e08cff'});rings.push({x:P.x,y:P.y,r:0,max:160,t:0,dur:0.3,c:'#ffffff'});burst(P.x,P.y,'#d58cff',36,520,0.5,4);if(typeof skShake==='function')skShake(6)}const fl=Math.hypot(P.fx||0,P.fy||0);if(fl>0.01){p.dx=P.fx/fl;p.dy=P.fy/fl}p.cx=P.x;p.cy=P.y}
       p.cx+=p.dx*1050*dt;p.cy+=p.dy*1050*dt;const an=p.a0+p.t*RPS*TAU;p.x=p.cx+Math.cos(an)*130;p.y=p.cy+Math.sin(an)*130;p.rot=an+Math.PI/2;
       if(Math.random()<0.3)parts.push({x:p.x,y:p.y,vx:0,vy:0,life:0.2,max:0.2,c:'#c9a6ff',s:5})}
     for(const b of ebullets){if(b.life<=0)continue;const rr=b.r+p.r*1.6;if((b.x-p.x)**2+(b.y-p.y)**2<rr*rr){b.life=0;if(parts.length<600)parts.push({x:b.x,y:b.y,vx:0,vy:0,life:0.25,max:0.25,c:'#e2ccff',s:7})}}
@@ -2483,7 +2483,13 @@ function drawSkillWorld(){lzFrame();ctx.save();ctx.globalCompositeOperation='lig
       g.fillStyle='rgba(120,220,255,.85)';g.strokeStyle='#4df3ff';g.lineWidth=2.5;for(const sg of [-1,1])for(const k of [0,14]){g.beginPath();g.moveTo(-50-k,0);g.lineTo(-62-k,sg*18);g.lineTo(-72-k,sg*18);g.lineTo(-62-k,0);g.closePath();g.fill();g.stroke()}
       });
       ctx.restore()}
-    else if(p.k==='Sblade'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot+G.t*14);ctx.scale(2.2,2.2);fxBlade('#e2ccff','#b9f',16);ctx.restore()}
+    else if(p.k==='Sblade'){const tr=p.rot||0,bx=-Math.cos(tr),by=-Math.sin(tr); // v74 간지 이펙트
+      ctx.save();ctx.globalCompositeOperation='lighter';
+      const hg=ctx.createRadialGradient(p.x,p.y,4,p.x,p.y,70);hg.addColorStop(0,'rgba(255,140,255,0.55)');hg.addColorStop(0.45,'rgba(150,90,255,0.25)');hg.addColorStop(1,'rgba(80,40,255,0)');ctx.fillStyle=hg;ctx.beginPath();ctx.arc(p.x,p.y,70,0,TAU);ctx.fill();
+      const sg=ctx.createLinearGradient(p.x,p.y,p.x+bx*150,p.y+by*150);sg.addColorStop(0,'rgba(255,200,255,0.85)');sg.addColorStop(0.4,'rgba(170,110,255,0.4)');sg.addColorStop(1,'rgba(90,60,255,0)');ctx.strokeStyle=sg;ctx.lineCap='round';ctx.lineWidth=22;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+bx*150,p.y+by*150);ctx.stroke();ctx.lineWidth=7;ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+bx*70,p.y+by*70);ctx.stroke();
+      for(let g=3;g>=1;g--){ctx.save();ctx.globalAlpha=0.32/g;ctx.translate(p.x+bx*g*34,p.y+by*g*34);ctx.rotate(tr+G.t*14-g*0.5);ctx.scale(2.2,2.2);fxBlade('#ff9cff','#7b5cff',16);ctx.restore()}
+      ctx.restore();
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(tr+G.t*14);ctx.scale(2.5,2.5);fxBlade('#f4e6ff','#d58cff',16);ctx.restore()}
     else if(p.k==='Sboom'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);fxBoom((p.r||42)*2.4);ctx.restore()}
     else if(p.k==='Slaser')drawLaser(p);
     else if(p.k==='Saura'){const Rr=p.R||p.r*8;const gr=ctx.createRadialGradient(p.x,p.y,Rr*0.15,p.x,p.y,Rr);gr.addColorStop(0,'rgba(255,120,40,0.05)');gr.addColorStop(0.75,'rgba(255,100,40,0.2)');gr.addColorStop(1,'rgba(255,190,80,0.45)');
