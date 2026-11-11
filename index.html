@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v77</title>
+<title>네온 생존자 - NEON SURVIVOR v78</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -72,7 +72,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v77</div>
+  <div class="sub">NEON SURVIVOR v78</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -2412,7 +2412,7 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
   if(id==='bolt'){for(const q of projs)if(q.k==='Sarrow'&&q.stuck&&q.ow===P){q.life=0;if(q.z)q.z.until=0}for(let k=0;k<8;k++){const aa=a+k*Math.PI/4;projs.push({k:'Sarrow',x,y,vx:Math.cos(aa)*1300,vy:Math.sin(aa)*1300,r:57,dmg:D*10,life:8,hit:new Set(),rot:aa,ow:P})}S.shoot();S.zap()} // v72 8방향
   else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:24,dmg:D*2.5,hm:new Map(),rot:0,life:4.4});S.shoot()}
   else if(id==='pulse'){doPulse(x,y,D,am);projs.push({k:'Spulse',x,y,r:1,t:0,n:2,life:3,D,am,rot:0})} // v75 3연속
-  else if(id==='chain'){{const hs=densest();const wp=[];if(hs)wp.push({x:hs.x,y:hs.y});else wp.push({x:x+ax*500,y:y+ay*500});projs.push({k:'Sdash',x,y,r:30,px:x,py:y,wp,hops:6,D,zt:0,life:3.5,rot:0});rings.push({x,y,r:0,max:180,t:0,dur:0.35,c:'#fff27a'});burst(x,y,'#fff27a',30,480,0.4,4);skShake(6);S.zap()}}
+  else if(id==='chain'){{const hs=densest();const wp=[];if(hs)wp.push({x:hs.x,y:hs.y});else wp.push({x:x+ax*500,y:y+ay*500});projs.push({k:'Sdash',x,y,r:30,px:x,py:y,ox:x,oy:y,wp,hops:6,D,zt:0,life:5,rot:0});rings.push({x,y,r:0,max:180,t:0,dur:0.35,c:'#fff27a'});burst(x,y,'#fff27a',30,480,0.4,4);skShake(6);S.zap()}}
   else if(id==='boom'){for(const o of [-0.35,0,0.35]){const b=a+o;projs.push({k:'Sboom',x,y,dx:Math.cos(b),dy:Math.sin(b),t:0,out:true,dist:0,r:34,dmg:D*4,hit:new Set(),rot:0})}S.shoot()}
   else if(id==='seek'){const tg=nearestN(x,y,30,760);for(let i=0;i<30;i++){const b=a+(i/29-0.5)*3.2;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*2,life:4,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
   else if(id==='aura'){const Rr=Math.min(650,st.rad*3.3*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:10,tick:0,dmg:D*2.4,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
@@ -2444,6 +2444,8 @@ function skProj(p,dt){
       for(let i=0;i<2&&t1.length;i++){const e=t1.splice((Math.random()*t1.length)|0,1)[0];if(e.dead)continue;
         zaps.push({pts:[{x:P.x,y:P.y},{x:(P.x+e.x)/2+rand(-20,20),y:(P.y+e.y)/2+rand(-20,20)},{x:e.x,y:e.y}],t:0.18});hurtEnemy(e,p.D*1.5,e.x-P.x,e.y-P.y,40);
         for(const f of nearestN(e.x,e.y,3,180)){if(f===e||f.dead)continue;zaps.push({pts:[{x:e.x,y:e.y},{x:(e.x+f.x)/2+rand(-15,15),y:(e.y+f.y)/2+rand(-15,15)},{x:f.x,y:f.y}],t:0.15});hurtEnemy(f,p.D*1.3,f.x-e.x,f.y-e.y,30)}}}
+    if(!p.wp.length&&!p.ret&&p.life>0){p.ret=1;p.hops=0;p.wp.push({x:p.ox,y:p.oy});rings.push({x:P.x,y:P.y,r:0,max:240,t:0,dur:0.4,c:'#fff27a'});burst(P.x,P.y,'#fff27a',30,480,0.4,4);skShake(6)} // v78 원래 자리로 복귀
+    if(p.life<=0&&!p.fin){p.fin=1;P.x=p.px=p.ox;P.y=p.py=p.oy}
     if(!p.wp.length||p.life<=0){p.life=0;rings.push({x:P.x,y:P.y,r:0,max:240,t:0,dur:0.4,c:'#fff27a'});rings.push({x:P.x,y:P.y,r:0,max:140,t:0,dur:0.3,c:'#ffffff'});burst(P.x,P.y,'#fff27a',40,520,0.5,4);skShake(8);P.inv=Math.max(P.inv,0.6)}
     return}
   if(p.k==='Spulse'){p.t+=dt;if(p.t>=0.45){p.t=0;p.n--;doPulse(P.x,P.y,p.D,p.am);if(p.n<=0)p.life=0}return}
