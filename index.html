@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v68</title>
+<title>네온 생존자 - NEON SURVIVOR v69</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -72,7 +72,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v68</div>
+  <div class="sub">NEON SURVIVOR v69</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -714,7 +714,7 @@ function killEnemy(e){
     pickups.push({type:'heart',x:e.x-34,y:e.y,t:0});pickups.push({type:'magnet',x:e.x+34,y:e.y,t:0});G.pendingLv+=1;
     showBanner('👑 엘리트 격파! 큰 보상 획득','#ffd84d');if(G.ev&&G.ev.k==='elite')G.ev.dur=Math.min(G.ev.dur,G.ev.t+2.5);return}
   if(e.type==='splitter'&&enemies.length<640){for(let i=0;i<3;i++){const a=rand(0,TAU),sh=spawnEnemy('shard',e.x+Math.cos(a)*12,e.y+Math.sin(a)*12);sh.kbx=Math.cos(a)*240;sh.kby=Math.sin(a)*240}burst(e.x,e.y,'#3cffd0',10,200,0.4,3)}
-  dropGem(e.x,e.y,e.xp*gemMul());
+  {const _r=window.__raid&&window.__raid.R;if(!(state==='raid'&&_r&&_r.diff!=='vs'&&Math.random()>=0.75))dropGem(e.x,e.y,e.xp*gemMul())} // v69 레이드 경험치 75%
   if(Math.random()<0.05)pickups.push({type:'crystal',x:e.x+rand(-8,8),y:e.y+rand(-8,8),t:0}); // 크리스탈 5%
   // 회복 물약 드롭: 일반 2.5%/6초, 하드 1.5%/9초, 크레이지 1.0%/12초. 엘리트는 위에서 확정 드롭
   const cz=isCrazy();
