@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v74</title>
+<title>네온 생존자 - NEON SURVIVOR v75</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -72,7 +72,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v74</div>
+  <div class="sub">NEON SURVIVOR v75</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -2088,7 +2088,7 @@ function hostUpdate(dt){
 }
 // ---------- 스냅샷 (클라이언트도 원본 render로 똑같이 그리기 위한 상태) ----------
 const r1=v=>Math.round(v),r2=v=>Math.round(v*100)/100;
-const ET=Object.keys(ETYPES),PK=['bolt','boom','seek','Sarrow','Sblade','Sboom','Sstorm','Saura','Slaser'],EBK=['ebullet','bossbullet'],ROTT=new Set(['charger','elite','boss']);
+const ET=Object.keys(ETYPES),PK=['bolt','boom','seek','Sarrow','Sblade','Sboom','Sstorm','Saura','Slaser','Spulse'],EBK=['ebullet','bossbullet'],ROTT=new Set(['charger','elite','boss']);
 let snapN=0;const pKey={};
 function nearAny(x,y,ps,m){for(const p of ps)if(Math.abs(p.x-x)<m&&Math.abs(p.y-y)<m*0.8)return true;return false}
 let nidC=0;const nid=o=>o._n||(o._n=(nidC=(nidC+1)&4095)||(nidC=1));
@@ -2385,7 +2385,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 <script>
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
-const SKILLS={bolt:{cd:15,d:'거대한 화살 8방향 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파·강한 넉백'},chain:{cd:20,d:'하늘에서 번개 연타'},
+const SKILLS={bolt:{cd:15,d:'거대한 화살 8방향 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파 3연속·강한 넉백'},chain:{cd:20,d:'하늘에서 번개 연타'},
   boom:{cd:10,d:'부메랑 3개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:20,d:'지정 위치에 유성 1개 낙하'},beam:{cd:20,dur:10,d:'10초 지속 레이저'}};
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
 const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
@@ -2411,8 +2411,7 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
   const st=skBase(id),D=st.dmg,am=areaMul(),a=Math.atan2(ay,ax),x=P.x,y=P.y;
   if(id==='bolt'){for(const q of projs)if(q.k==='Sarrow'&&q.stuck&&q.ow===P){q.life=0;if(q.z)q.z.until=0}for(let k=0;k<8;k++){const aa=a+k*Math.PI/4;projs.push({k:'Sarrow',x,y,vx:Math.cos(aa)*1300,vy:Math.sin(aa)*1300,r:57,dmg:D*10,life:8,hit:new Set(),rot:aa,ow:P})}S.shoot();S.zap()} // v72 8방향
   else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:24,dmg:D*2.5,hm:new Map(),rot:0,life:4.4});S.shoot()}
-  else if(id==='pulse'){const Rr=380*am;rings.push({x,y,r:0,max:Rr,t:0,dur:0.6,c:'#8ff6ff'});rings.push({x,y,r:0,max:Rr*0.65,t:0,dur:0.45,c:'#ffffff'});
-    buildGrid();query(x,y,Rr,(e,dx,dy)=>{hurtEnemy(e,D*4,0,0,0);skPush(e,x,y)});burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
+  else if(id==='pulse'){doPulse(x,y,D,am);projs.push({k:'Spulse',x,y,r:1,t:0,n:2,life:3,D,am,rot:0})} // v75 3연속
   else if(id==='chain'){projs.push({k:'Sstorm',x,y,r:0,n:14,cd:0,dmg:D*5,life:4,rot:0})}
   else if(id==='boom'){for(const o of [-0.35,0,0.35]){const b=a+o;projs.push({k:'Sboom',x,y,dx:Math.cos(b),dy:Math.sin(b),t:0,out:true,dist:0,r:34,dmg:D*4,hit:new Set(),rot:0})}S.shoot()}
   else if(id==='seek'){const tg=nearestN(x,y,30,760);for(let i=0;i<30;i++){const b=a+(i/29-0.5)*3.2;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*2,life:4,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
@@ -2425,7 +2424,10 @@ function fireSkill(id,ax,ay,tx,ty){const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=
 function skPush(e,x,y){if(e.dead||e.type==='raidboss')return;let dx=e.x-x,dy=e.y-y;const d=Math.hypot(dx,dy);if(d<1){const b=rand(0,TAU);dx=Math.cos(b);dy=Math.sin(b)}else{dx/=d;dy/=d}
   const boss=e.type==='boss',ex=Math.min(W*0.5/VS/(Math.abs(dx)||1e-6),H*0.5/VS/(Math.abs(dy)||1e-6))*0.92,dist=boss?70:Math.max(260,ex-Math.max(d,0)),T=1.2,k=3.2,v0=dist*k/(1-Math.exp(-k*T));
   e.pT=T;e.pvx=dx*v0;e.pvy=dy*v0;e.kbx=e.kby=0}
+function doPulse(x,y,D,am){const Rr=380*am;rings.push({x,y,r:0,max:Rr,t:0,dur:0.6,c:'#8ff6ff'});rings.push({x,y,r:0,max:Rr*0.65,t:0,dur:0.45,c:'#ffffff'});
+    buildGrid();query(x,y,Rr,(e,dx,dy)=>{hurtEnemy(e,D*4,0,0,0);skPush(e,x,y)});burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
 function skProj(p,dt){
+  if(p.k==='Spulse'){p.t+=dt;if(p.t>=0.45){p.t=0;p.n--;doPulse(P.x,P.y,p.D,p.am);if(p.n<=0)p.life=0}return}
   if(p.k==='Sarrow'&&p.stuck){for(const q of (state==='raid'?rRP().filter(q=>!q.dead):[P])){if(q&&(q.x-p.x)**2+(q.y-p.y)**2<320*320){p.life=0;if(p.z)p.z.until=0;burst(p.x,p.y,'#4df3ff',20,260,0.4,3);break}}if(p.life<=0)return;p.tk=(p.tk||0)+dt;while(p.tk>=0.1){p.tk-=0.1;query(p.x,p.y,320,e=>{if(e.type==='boss'||e.type==='raidboss'||e.boss||e.isBoss)return;if((e.x-p.x)**2+(e.y-p.y)**2<(320+e.r)**2)hurtEnemy(e,10000,0,0,0)})}}
   else if(p.k==='Sarrow'){p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;{if(Math.abs(p.x)>=WH||Math.abs(p.y)>=WH){p.x=clamp(p.x,-WH,WH);p.y=clamp(p.y,-WH,WH);p.stuck=1;p.life=Infinity;
       p.z={x:p.x,y:p.y,r:320,until:Infinity,g:G};NOSP.push(p.z);rings.push({x:p.x,y:p.y,r:0,max:320,t:0,dur:0.6,c:'#4df3ff'});burst(p.x,p.y,'#4df3ff',40,380,0.6,4);skShake(6);
