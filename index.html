@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v90</title>
+<title>네온 생존자 - NEON SURVIVOR v91</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v90</div>
+  <div class="sub">NEON SURVIVOR v91</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -2537,7 +2537,7 @@ function fireSkill(id,ax,ay,tx,ty){if(P&&P.down)return;const l=Math.hypot(ax,ay)
   else if(id==='aura'){const Rr=Math.min(690,st.rad*3.5*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:10,tick:0,dmg:D*2.5,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
   else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
     meteors.push({x:mx,y:my,t:0,warn:4.2,dmg:D*10,rad:Math.max(260,st.rad*2.6*am),hit:false,big:1,all:1});S.pulse()} // v83 거대 메테오 연출
-  else if(id==='beam'){projs.push({k:'Slaser',x,y,r:Math.min(63,Math.round(760*am/20)),t:0,life:10,tick:0,dmg:D*1.5,ax,ay,rot:a,len:760*am});S.zap()}
+  else if(id==='beam'){projs.push({k:'Slaser',x,y,r:Math.min(63,Math.round(760*am/20)),t:0,life:10,tick:0,dmg:D*1.5,ax,ay,rot:a,len:760*am});rings.push({x,y,r:0,max:240,t:0,dur:0.42,c:'#ff6ad5'});rings.push({x,y,r:0,max:130,t:0,dur:0.28,c:'#ffffff'});burst(x,y,'#ff6ad5',36,520,0.5,4);burst(x,y,'#ffffff',16,340,0.35,3);skShake(6);S.zap()}
 }
 // 충격파 밀어내기: kbRes 무시, 감속(ease-out) 속도, 밀리는 동안(1.2초) 자체 이동 없음
 function skPush(e,x,y){if(e.dead||e.type==='raidboss')return;let dx=e.x-x,dy=e.y-y;const d=Math.hypot(dx,dy);if(d<1){const b=rand(0,TAU);dx=Math.cos(b);dy=Math.sin(b)}else{dx/=d;dy/=d}
@@ -2613,22 +2613,46 @@ function skProj(p,dt){
     query(p.x,p.y,L+60,e=>{if(e.dead||p.hm.has(e))return;const dx=e.x-p.x,dy=e.y-p.y,d=Math.hypot(dx,dy);if(d>L+e.r+half)return;
       let hit=hitLine(p.rot,e)||(sw>0.001&&hitLine(prev,e));
       if(!hit&&sw>0.001&&d>4){const ea=Math.atan2(dy,dx),a0=Math.atan2(Math.sin(ea-prev),Math.cos(ea-prev)),a1=Math.atan2(Math.sin(ea-p.rot),Math.cos(ea-p.rot)),pad=(half+e.r)/d;if(a0*a1<=0&&Math.abs(a0)+Math.abs(a1)<=sw+pad+0.02)hit=true}
-      if(hit){p.hm.set(e,0.1);hurtEnemy(e,p.dmg,dx,dy,60)}})}
+      if(hit){p.hm.set(e,0.1);hurtEnemy(e,p.dmg,dx,dy,60);if(!lowGfx()&&Math.random()<0.4&&parts.length<700)burst(e.x,e.y,'#ff9aff',5,180,0.28,2.6)}})}
 }
 // ---------- 그리기 (월드 좌표) ----------
-// 레이저 부드러운 렌더: 표시 각도 보간(최단각, 프레임 독립) + 굵기 이즈 인/아웃, 랜덤 지터 없음
+// 레이저 연출 v91: 잔상·에너지 펄스·총구/팁 플레어 (판정은 그대로)
 const LZS=new Map();let lzT=0,lzDt=0,lzF=0;
 function lzKey(p){return p._n!=null?p._n:p}
 function lzFrame(){const n=performance.now();lzDt=lzT?Math.min(0.1,(n-lzT)/1000):0;lzT=n;lzF++;for(const [k,s] of LZS)if(lzF-s.f>2)LZS.delete(k)}
-function drawLaser(p){const k=lzKey(p);let s=LZS.get(k);if(!s){s={a:p.rot||0,age:0,f:lzF};LZS.set(k,s)}
+function drawLaser(p){const k=lzKey(p);let s=LZS.get(k);if(!s){s={a:p.rot||0,age:0,f:lzF,tr:[]};LZS.set(k,s)}
   s.f=lzF;s.age+=lzDt;const da=Math.atan2(Math.sin((p.rot||0)-s.a),Math.cos((p.rot||0)-s.a));s.a+=da*(1-Math.exp(-22*lzDt));
-  const L=p.len||(p.r?p.r*20:760),c=Math.cos(s.a),sn=Math.sin(s.a),x2=p.x+c*L,y2=p.y+sn*L;
-  const ein=Math.min(1,s.age/0.18),eout=p.life!=null?Math.min(1,Math.max(0,p.life)/0.25):1,e0=Math.min(ein,eout),e=e0*e0*(3-2*e0);if(e<=0)return;
-  const pul=1+0.06*Math.sin(G.t*10),w=22*e*pul;ctx.lineCap='round';
-  ctx.globalAlpha=0.35*e;ctx.strokeStyle='#ff6ad5';ctx.lineWidth=w*2.4+6;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(x2,y2);ctx.stroke();
-  ctx.globalAlpha=0.6*e;ctx.lineWidth=w*1.2+3;ctx.stroke();
-  ctx.globalAlpha=0.85*e;ctx.strokeStyle='#ffe6ff';ctx.lineWidth=w*0.5+2;ctx.stroke();
-  ctx.globalAlpha=1;ctx.lineCap='butt'}
+  if(!s.tr)s.tr=[];s.tr.push({a:s.a,x:p.x,y:p.y});const tmax=lowGfx()?4:9;while(s.tr.length>tmax)s.tr.shift();
+  const L=p.len||(p.r?p.r*20:760);
+  const ein=Math.min(1,s.age/0.12),eout=p.life!=null?Math.min(1,Math.max(0,p.life)/0.35):1,e0=Math.min(ein,eout),e=e0*e0*(3-2*e0);if(e<=0)return;
+  const tm=(G&&G.t)||s.age,pul=1+0.09*Math.sin(tm*14)+0.04*Math.sin(tm*31),w=26*e*pul;
+  ctx.save();ctx.lineCap='round';ctx.globalCompositeOperation='lighter';
+  for(let i=0;i<s.tr.length-1;i++){const g=s.tr[i],al=e*0.16*(i+1)/s.tr.length,gx=g.x+Math.cos(g.a)*L,gy=g.y+Math.sin(g.a)*L;
+    ctx.globalAlpha=al;ctx.strokeStyle='#ff4dff';ctx.lineWidth=w*1.7;ctx.beginPath();ctx.moveTo(g.x,g.y);ctx.lineTo(gx,gy);ctx.stroke()}
+  const c=Math.cos(s.a),sn=Math.sin(s.a),x1=p.x,y1=p.y,x2=p.x+c*L,y2=p.y+sn*L;
+  const beam=()=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()};
+  ctx.globalAlpha=0.22*e;ctx.strokeStyle='#b44dff';ctx.lineWidth=w*3.6+12;beam();
+  ctx.globalAlpha=0.48*e;ctx.strokeStyle='#ff6ad5';ctx.lineWidth=w*2.1+6;beam();
+  ctx.globalAlpha=0.72*e;ctx.strokeStyle='#ff9aef';ctx.lineWidth=w*1.05+3;beam();
+  ctx.globalAlpha=0.55*e;ctx.strokeStyle='#ffffff';ctx.lineWidth=Math.max(2,w*0.38);ctx.setLineDash([22,26]);ctx.lineDashOffset=-tm*480;beam();ctx.setLineDash([]);
+  ctx.globalAlpha=0.96*e;ctx.strokeStyle='#ffffff';ctx.lineWidth=w*0.28+1.4;beam();
+  const nPkt=lowGfx()?3:6;for(let i=0;i<nPkt;i++){const u=(tm*1.45+i/nPkt)%1,fd=Math.sin(u*Math.PI),px=x1+c*u*L,py=y1+sn*u*L,pr=w*(0.55+0.5*fd);
+    ctx.globalAlpha=0.4*e*fd;ctx.fillStyle='#ff9aff';ctx.beginPath();ctx.arc(px,py,pr*0.9,0,TAU);ctx.fill();
+    ctx.globalAlpha=0.85*e*fd;ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(px,py,pr*0.32,0,TAU);ctx.fill()}
+  if(!lowGfx()){const pxp=-sn,pyp=c;for(let i=0;i<8;i++){const u=(tm*0.75+i*0.155)%1,off=Math.sin(tm*20+i*1.7)*w*0.55,px=x1+c*u*L+pxp*off,py=y1+sn*u*L+pyp*off;
+    ctx.globalAlpha=0.48*e*(0.35+0.65*Math.sin(u*Math.PI));ctx.strokeStyle=i%2?'#ffffff':'#ffb0ff';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(px-c*11,py-sn*11);ctx.lineTo(px+c*11,py+sn*11);ctx.stroke()}}
+  const mz=30*e*pul;
+  const mg=ctx.createRadialGradient(x1,y1,0,x1,y1,mz*2.6);mg.addColorStop(0,'rgba(255,255,255,0.95)');mg.addColorStop(0.22,'rgba(255,180,255,0.72)');mg.addColorStop(0.55,'rgba(255,70,200,0.28)');mg.addColorStop(1,'rgba(160,40,255,0)');
+  ctx.globalAlpha=e;ctx.fillStyle=mg;ctx.beginPath();ctx.arc(x1,y1,mz*2.6,0,TAU);ctx.fill();
+  ctx.globalAlpha=0.9*e;ctx.strokeStyle='#ffffff';ctx.lineWidth=2.3;ctx.beginPath();ctx.arc(x1,y1,mz*0.68,tm*8,tm*8+Math.PI*1.25);ctx.stroke();
+  ctx.strokeStyle='#ff6ad5';ctx.beginPath();ctx.arc(x1,y1,mz*1.08,-tm*6.2,-tm*6.2+Math.PI*1.45);ctx.stroke();
+  const tg=ctx.createRadialGradient(x2,y2,0,x2,y2,mz*3);tg.addColorStop(0,'rgba(255,255,255,0.95)');tg.addColorStop(0.28,'rgba(255,150,230,0.55)');tg.addColorStop(1,'rgba(255,70,200,0)');
+  ctx.globalAlpha=e;ctx.fillStyle=tg;ctx.beginPath();ctx.arc(x2,y2,mz*3,0,TAU);ctx.fill();
+  const sp=mz*2.3*(1+0.18*Math.sin(tm*22));ctx.globalAlpha=0.92*e;ctx.strokeStyle='#ffffff';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(x2-c*sp,y2-sn*sp);ctx.lineTo(x2+c*sp*0.55,y2+sn*sp*0.55);
+  ctx.moveTo(x2+sn*sp*0.75,y2-c*sp*0.75);ctx.lineTo(x2-sn*sp*0.75,y2+c*sp*0.75);ctx.stroke();
+  ctx.globalAlpha=1;ctx.lineCap='butt';ctx.restore()}
 function drawSkillWorld(){lzFrame();ctx.save();ctx.globalCompositeOperation='lighter';
   for(const z of NOSP){if(z.g!==G||G.t>=z.until)continue;const al=Math.min(1,(z.until-G.t)/1.5);ctx.globalAlpha=0.18*al;ctx.fillStyle='#4df3ff';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,TAU);ctx.fill();ctx.globalAlpha=0.6*al;ctx.strokeStyle='#4df3ff';ctx.lineWidth=3;ctx.setLineDash([14,10]);ctx.stroke();ctx.setLineDash([])}ctx.globalAlpha=1;
   for(const p of projs){if(p.k[0]!=='S')continue;
