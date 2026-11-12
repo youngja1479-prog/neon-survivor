@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v87</title>
+<title>네온 생존자 - NEON SURVIVOR v88</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v87</div>
+  <div class="sub">NEON SURVIVOR v88</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -433,7 +433,7 @@ function tdBuy(k){if(state==='raid'&&window.__raid&&__raid.R&&!__raid.R.host){tr
 function tdSkin(){const eq=(window.__cry&&__cry.eq&&__cry.eq())||{};const m={tw_sapphire:{col:'#4da6ff',fill:'#102030',core:'#d0e8ff',glow:'#4da6ff',rgba:'80,180,255'},tw_ruby:{col:'#ff4d6d',fill:'#2a1016',core:'#ffd0d8',glow:'#ff4d6d',rgba:'255,80,110'},tw_gold:{col:'#ffd84d',fill:'#2a2410',core:'#fff4c0',glow:'#ffd84d',rgba:'255,216,80'},tw_obsidian:{col:'#b46bff',fill:'#160e24',core:'#e8d0ff',glow:'#b46bff',rgba:'180,107,255'},tw_ice:{col:'#9ef6ff',fill:'#102428',core:'#ffffff',glow:'#9ef6ff',rgba:'160,240,255'},tw_sun:{col:'#ff8c3a',fill:'#2a1608',core:'#ffe0a0',glow:'#ff8c3a',rgba:'255,140,60'}};
   return m[eq.tw]||{col:'#7dff6b',fill:'#152818',core:'#efffe8',glow:'#7dff6b',rgba:'180,255,160'}}
 function tdEnsureUI(){if($('tdUpBtn'))return;
-  const st=document.createElement('style');st.textContent='#tdUpBtn{position:fixed;right:12px;bottom:72px;z-index:7;display:none;font:inherit;font-weight:900;font-size:15px;color:#0a0820;background:#7dff6b;border:0;border-radius:14px;padding:10px 16px;cursor:pointer;box-shadow:0 0 16px #7dff6b88}#tdUpBtn.show{display:block}#tdUpList{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:640px;margin:8px auto;max-height:56vh;overflow:auto}#tdUpList .sitem{width:168px}#tdUpOv{background:rgba(5,4,15,.5)}';document.head.appendChild(st);
+  const st=document.createElement('style');st.textContent='#tdUpBtn{position:fixed;left:10px;bottom:6px;z-index:7;display:none;font:inherit;font-weight:900;font-size:15px;color:#0a0820;background:#7dff6b;border:0;border-radius:14px;padding:10px 16px;cursor:pointer;box-shadow:0 0 16px #7dff6b88}#tdUpBtn.show{display:block}#tdUpList{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:640px;margin:8px auto;max-height:56vh;overflow:auto}#tdUpList .sitem{width:168px}#tdUpOv{background:rgba(5,4,15,.5)}';document.head.appendChild(st);
   const b=document.createElement('button');b.id='tdUpBtn';b.type='button';b.textContent='타워 강화';document.body.appendChild(b);
   const ov=document.createElement('div');ov.className='ov';ov.id='tdUpOv';ov.innerHTML='<div class="big" style="color:#7dff6b;text-shadow:0 0 18px #7dff6b">타워 강화</div><div id="tdUpBal" style="color:#ffb44a;font-weight:900;margin:4px 0 8px"></div><div id="tdUpList"></div><div class="row"><button class="btn sec" id="tdUpClose">닫기</button></div>';document.body.appendChild(ov);
   b.onclick=()=>{tdRenderUp();ov.classList.add('show')};$('tdUpClose').onclick=()=>ov.classList.remove('show')}
