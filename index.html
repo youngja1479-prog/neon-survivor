@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v95</title>
+<title>네온 생존자 - NEON SURVIVOR v96</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v95</div>
+  <div class="sub">NEON SURVIVOR v96</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -172,7 +172,7 @@ const lowGfx=()=>SET.gfx==='low';
 (()=>{const D=Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype,'shadowBlur');if(!D||!D.set)return;
   Object.defineProperty(ctx,'shadowBlur',{configurable:true,get(){return D.get.call(this)},set(v){D.set.call(this,lowGfx()?0:v)}})})();
 let W=0,H=0,DPR=1,VS=1; // VS: 월드 확대 비율
-const WH=2400; // 월드 반경 (월드 크기 4800x4800)
+const WH=1800; // v96 월드 반경 (월드 크기 3600x3600, 이전 2400/4800)
 const FONT='"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR","Noto Sans CJK KR","Gothic A1",sans-serif';
 function resize(){
   DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;
@@ -2501,7 +2501,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 <script>
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
-const SKILLS={bolt:{cd:15,d:'거대한 화살 8방향 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파 3연속·강한 넉백'},chain:{cd:18,d:'번개 두르고 적진 돌진 · 충돌 시 번개와 충격파'},
+const SKILLS={bolt:{cd:15,d:'거대한 화살 4방향 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파 3연속·강한 넉백'},chain:{cd:18,d:'번개 두르고 적진 돌진 · 충돌 시 번개와 충격파'},
   boom:{cd:10,d:'부메랑 5개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:80,d:'거대 메테오: 보스 제외 맵 전체 적 전멸 (시작 후 80초 뒤 사용 가능)'},beam:{cd:15,dur:10,d:'10초 지속 레이저 · 빠르게 돌려도 적중'}};
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
 const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
@@ -2525,7 +2525,7 @@ $('setBackBtn').onclick=()=>{$('settings').classList.remove('show');toTitle()};
 // ---------- 스킬 발동 (현재 P 기준; 레이드 호스트는 swapIn 후 호출) ----------
 function fireSkill(id,ax,ay,tx,ty){if(P&&P.down)return;const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=0}else{ax/=l;ay/=l}
   const st=skBase(id),D=st.dmg,am=areaMul(),a=Math.atan2(ay,ax),x=P.x,y=P.y;
-  if(id==='bolt'){for(const q of projs)if(q.k==='Sarrow'&&q.stuck&&q.ow===P){q.life=0;if(q.z)q.z.until=0}for(let k=0;k<8;k++){const aa=a+k*Math.PI/4;projs.push({k:'Sarrow',x,y,vx:Math.cos(aa)*1300,vy:Math.sin(aa)*1300,r:57,dmg:D*10,life:8,hit:new Set(),rot:aa,ow:P})}S.shoot();S.zap()} // v72 8방향
+  if(id==='bolt'){for(const q of projs)if(q.k==='Sarrow'&&q.stuck&&q.ow===P){q.life=0;if(q.z)q.z.until=0}for(let k=0;k<4;k++){const aa=a+k*Math.PI/2;projs.push({k:'Sarrow',x,y,vx:Math.cos(aa)*1300,vy:Math.sin(aa)*1300,r:57,dmg:D*10,life:8,hit:new Set(),rot:aa,ow:P})}S.shoot();S.zap()} // v96 4방향
   else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:24,dmg:D*2.5,hm:new Map(),rot:0,life:4.4});S.shoot()}
   else if(id==='pulse'){doPulse(x,y,D,am);projs.push({k:'Spulse',x,y,r:1,t:0,n:2,life:3,D,am,rot:0})} // v75 3연속
   else if(id==='chain'){{const hs=densest();const wp=[];if(hs)wp.push({x:hs.x,y:hs.y});else wp.push({x:x+ax*500,y:y+ay*500});projs.push({k:'Sdash',x,y,r:30,px:x,py:y,ox:x,oy:y,wp,hops:8,D,am,zt:0,life:5,rot:0,ch:new Set(),pz:0});rings.push({x,y,r:0,max:180,t:0,dur:0.35,c:'#fff27a'});burst(x,y,'#fff27a',30,480,0.4,4);skShake(6);S.zap()}}
