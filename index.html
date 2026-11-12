@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v93</title>
+<title>네온 생존자 - NEON SURVIVOR v94</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v93</div>
+  <div class="sub">NEON SURVIVOR v94</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -534,8 +534,8 @@ function spawnEnemy(type,x,y){
   if(isTower())e.aim=tdPickAim(type);enemies.push(e);return e;
 }
 let NOSP=[];function noSpAt(x,y){NOSP=NOSP.filter(z=>z.g===G&&G.t<z.until);for(const z of NOSP)if((x-z.x)**2+(y-z.y)**2<z.r*z.r)return true;return false}
-function offscreenPos(around){const o=around||((isTower()&&G.tower)?G.tower:P);const v=viewHalf();let a=rand(0,TAU),d=Math.hypot(v.w,v.h)+rand(40,120);
-  return {x:clamp(o.x+Math.cos(a)*d,-WH+20,WH-20),y:clamp(o.y+Math.sin(a)*d,-WH+20,WH-20)}}
+function offscreenPos(around){const m=WH-20,s=(Math.random()*4)|0,u=rand(-m,m); // v94 맵 테두리에서만 스폰
+  return s===0?{x:u,y:-m}:s===1?{x:u,y:m}:s===2?{x:-m,y:u}:{x:m,y:u}}
 function pickType(){const t=diffT();const w=[['grunt',10]];
   const batT=isHard()?8:20,bruteT=isHard()?32:60,spitT=isHard()?50:95,chgT=isHard()?110:210,splT=isHard()?70:120;
   if(t>batT)w.push(['bat',t<60? (isHard()?5:3):(isHard()?8:6)]);if(t>bruteT)w.push(['brute',Math.min(isHard()?3.556:2.889,1+(t-bruteT)/(isHard()?40:60))]); // v93 후반 약 10%
