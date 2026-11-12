@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v94</title>
+<title>네온 생존자 - NEON SURVIVOR v95</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v94</div>
+  <div class="sub">NEON SURVIVOR v95</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -259,6 +259,7 @@ const MODES={
   tower:{name:'타워디펜스',short:'타워',col:'#7dff6b',desc:'맵 중앙의 타워를 지키세요. 타워가 부서지면 패배. 플레이어는 죽어도 10초 뒤 부활합니다. 적에게서 코어를 모아 타워를 강화하세요. 5분 이후에는 적이 급격히 몰려옵니다.'}
 };
 const isHard=()=>gameMode==='hard';const UPD=()=>isCrazy()?1:(state==='raid'?1.3:1.0);
+const SPWN=1.3; // v95 생성 속도·생성량
 const isCrazy=()=>gameMode==='crazy';const isTower=()=>gameMode==='tower';const soloEasy=()=>(gameMode==='normal'||gameMode==='hard'||gameMode==='warrior')&&!(window.__raid&&window.__raid.R)&&state!=='raid';
 const CRAZY_T0=600; // ~10분 경과 스폰/난이도
 const diffT=()=>G?G.t+(isCrazy()?CRAZY_T0:0):0;
@@ -544,8 +545,8 @@ function pickType(){const t=diffT();const w=[['grunt',10]];
   let s=0;for(const x of w)s+=x[1];let r=Math.random()*s;for(const x of w){r-=x[1];if(r<=0)return x[0]}return 'grunt'}
 function spawner(dt){
   const t=G.t;const st=diffT();const hm=isHard()?1.55:1;const tdRush=isTower()&&t>=300;
-  const rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*UPD()*(isCrazy()?2:1)*(soloEasy()?0.85:1)*(isTower()?0.8:1)*(tdRush?3.5+(t-300)/38:1);
-  const cap=Math.min(isTower()?(tdRush?300:200):isHard()?640:520,(isTower()?24:isHard()?46:30)+st*(isTower()?0.55:isHard()?1.3:1.0)+(tdRush?90+(t-300)*0.5:0));
+  const rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*UPD()*(isCrazy()?2:1)*(soloEasy()?0.85:1)*(isTower()?0.8:1)*(tdRush?3.5+(t-300)/38:1)*SPWN;
+  const cap=Math.round(Math.min(isTower()?(tdRush?300:200):isHard()?640:520,(isTower()?24:isHard()?46:30)+st*(isTower()?0.55:isHard()?1.3:1.0)+(tdRush?90+(t-300)*0.5:0))*SPWN);
   G.spawnAcc+=rate*dt*(magnetStorm()?1.5:1);
   while(G.spawnAcc>=1){G.spawnAcc-=1;if(enemies.length>=cap)continue;
     const type=pickType();const p=offscreenPos();
@@ -556,7 +557,7 @@ function spawner(dt){
   const bossAt=isCrazy()?30:300;
   if(isTower()){
     if(!G.tdRush&&t>=300){G.tdRush=true;G.bossSpawned=true;const T=G.tower||{x:0,y:0};
-      for(let i=0;i<56;i++){const a=i/56*TAU+rand(-0.06,0.06),d=480+rand(0,200),ty=pickType();spawnEnemy(ty,T.x+Math.cos(a)*d,T.y+Math.sin(a)*d)}
+      for(let i=0;i<Math.round(56*SPWN);i++){const a=i/Math.round(56*SPWN)*TAU+rand(-0.06,0.06),d=480+rand(0,200),ty=pickType();spawnEnemy(ty,T.x+Math.cos(a)*d,T.y+Math.sin(a)*d)}
       showBanner('⚠ 적들이 몰려온다! ⚠','#ff4d6d');S.boss();shake=Math.max(shake,10)}
   }else if(!G.bossSpawned&&t>=bossAt){G.bossSpawned=true;G.nextBoss=t+300;const p=offscreenPos();spawnEnemy('boss',p.x,p.y);showBanner(isCrazy()?'⚠ 크레이지 보스! 처치하면 클리어! ⚠':(isHard()?'⚠ 하드 보스! 처치하면 클리어! ⚠':'⚠ 보스 출현! 처치하면 클리어! ⚠'),'#ff2e63');S.boss();shake=Math.max(shake,10)}
   else if(G.victory&&t>=G.nextBoss){G.nextBoss=(Math.floor(t/300)+1)*300;const p=offscreenPos();spawnEnemy('boss',p.x,p.y);showBanner('⚠ 보스 출현! ⚠','#ff2e63');S.boss();shake=Math.max(shake,10)}
@@ -2044,8 +2045,8 @@ function vote(p){if(R.phase!=='inter'||p.dead)return;R.votes[p.id]=1;if(alive().
 function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;const tdRush=R.diff==='tower'&&st>=300;let rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*NUM.mobRateMul*(0.75+0.25*R.n)*1.2;
   if(R.diff!=='vs'&&R.diff!=='tower')rate*=1.5; // v68 레이드 적 1.5배 (타워는 자체 배율)
   if(R.diff==='tower')rate*=1.25*(tdRush?3.9+(st-300)/32:1);
-  if(R.diff==='story')rate*=(R.storyHard?2.5:1.15);if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6;
-  const cap=Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)));
+  if(R.diff==='story')rate*=(R.storyHard?2.5:1.15);if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6;rate*=SPWN;
+  const cap=Math.round(Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)))*SPWN);
   R.spawnAcc+=rate*dt;const ps=alive();if(!ps.length&&!(R.diff==='tower'&&G.tower&&G.tower.hp>0))return;
   while(R.spawnAcc>=1){R.spawnAcc-=1;if(enemies.length>=cap)continue;const tp=ps.length?ps[Math.random()*ps.length|0]:G.tower;P=tp||P;
     const type=pickType();const pos=offscreenPos(R.diff==='tower'?G.tower:null);
@@ -2093,7 +2094,7 @@ function hostUpdate(dt){
   R.t+=dt;G.t=R.t;G.dropCd-=dt;G.healCd-=dt;tickXpDie(dt);
   if(isTower())updateTower(dt);
   if(R.phase==='wave1'&&R.t>=R.bossAt){
-    if(R.diff==='tower'){if(!G.tdRush){G.tdRush=true;const T=G.tower||{x:0,y:0};for(let i=0;i<72;i++){const a=i/72*TAU+rand(-0.06,0.06),d=480+rand(0,200),ty=pickType();spawnEnemy(ty,T.x+Math.cos(a)*d,T.y+Math.sin(a)*d)}showBanner('⚠ 적들이 몰려온다! ⚠','#ff4d6d');S.boss();shake=Math.max(shake,10)}}
+    if(R.diff==='tower'){if(!G.tdRush){G.tdRush=true;const T=G.tower||{x:0,y:0};for(let i=0;i<Math.round(72*SPWN);i++){const a=i/Math.round(72*SPWN)*TAU+rand(-0.06,0.06),d=480+rand(0,200),ty=pickType();spawnEnemy(ty,T.x+Math.cos(a)*d,T.y+Math.sin(a)*d)}showBanner('⚠ 적들이 몰려온다! ⚠','#ff4d6d');S.boss();shake=Math.max(shake,10)}}
     else if(R.diff==='story'){if(!R.s3)story3Begin();if(R.s3&&!R.s3.done)story3Tick(dt)}
     else{R.phase='boss1';makeBoss('gozara')}}
   if(R.phase==='wave2'){
