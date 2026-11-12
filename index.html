@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v97</title>
+<title>네온 생존자 - NEON SURVIVOR v98</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v97</div>
+  <div class="sub">NEON SURVIVOR v98</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -875,7 +875,7 @@ function gameUpdate(dt){
   G.beatFlash=Math.max(0,G.beatFlash-dt*4);
   buildGrid();
   // 적 업데이트
-  const v=viewHalf();const farD=Math.max(v.w,v.h)*1.25+350;
+  const v=viewHalf();const farD=G&&G.t<30?Math.max(v.w,v.h)*1.25+350:WH*3; // v98 테두리 스폰 적이 매 프레임 재배치되지 않게
   for(const e of enemies){
     if(e.dead)continue;e.flash-=dt;
     const tgt=tdAim(e);let dx=tgt.x-e.x,dy=tgt.y-e.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
@@ -2115,7 +2115,7 @@ function hostUpdate(dt){
   updateBeat(dt);G.beatFlash=Math.max(0,G.beatFlash-dt*4);
   raidEvents(dt);
   buildGrid();
-  const v=viewHalf();const farD=Math.max(v.w,v.h)*1.25+350;
+  const v=viewHalf();const farD=G&&G.t<30?Math.max(v.w,v.h)*1.25+350:WH*3; // v98 테두리 스폰 적이 매 프레임 재배치되지 않게
   for(const e of enemies){if(e.dead||e.type==='raidboss')continue;e.flash-=dt;const aimT=isTower()&&e.aim==='tower'&&G.tower&&G.tower.hp>0;const tp=aimT?G.tower:(nearestP(e.x,e.y)||(isTower()&&G.tower&&G.tower.hp>0?G.tower:null));if(!tp)continue;
     let dx=tp.x-e.x,dy=tp.y-e.y;const d=Math.hypot(dx,dy)||1;dx/=d;dy/=d;
     const es=e.spd*(blackout()?0.85:1)*(magnetStorm()?1.08:1)*(e.slowT>0?0.45:1);if(e.slowT>0)e.slowT-=dt;let vx=dx*es,vy=dy*es;
