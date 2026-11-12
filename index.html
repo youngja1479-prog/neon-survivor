@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v91</title>
+<title>네온 생존자 - NEON SURVIVOR v92</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v91</div>
+  <div class="sub">NEON SURVIVOR v92</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -641,12 +641,8 @@ const blackout=()=>!!(G.ev&&G.ev.k==='blackout');
 const magnetStorm=()=>!!(G.ev&&G.ev.k==='magnet');
 const gemMul=()=>blackout()?2:magnetStorm()?1.75:1;
 const XP_DIE_T0=420,XP_DIE_T1=480; // 7:00–8:00 경험치 사망
-const noXpWindow=()=>!!(G&&G.t>=XP_DIE_T0&&G.t<XP_DIE_T1);
-function tickXpDie(dt){if(!G)return;dt=dt||0;
-  if(G.t>=XP_DIE_T0&&!G.xpDieOn){G.xpDieOn=1;G.xpDieFx=2.8;hurtFlash=Math.max(hurtFlash,0.55);addShake(12);
-    showBanner('⚡ 경험치 사망','#b46bff');S.xpdie()}
-  if(G.t>=XP_DIE_T1&&G.xpDieOn&&!G.xpDieOff){G.xpDieOff=1;G.xpDieFx=0;showBanner('경험치 복구','#4df3ff');S.level()}
-  if(G.xpDieFx>0)G.xpDieFx=Math.max(0,G.xpDieFx-dt)}
+const noXpWindow=()=>false; // 경험치 사망 삭제(v92)
+function tickXpDie(dt){}
 function drawXpDieFx(){if(!G)return;const on=noXpWindow(),fx=G.xpDieFx|0;if(!on&&!(G.xpDieFx>0))return;
   // 짧은 연출(시작 2.8초) + 윈도우 중 약한 깜빡임
   const t=performance.now()*0.001;const big=G.xpDieFx>0;const a=big?Math.min(1,G.xpDieFx*2,G.xpDieFx)* (0.7+0.3*Math.sin(t*28)):0.35+0.25*Math.sin(t*9);
@@ -2505,7 +2501,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
 const SKILLS={bolt:{cd:15,d:'거대한 화살 8방향 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파 3연속·강한 넉백'},chain:{cd:18,d:'번개 두르고 적진 돌진 · 충돌 시 번개와 충격파'},
-  boom:{cd:10,d:'부메랑 5개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:100,d:'거대 메테오: 보스 제외 맵 전체 적 전멸 (시작 후 100초 뒤 사용 가능)'},beam:{cd:15,dur:10,d:'10초 지속 레이저 · 빠르게 돌려도 적중'}};
+  boom:{cd:10,d:'부메랑 5개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:80,d:'거대 메테오: 보스 제외 맵 전체 적 전멸 (시작 후 80초 뒤 사용 가능)'},beam:{cd:15,dur:10,d:'10초 지속 레이저 · 빠르게 돌려도 적중'}};
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
 const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
 if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
