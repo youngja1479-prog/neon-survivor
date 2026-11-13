@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v99</title>
+<title>네온 생존자 - NEON SURVIVOR v100</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v99</div>
+  <div class="sub">NEON SURVIVOR v100</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -530,7 +530,7 @@ function spawnEnemy(type,x,y){
     orbT:-9,auraT:-9,slowT:0,shootT:rand(1,2.5)*(isHard()?0.8:1),st:0,stT:rand(2,4),dx:0,dy:0,rot:0,dead:false};
   if(type==='boss'){G.bossN++;const cz=isCrazy();e.r=T.r*(cz?1.9:1);e.hp=e.maxHp=T.hp*Math.pow(2.3,G.bossN-1)*(1+diffT()/900)*(isHard()?1.85:1)*(cz?18:bossLvMul())*UPD();e.dmg=T.dmg*(1+G.bossN*0.25)*(isHard()?1.45:1)*(cz?4.5:1);e.shootT=cz?0.8:isHard()?1.7:2.5;e.dashT=cz?1.6:isHard()?3.4:5;G.boss=e}
   {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff==='story'&&type!=='boss'){const m=_r.storyHard?3.5:1.25,md=_r.storyHard?2.5:1.25;e.hp=e.maxHp=e.hp*m;if(_r.storyHard)e.dmg=T.dmg*2.5;else e.dmg*=md}}
-  {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff!=='vs'){e.hp*=1.3;e.maxHp*=1.3}if(state==='raid'&&_r&&_r.diff==='tower'&&type!=='boss'){e.hp*=1.35;e.maxHp*=1.35;e.dmg*=1.35}} // v71 + v87 타워 레이드
+  {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff!=='vs'){e.hp*=1.3;e.maxHp*=1.3}if(state==='raid'&&_r&&_r.diff==='tower'&&type!=='boss'){e.hp*=1.35;e.maxHp*=1.35;e.dmg*=1.35}if(state==='raid'&&_r&&_r.diff!=='vs'&&_r.diff!=='tower'&&(_r.n===1||_r.n===2)){const k=_r.n===1;e.hp*=k?1.4:1.15;e.maxHp*=k?1.4:1.15;e.dmg*=k?1.3:1.1}} // v71 + v87 타워 레이드 + v100 솔로/2인 레이드 강화
   if(soloEasy()){e.hp*=0.8;e.maxHp*=0.8;e.dmg*=0.8} // v65/66 솔로 일반·하드·전사 난이도 완화
   if(isTower())e.aim=tdPickAim(type);enemies.push(e);return e;
 }
@@ -789,7 +789,7 @@ function killEnemy(e,q){
     pickups.push({type:'heart',x:e.x-34,y:e.y,t:0});pickups.push({type:'magnet',x:e.x+34,y:e.y,t:0});G.pendingLv+=1;
     showBanner('👑 엘리트 격파! 큰 보상 획득','#ffd84d');if(G.ev&&G.ev.k==='elite')G.ev.dur=Math.min(G.ev.dur,G.ev.t+2.5);return}
   if(e.type==='splitter'&&enemies.length<640){for(let i=0;i<3;i++){const a=rand(0,TAU),sh=spawnEnemy('shard',e.x+Math.cos(a)*12,e.y+Math.sin(a)*12);sh.kbx=Math.cos(a)*240;sh.kby=Math.sin(a)*240}burst(e.x,e.y,'#3cffd0',10,200,0.4,3)}
-  {const _r=window.__raid&&window.__raid.R;if(!(state==='raid'&&_r&&_r.diff!=='vs'&&Math.random()>=0.75))dropGem(e.x,e.y,e.xp*gemMul())} // v69 레이드 경험치 75%
+  {const _r=window.__raid&&window.__raid.R;if(!(state==='raid'&&_r&&_r.diff!=='vs'&&Math.random()>=(_r.diff==='tower'?0.75:_r.n===1?0.55:_r.n===2?0.65:0.75)))dropGem(e.x,e.y,e.xp*gemMul())} // v69 레이드 경험치 75%
   if(Math.random()<0.05)pickups.push({type:'crystal',x:e.x+rand(-8,8),y:e.y+rand(-8,8),t:0}); // 크리스탈 5%
   // 회복 물약 드롭: 일반 2.5%/6초, 하드 1.5%/9초, 크레이지 1.0%/12초. 엘리트는 위에서 확정 드롭
   const cz=isCrazy();
@@ -1997,7 +1997,8 @@ function hurtP(p,d){if(p.dead||p.inv>0||p.god||R.god||(R&&(R.phase==='story'||R.
     if(RP.length>1){p.reviveT=NUM.reviveT||30;rbanner(p.name+' 쓰러짐! '+Math.ceil(p.reviveT)+'초 후 부활','#ff8c8c',2)}else rbanner(p.name+' 쓰러짐!','#ff8c8c',2)}}
 function reviveP(p){const ps=alive();const tw=isTower()&&G.tower;if(!ps.length&&!tw)return;const t=tw||ps[(Math.random()*ps.length)|0];const a=Math.random()*Math.PI*2,rad=tw?170:50;p.x=t.x+Math.cos(a)*rad;p.y=t.y+Math.sin(a)*rad;p.dead=false;p.down=false;p.reviveT=0;p.hp=tw?p.maxHp:Math.max(1,Math.round(p.maxHp*0.5));p.inv=tw?2.8:3;p.trail=[];rings.push({x:p.x,y:p.y,r:0,max:120,t:0,dur:0.5,c:p.col});burst(p.x,p.y,p.col,40,260,0.8,4);rbanner(p.name+' 부활!','#7dffb0',2)}
 function addTele(o){o.t=0;R.tele.push(o)}
-function makeBoss(kind,opt){const N=NUM[kind];const ps=alive();const c=ps[0]||{x:0,y:0};let hp=N.hp*NUM.scale(R.n)*(H_()?NUM.hard.bossHp:1)*1.3;
+function soloRK(){return (R&&R.diff!=='vs'&&R.diff!=='tower')?(R.n===1?1:R.n===2?0.5:0):0} // v100 1인=1, 2인=0.5
+function makeBoss(kind,opt){const N=NUM[kind];const ps=alive();const c=ps[0]||{x:0,y:0};let hp=N.hp*NUM.scale(R.n)*(H_()?NUM.hard.bossHp:1)*1.3*(1+0.6*soloRK());
   if(R.diff==='story')hp*=(R.storyHard?3.0:1.3);
   if(R.diff!=='vs')hp*=1.3; // v71
   const b={type:'raidboss',kind,name:kind==='gozara'?'고자라':(R.diff==='story'?'강산':'차박후 강똥원 원비 강산'),x:clamp(c.x+520,-WH+200,WH-200),y:clamp(c.y-200,-WH+200,WH-200),r:N.r,hp,maxHp:hp,mode:'chase',mt:2.5,face:-1,flash:0,kbx:0,kby:0,kbRes:0,xp:0,
@@ -2005,7 +2006,7 @@ function makeBoss(kind,opt){const N=NUM[kind];const ps=alive();const c=ps[0]||{x
   R.boss=b;enemies.push(b);QM=Math.max(58,N.r+10);
   if(kind==='gozara')R.gozRush=1; // v99
   if(!(opt&&opt.silent)){if(kind==='gozara')rbanner('⚠ 레이드 보스 「고자라」 출현! ⚠','#ff2e63',4);else if(R.diff==='story')rbanner('⚠ 레이드 보스 「강산」 출현! ⚠','#ff8c3a',4);else rbanner('세상을 정화시켜야한다.','#ff8c3a',5)}S.boss()}
-function bdm(){return H_()?NUM.hard.bossDmg:1}
+function bdm(){return (H_()?NUM.hard.bossDmg:1)*(1+0.35*soloRK())}
 function bossAI(dt){const b=R.boss,N=NUM[b.kind],tg=nearestP(b.x,b.y);if(!tg)return;b.flash-=dt;
   const hs=H_()?NUM.hard.bossSpd:1;
   if(b.kind==='kangsan'&&!b.enr&&b.hp<=b.maxHp*0.5){b.enr=true;rbanner('강산 격노! 더 빠르고 강해진다!','#ff2e63',3);b.mode='rest';b.mt=1.2}
@@ -2044,15 +2045,16 @@ function applyPick(p,i){if(!p.opts||!p.opts[i]||p.dead)return;const o=p.opts[i];
   burst(P.x,P.y,'#ffd84d',24,220,0.6,3);P=prev;p.opts=null;p.chooseT=0;p.storyPick=0;if(p.id===myId)S.level()}
 function vote(p){if(R.phase!=='inter'||p.dead)return;R.votes[p.id]=1;if(alive().every(q=>R.votes[q.id])){R.phase='wave2';R.boss2At=R.t+NUM.boss2Delay;R.nextElite=R.t+60;rbanner('몹 웨이브 재개! 5분 뒤 두 번째 보스가 온다…','#ffd84d',4)}}
 // 일반 모드 스폰 공식 재사용 (pickType/spawnEnemy/offscreenPos 원본 그대로)
-function gozRushBurst(){if(!R||R.gozBurst)return;R.gozBurst=1;R.gozRush=1;const ps=alive();const c=ps[0]||{x:0,y:0};const n=Math.round(40+16*(R.n||1)); // v99 고자라 출현 시 한꺼번에
+function gozRushBurst(){if(!R||R.gozBurst)return;R.gozBurst=1;R.gozRush=1;const ps=alive();const c=ps[0]||{x:0,y:0};const n=Math.round(R.n===1?90:R.n===2?100:40+16*(R.n||1)); // v100 1인90/2인100, v99 고자라 출현 시 한꺼번에
   for(let i=0;i<n;i++){const a=i/n*TAU+rand(-0.06,0.06),d=440+rand(0,200),ty=pickType();spawnEnemy(ty,clamp(c.x+Math.cos(a)*d,-WH+20,WH-20),clamp(c.y+Math.sin(a)*d,-WH+20,WH-20))}}
 function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;const tdRush=R.diff==='tower'&&st>=300;let rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*NUM.mobRateMul*(0.75+0.25*R.n)*1.2;
   if(R.diff!=='vs'&&R.diff!=='tower')rate*=1.5; // v68 레이드 적 1.5배 (타워는 자체 배율)
   if(R.diff==='tower')rate*=1.25*(tdRush?3.9+(st-300)/32:1);
   if(R.diff==='story')rate*=(R.storyHard?2.5:1.15);
-  if(R.gozRush)rate*=3.2;else if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6; // v99 고자라부터 폭주
+  rate*=1+0.3*soloRK(); // v100 소규모 상시 압박
+  if(R.gozRush)rate*=3.2+1.0*soloRK();else if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6; // v99 고자라부터 폭주
   rate*=SPWN;
-  const cap=Math.round(Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)))*SPWN*(R.gozRush?1.5:1));
+  const cap=Math.round(Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)))*SPWN*(R.gozRush?1.5+0.2*soloRK():1));
   R.spawnAcc+=rate*dt;const ps=alive();if(!ps.length&&!(R.diff==='tower'&&G.tower&&G.tower.hp>0))return;
   while(R.spawnAcc>=1){R.spawnAcc-=1;if(enemies.length>=cap)continue;const tp=ps.length?ps[Math.random()*ps.length|0]:G.tower;P=tp||P;
     const type=pickType();const pos=offscreenPos(R.diff==='tower'?G.tower:null);
