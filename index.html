@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v98</title>
+<title>네온 생존자 - NEON SURVIVOR v99</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v98</div>
+  <div class="sub">NEON SURVIVOR v99</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -545,9 +545,9 @@ function pickType(){const t=diffT();const w=[['grunt',10]];
   if(t>splT)w.push(['splitter',Math.min(isHard()?4:3,1+(t-splT)/70)]);
   let s=0;for(const x of w)s+=x[1];let r=Math.random()*s;for(const x of w){r-=x[1];if(r<=0)return x[0]}return 'grunt'}
 function spawner(dt){
-  const t=G.t;const st=diffT();const hm=isHard()?1.55:1;const tdRush=isTower()&&t>=300;
-  const rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*UPD()*(isCrazy()?2:1)*(soloEasy()?0.85:1)*(isTower()?0.8:1)*(tdRush?3.5+(t-300)/38:1)*SPWN;
-  const cap=Math.round(Math.min(isTower()?(tdRush?300:200):isHard()?640:520,(isTower()?24:isHard()?46:30)+st*(isTower()?0.55:isHard()?1.3:1.0)+(tdRush?90+(t-300)*0.5:0))*SPWN);
+  const t=G.t;const st=diffT();const hm=isHard()?1.55:1;const tdRush=isTower()&&t>=300;const midRush=(gameMode==='normal'||gameMode==='hard')&&t>=180; // v99 일반 3분 후 (혼자 클리어 가능하게)
+  const rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*UPD()*(isCrazy()?2:1)*(soloEasy()?0.85:1)*(isTower()?0.8:1)*(tdRush?3.5+(t-300)/38:1)*SPWN*(midRush?(isHard()?1.5:1.7):1);
+  const cap=Math.round(Math.min(isTower()?(tdRush?300:200):isHard()?640:520,(isTower()?24:isHard()?46:30)+st*(isTower()?0.55:isHard()?1.3:1.0)+(tdRush?90+(t-300)*0.5:0))*SPWN*(midRush?(isHard()?1.15:1.2):1));
   G.spawnAcc+=rate*dt*(magnetStorm()?1.5:1);
   while(G.spawnAcc>=1){G.spawnAcc-=1;if(enemies.length>=cap)continue;
     const type=pickType();const p=offscreenPos();
@@ -1904,7 +1904,7 @@ function story3SpawnBossDlg(){if(!R||!R.s3)return;R.s3.stage='bossdlg';R.s3.i=0;
   makeBoss('gozara',{silent:true});if(R.boss){R.boss.mode='rest';R.boss.mt=9e3}
   rbanner('⚠ 레이드 보스 「고자라」 출현! ⚠','#ff2e63',4);
   story3Show(STORY3_BOSS[0],'tap');bcast({t:'s3',stage:'bossdlg',i:0})}
-function story3Resume(){if(!R||!R.s3)return;storyHide();R.phase='boss1';
+function story3Resume(){if(!R||!R.s3)return;storyHide();R.phase='boss1';gozRushBurst();
   if(R.boss){R.boss.mode='chase';R.boss.mt=2.5}R.s3.stage='done';R.s3.done=1;bcast({t:'s3',stage:'done'})}
 function story3Tick(dt){if(!R||!R.host||!R.s3||R.s3.done)return;const s=R.s3;
   if(s.stage==='lines'){s.t+=dt;if(s.t>=2){s.t=0;s.i++;if(s.i>=STORY3_AUTO.length){story3FireMayday();return}
@@ -2003,6 +2003,7 @@ function makeBoss(kind,opt){const N=NUM[kind];const ps=alive();const c=ps[0]||{x
   const b={type:'raidboss',kind,name:kind==='gozara'?'고자라':(R.diff==='story'?'강산':'차박후 강똥원 원비 강산'),x:clamp(c.x+520,-WH+200,WH-200),y:clamp(c.y-200,-WH+200,WH-200),r:N.r,hp,maxHp:hp,mode:'chase',mt:2.5,face:-1,flash:0,kbx:0,kby:0,kbRes:0,xp:0,
     orbT:-9,slowT:0,dead:false,enr:false,z:0,cyc:0,spd:0,dmg:0};
   R.boss=b;enemies.push(b);QM=Math.max(58,N.r+10);
+  if(kind==='gozara')R.gozRush=1; // v99
   if(!(opt&&opt.silent)){if(kind==='gozara')rbanner('⚠ 레이드 보스 「고자라」 출현! ⚠','#ff2e63',4);else if(R.diff==='story')rbanner('⚠ 레이드 보스 「강산」 출현! ⚠','#ff8c3a',4);else rbanner('세상을 정화시켜야한다.','#ff8c3a',5)}S.boss()}
 function bdm(){return H_()?NUM.hard.bossDmg:1}
 function bossAI(dt){const b=R.boss,N=NUM[b.kind],tg=nearestP(b.x,b.y);if(!tg)return;b.flash-=dt;
@@ -2043,11 +2044,15 @@ function applyPick(p,i){if(!p.opts||!p.opts[i]||p.dead)return;const o=p.opts[i];
   burst(P.x,P.y,'#ffd84d',24,220,0.6,3);P=prev;p.opts=null;p.chooseT=0;p.storyPick=0;if(p.id===myId)S.level()}
 function vote(p){if(R.phase!=='inter'||p.dead)return;R.votes[p.id]=1;if(alive().every(q=>R.votes[q.id])){R.phase='wave2';R.boss2At=R.t+NUM.boss2Delay;R.nextElite=R.t+60;rbanner('몹 웨이브 재개! 5분 뒤 두 번째 보스가 온다…','#ffd84d',4)}}
 // 일반 모드 스폰 공식 재사용 (pickType/spawnEnemy/offscreenPos 원본 그대로)
+function gozRushBurst(){if(!R||R.gozBurst)return;R.gozBurst=1;R.gozRush=1;const ps=alive();const c=ps[0]||{x:0,y:0};const n=Math.round(40+16*(R.n||1)); // v99 고자라 출현 시 한꺼번에
+  for(let i=0;i<n;i++){const a=i/n*TAU+rand(-0.06,0.06),d=440+rand(0,200),ty=pickType();spawnEnemy(ty,clamp(c.x+Math.cos(a)*d,-WH+20,WH-20),clamp(c.y+Math.sin(a)*d,-WH+20,WH-20))}}
 function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;const tdRush=R.diff==='tower'&&st>=300;let rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*NUM.mobRateMul*(0.75+0.25*R.n)*1.2;
   if(R.diff!=='vs'&&R.diff!=='tower')rate*=1.5; // v68 레이드 적 1.5배 (타워는 자체 배율)
   if(R.diff==='tower')rate*=1.25*(tdRush?3.9+(st-300)/32:1);
-  if(R.diff==='story')rate*=(R.storyHard?2.5:1.15);if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6;rate*=SPWN;
-  const cap=Math.round(Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)))*SPWN);
+  if(R.diff==='story')rate*=(R.storyHard?2.5:1.15);
+  if(R.gozRush)rate*=3.2;else if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6; // v99 고자라부터 폭주
+  rate*=SPWN;
+  const cap=Math.round(Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)))*SPWN*(R.gozRush?1.5:1));
   R.spawnAcc+=rate*dt;const ps=alive();if(!ps.length&&!(R.diff==='tower'&&G.tower&&G.tower.hp>0))return;
   while(R.spawnAcc>=1){R.spawnAcc-=1;if(enemies.length>=cap)continue;const tp=ps.length?ps[Math.random()*ps.length|0]:G.tower;P=tp||P;
     const type=pickType();const pos=offscreenPos(R.diff==='tower'?G.tower:null);
@@ -2097,7 +2102,7 @@ function hostUpdate(dt){
   if(R.phase==='wave1'&&R.t>=R.bossAt){
     if(R.diff==='tower'){if(!G.tdRush){G.tdRush=true;const T=G.tower||{x:0,y:0};for(let i=0;i<Math.round(72*SPWN);i++){const a=i/Math.round(72*SPWN)*TAU+rand(-0.06,0.06),d=480+rand(0,200),ty=pickType();spawnEnemy(ty,T.x+Math.cos(a)*d,T.y+Math.sin(a)*d)}showBanner('⚠ 적들이 몰려온다! ⚠','#ff4d6d');S.boss();shake=Math.max(shake,10)}}
     else if(R.diff==='story'){if(!R.s3)story3Begin();if(R.s3&&!R.s3.done)story3Tick(dt)}
-    else{R.phase='boss1';makeBoss('gozara')}}
+    else{R.phase='boss1';makeBoss('gozara');gozRushBurst()}}
   if(R.phase==='wave2'){
     if(R.diff==='story'){if(!R.s5&&R.boss2At!=null&&R.t>=R.boss2At-STORY5_LEAD)story5Begin();if(R.s5&&!R.s5.done)story5Tick(dt)}
     else if(R.t>=R.boss2At){R.phase='boss2';makeBoss('kangsan')}}
