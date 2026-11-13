@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v105</title>
+<title>네온 생존자 - NEON SURVIVOR v106</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v105</div>
+  <div class="sub">NEON SURVIVOR v106</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -2239,7 +2239,7 @@ function hostUpdate(dt){
 }
 // ---------- 스냅샷 (클라이언트도 원본 render로 똑같이 그리기 위한 상태) ----------
 const r1=v=>Math.round(v),r2=v=>Math.round(v*100)/100;
-const ET=Object.keys(ETYPES),PK=['bolt','boom','seek','Sarrow','Sblade','Sboom','Sstorm','Saura','Slaser','Spulse','Sdash'],EBK=['ebullet','bossbullet'],ROTT=new Set(['charger','elite','boss']);
+const ET=Object.keys(ETYPES),PK=['bolt','boom','seek','Sarrow','Sblade','Sboom','Sstorm','Saura','Slaser','Spulse','Sdash','Sfire'],EBK=['ebullet','bossbullet'],ROTT=new Set(['charger','elite','boss']);
 let snapN=0;const pKey={};
 function nearAny(x,y,ps,m){for(const p of ps)if(Math.abs(p.x-x)<m&&Math.abs(p.y-y)<m*0.8)return true;return false}
 let nidC=0;const nid=o=>o._n||(o._n=(nidC=(nidC+1)&4095)||(nidC=1));
@@ -2539,7 +2539,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
 const SKILLS={bolt:{cd:15,d:'거대한 화살 4방향 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파 3연속·강한 넉백'},chain:{cd:18,d:'번개 두르고 적진 돌진 · 충돌 시 번개와 충격파'},
-  boom:{cd:10,d:'부메랑 5개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:80,d:'거대 메테오: 보스 제외 맵 전체 적 전멸 (시작 후 80초 뒤 사용 가능)'},beam:{cd:15,dur:10,d:'10초 지속 레이저 · 빠르게 돌려도 적중'}};
+  boom:{cd:10,d:'부메랑 5개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:80,d:'거대 메테오: 보스 제외 맵 전체 적 전멸 (시작 후 80초 뒤 사용 가능)'},beam:{cd:15,dur:10,d:'10초 지속 레이저 · 빠르게 돌려도 적중'},flame:{cd:15,d:'불바다: 플레이어 주위로 불길이 쫘라락 퍼지고 3초간 바닥이 불탐 · 화상'}};
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
 const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
 if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
@@ -2571,8 +2571,11 @@ function fireSkill(id,ax,ay,tx,ty){if(P&&P.down)return;const l=Math.hypot(ax,ay)
   else if(id==='aura'){const Rr=Math.min(690,st.rad*3.5*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:10,tick:0,dmg:D*2.5,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
   else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
     meteors.push({x:mx,y:my,t:0,warn:4.2,dmg:D*10,rad:Math.max(260,st.rad*2.6*am),hit:false,big:1,all:1});S.pulse()} // v83 거대 메테오 연출
+  else if(id==='flame'){const Rr=fireSkR(st,am);projs.push({k:'Sfire',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:3.5,tick:0.25,dmg:D,burn:st.burn||3,hit:new Set(),rot:-Math.PI});
+    rings.push({x,y,r:0,max:Rr*0.45,t:0,dur:0.3,c:'#ffd27a'});burst(x,y,'#ff8a2a',30,520,0.5,4);burst(x,y,'#ffd27a',14,320,0.35,3);skShake(8);S.boom()}
   else if(id==='beam'){projs.push({k:'Slaser',x,y,r:Math.min(63,Math.round(760*am/20)),t:0,life:10,tick:0,dmg:D*1.5,ax,ay,rot:a,len:760*am});rings.push({x,y,r:0,max:240,t:0,dur:0.42,c:'#ff6ad5'});rings.push({x,y,r:0,max:130,t:0,dur:0.28,c:'#ffffff'});burst(x,y,'#ff6ad5',36,520,0.5,4);burst(x,y,'#ffffff',16,340,0.35,3);skShake(6);S.zap()}
 }
+const fireSkR=(st,am)=>Math.min(500,(340+(st.len||150)*0.3)*am); // 불바다 반경: 기본 ~385, 화염 방사기 레벨(사거리)에 따라 소폭 증가
 // 충격파 밀어내기: kbRes 무시, 감속(ease-out) 속도, 밀리는 동안(1.2초) 자체 이동 없음
 function skPush(e,x,y){if(e.dead||e.type==='raidboss')return;let dx=e.x-x,dy=e.y-y;const d=Math.hypot(dx,dy);if(d<1){const b=rand(0,TAU);dx=Math.cos(b);dy=Math.sin(b)}else{dx/=d;dy/=d}
   const boss=e.type==='boss',ex=Math.min(W*0.5/VS/(Math.abs(dx)||1e-6),H*0.5/VS/(Math.abs(dy)||1e-6))*0.92,dist=boss?70:Math.max(260,ex-Math.max(d,0)),T=1.2,k=3.2,v0=dist*k/(1-Math.exp(-k*T));
@@ -2638,6 +2641,10 @@ function skProj(p,dt){
       query(tx,ty,95,(e,dx,dy)=>hurtEnemy(e,p.dmg,dx,dy,90));burst(tx,ty,'#fff27a',10,200,0.35,3);skShake(3);S.zap()}
     if(p.n<=0)p.dead=true}
   else if(p.k==='Saura'){p.x=P.x;p.y=P.y;p.life-=dt;p.tick-=dt;if(p.tick<=0){p.tick=0.3;query(p.x,p.y,p.R,e=>{hurtEnemy(e,p.dmg,e.x-p.x,e.y-p.y,40,isTower()?1:0);if(Math.random()<(isTower()?0.06:0.3)&&parts.length<500)burst(e.x,e.y,'#ff7a3c',2,60,0.4,2.5)})}}
+  else if(p.k==='Sfire'){p.t+=dt;p.life-=dt;p.rot=-Math.PI+Math.min(1,p.t/3.5)*TAU*0.998;const k=Math.min(1,p.t/0.5),cr=p.R*(1-(1-k)*(1-k)*(1-k)),q=isTower()?1:0;
+    if(k<1||!p.wd){if(k>=1)p.wd=1;query(p.x,p.y,cr,e=>{if(p.hit.has(e))return;p.hit.add(e);hurtEnemy(e,p.dmg*12,e.x-p.x,e.y-p.y,140,q);if(!lowGfx()&&Math.random()<0.25&&parts.length<600)burst(e.x,e.y,'#ff8a2a',3,120,0.3,3)})}
+    p.tick-=dt;if(p.tick<=0){p.tick=0.25;const fb=P&&P.weapons&&P.weapons.flame&&G.timers?(G.timers._fb||(G.timers._fb=[])):null;
+      query(p.x,p.y,cr,e=>{hurtEnemy(e,p.dmg*2,0,0,0,1);if(fb&&!e.dead){e.fbT=G.t+2;e.fbD=Math.max(e.fbD||0,p.burn);if(!e.fbOn){e.fbOn=1;fb.push(e)}}})}}
   else if(p.k==='Slaser'){p.x=P.x;p.y=P.y;p.life-=dt;if(P.dead||state==='dying'){p.dead=true;return}
     const prev=p.rot,fx=P.fx||0,fy=P.fy||0;if(fx||fy){let ta=Math.atan2(fy,fx),da=Math.atan2(Math.sin(ta-p.rot),Math.cos(ta-p.rot));p.rot+=da*(1-Math.exp(-22*dt))}
     const L=p.len,half=28;if(!p.hm)p.hm=new Map();
@@ -2687,6 +2694,15 @@ function drawLaser(p){const k=lzKey(p);let s=LZS.get(k);if(!s){s={a:p.rot||0,age
   ctx.beginPath();ctx.moveTo(x2-c*sp,y2-sn*sp);ctx.lineTo(x2+c*sp*0.55,y2+sn*sp*0.55);
   ctx.moveTo(x2+sn*sp*0.75,y2-c*sp*0.75);ctx.lineTo(x2-sn*sp*0.75,y2+c*sp*0.75);ctx.stroke();
   ctx.globalAlpha=1;ctx.lineCap='butt';ctx.restore()}
+let FSSPR=null;
+function drawFireSea(p){const t=p.t!=null?p.t:((p.rot||0)+Math.PI)/TAU*3.5,R=p.R||p.r*8,k=Math.min(1,t/0.5),cr=R*(1-(1-k)*(1-k)*(1-k)),fd=t<3?1:Math.max(0,(3.5-t)/0.5);if(cr<2||fd<=0)return;
+  if(!FSSPR){const c=makeCanvas(256,256),g=c.getContext('2d'),gr=g.createRadialGradient(128,128,0,128,128,128);gr.addColorStop(0,'rgba(255,80,20,0.22)');gr.addColorStop(0.55,'rgba(255,100,30,0.32)');gr.addColorStop(0.86,'rgba(255,165,60,0.62)');gr.addColorStop(1,'rgba(255,50,40,0)');g.fillStyle=gr;g.fillRect(0,0,256,256);FSSPR=c}
+  const tm=(G&&G.t)||t,fl=1+Math.sin(tm*13)*0.02;ctx.globalAlpha=0.9*fd;ctx.drawImage(FSSPR,p.x-cr*fl,p.y-cr*fl,cr*2*fl,cr*2*fl);
+  if(k<1){const w=1-k;ctx.globalAlpha=0.85;ctx.strokeStyle='#ff8a2a';ctx.lineWidth=10+34*w;ctx.beginPath();ctx.arc(p.x,p.y,cr,0,TAU);ctx.stroke();ctx.globalAlpha=0.9;ctx.strokeStyle='#ffe6a0';ctx.lineWidth=4+8*w;ctx.stroke()}
+  else{ctx.globalAlpha=0.55*fd;ctx.strokeStyle='#ff4d2a';ctx.lineWidth=5;ctx.beginPath();ctx.arc(p.x,p.y,cr,0,TAU);ctx.stroke()}
+  const n=lowGfx()?8:18;for(let i=0;i<n;i++){const u=(tm*0.9+i*0.383)%1,an=i/n*TAU+Math.sin(i*1.7+tm*0.6)*0.4,rr=cr*(0.25+0.72*((i*0.618)%1)),sz=(10+12*Math.sin(u*Math.PI))*(0.6+0.4*k);
+    ctx.globalAlpha=0.45*fd*Math.sin(u*Math.PI);ctx.fillStyle=i%2?'#ff5a2a':'#ffc05a';ctx.beginPath();ctx.arc(p.x+Math.cos(an)*rr,p.y+Math.sin(an)*rr-u*18,sz,0,TAU);ctx.fill()}
+  ctx.globalAlpha=1}
 function drawSkillWorld(){lzFrame();ctx.save();ctx.globalCompositeOperation='lighter';
   for(const z of NOSP){if(z.g!==G||G.t>=z.until)continue;const al=Math.min(1,(z.until-G.t)/1.5);ctx.globalAlpha=0.18*al;ctx.fillStyle='#4df3ff';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,TAU);ctx.fill();ctx.globalAlpha=0.6*al;ctx.strokeStyle='#4df3ff';ctx.lineWidth=3;ctx.setLineDash([14,10]);ctx.stroke();ctx.setLineDash([])}ctx.globalAlpha=1;
   for(const p of projs){if(p.k[0]!=='S')continue;
@@ -2710,6 +2726,7 @@ function drawSkillWorld(){lzFrame();ctx.save();ctx.globalCompositeOperation='lig
       ctx.save();ctx.translate(p.x,p.y);ctx.rotate(tr+G.t*14);ctx.scale(2.5,2.5);fxBlade('#f4e6ff','#d58cff',16);ctx.restore()}
     else if(p.k==='Sboom'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);fxBoom((p.r||42)*2.4);ctx.restore()}
     else if(p.k==='Slaser')drawLaser(p);
+    else if(p.k==='Sfire')drawFireSea(p);
     else if(p.k==='Saura'){const Rr=p.R||p.r*8;const gr=ctx.createRadialGradient(p.x,p.y,Rr*0.15,p.x,p.y,Rr);gr.addColorStop(0,'rgba(255,120,40,0.05)');gr.addColorStop(0.75,'rgba(255,100,40,0.2)');gr.addColorStop(1,'rgba(255,190,80,0.45)');
       ctx.fillStyle=gr;ctx.beginPath();ctx.arc(p.x,p.y,Rr*(1+Math.sin(G.t*9)*0.03),0,TAU);ctx.fill();ctx.strokeStyle='rgba(255,160,60,.7)';ctx.lineWidth=4;ctx.stroke()}}
   ctx.restore();
@@ -2721,7 +2738,7 @@ function drawSkillWorld(){lzFrame();ctx.save();ctx.globalCompositeOperation='lig
   const line=(L,w)=>{ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(fy,fx));ctx.beginPath();ctx.rect(0,-w,L,w*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(L,-w*1.8);ctx.lineTo(L+30,0);ctx.lineTo(L,w*1.8);ctx.stroke();ctx.restore()};
   const circ=(cx,cy,r)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.fill();ctx.stroke()};
   if(id==='bolt')line(1100,28);else if(id==='orbit'){circ(x,y,120);line(900,60)}else if(id==='beam')line(760*am,22);else if(id==='boom'){line(950,34);const s0=fx,s1=fy;for(const o of [-0.7,-0.35,0.35,0.7]){const c=Math.cos(o),sn=Math.sin(o);fx=s0*c-s1*sn;fy=s0*sn+s1*c;line(950,34)}fx=s0;fy=s1}
-  else if(id==='pulse')circ(x,y,380*am);else if(id==='aura'){const sv=P;P=me;const r=Math.min(650,skBase('aura').rad*3.3*am);P=sv;circ(x,y,r)}
+  else if(id==='pulse')circ(x,y,380*am);else if(id==='aura'){const sv=P;P=me;const r=Math.min(650,skBase('aura').rad*3.3*am);P=sv;circ(x,y,r)}else if(id==='flame'){const sv=P;P=me;const r=fireSkR(skBase('flame'),am);P=sv;circ(x,y,r)}
   else if(id==='meteor'&&skAimP){const sv=P;P=me;const r=Math.max(260,skBase('meteor').rad*2.6*am);P=sv;ctx.setLineDash([]);ctx.lineWidth=4;circ(skAimP.x,skAimP.y,r);ctx.beginPath();ctx.moveTo(skAimP.x-r-14,skAimP.y);ctx.lineTo(skAimP.x+r+14,skAimP.y);ctx.moveTo(skAimP.x,skAimP.y-r-14);ctx.lineTo(skAimP.x,skAimP.y+r+14);ctx.stroke()}else if(id==='chain')circ(x,y,480);else if(id==='seek'){circ(x,y,1200);line(200,10)}
   ctx.setLineDash([]);ctx.restore()}
 // ---------- 입력 ----------
