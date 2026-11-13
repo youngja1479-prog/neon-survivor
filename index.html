@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v104</title>
+<title>네온 생존자 - NEON SURVIVOR v105</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v104</div>
+  <div class="sub">NEON SURVIVOR v105</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -249,8 +249,8 @@ const WEAPONS={
   meteor:{name:'유성우',color:'#ff9a5d',desc:'적이 모인 곳에 유성을 떨어뜨립니다. 잠시 뒤 범위 폭발!',
     lv:[{dmg:34,n:2,cd:2.6,rad:68},{dmg:42,n:3,cd:2.4,rad:74},{dmg:52,n:3,cd:2.2,rad:84},{dmg:64,n:4,cd:1.95,rad:92},{dmg:82,n:5,cd:1.7,rad:104}]},
   flame:{name:'화염 방사기',color:'#ff8a2a',desc:'바라보는 방향으로 불길을 뿜어 부채꼴 안의 적을 모두 태웁니다. 맞은 적은 잠시 화상.',
-    lv:[{dmg:4,tick:0.3,len:150,arc:38,burn:2},{dmg:5,tick:0.3,len:158,arc:40,burn:2},{dmg:6,tick:0.29,len:166,arc:42,burn:2},{dmg:7,tick:0.28,len:174,arc:44,burn:3},{dmg:8,tick:0.26,len:185,arc:46,burn:3},
-      {dmg:9,tick:0.25,len:196,arc:48,burn:4},{dmg:11,tick:0.25,len:208,arc:50,burn:4},{dmg:13,tick:0.24,len:220,arc:52,burn:5},{dmg:15,tick:0.24,len:233,arc:54,burn:5},{dmg:18,tick:0.23,len:247,arc:56,burn:6}]},
+    lv:[{dmg:6,tick:0.3,len:150,arc:38,burn:3},{dmg:8,tick:0.3,len:158,arc:40,burn:3},{dmg:10,tick:0.29,len:166,arc:42,burn:3},{dmg:11,tick:0.28,len:174,arc:44,burn:5},{dmg:13,tick:0.26,len:185,arc:46,burn:5},
+      {dmg:14,tick:0.25,len:196,arc:48,burn:6},{dmg:18,tick:0.25,len:208,arc:50,burn:6},{dmg:21,tick:0.24,len:220,arc:52,burn:8},{dmg:24,tick:0.24,len:233,arc:54,burn:8},{dmg:29,tick:0.23,len:247,arc:56,burn:9}]},
 };
 const STAT_LBL={dmg:'피해',n:'개수',cd:'쿨타임',pierce:'관통',rad:'범위',len:'사거리',tick:'분사 간격',arc:'분사 각도',burn:'화상 피해'};
 const RANGED_W=new Set(['bolt','chain','boom','seek','beam','meteor']);
