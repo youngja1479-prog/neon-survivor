@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v108</title>
+<title>네온 생존자 - NEON SURVIVOR v109</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v108</div>
+  <div class="sub">NEON SURVIVOR v109</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -168,14 +168,21 @@ const cv=document.getElementById('c'), ctx=cv.getContext('2d');
 // 설정 (localStorage 저장): 데미지 숫자 표시, 그래픽 품질(low: 글로우(shadowBlur) 끄기·파티클 축소)
 const SET=(()=>{const d={dmgNum:true,gfx:'high'};try{return Object.assign(d,JSON.parse(localStorage.getItem('neonSurvivorSettings'))||{})}catch(e){return d}})();
 function saveSettings(){try{localStorage.setItem('neonSurvivorSettings',JSON.stringify(SET))}catch(e){}}
-const lowGfx=()=>SET.gfx==='low';
+// v109 [perf] 자동 성능 조절: 프레임이 느리면 단계적으로 lv1 글로우 끄기·경량 스프라이트·파티클/숫자 축소, lv2~3 렌더 해상도 축소 (게임 로직은 동일)
+const PERF={lv:0,ema:16.7,bad:0,good:0,enAt:[0,0,0,0],rs:1};
+const lowGfx=()=>SET.gfx==='low'||PERF.lv>=1;
+function perfApply(){const rs=PERF.lv>=3?0.6:PERF.lv>=2?0.78:1;if(lowGfx()&&parts.length>500)parts.splice(0,parts.length-500);if(rs!==PERF.rs){PERF.rs=rs;resize()}}
+function perfTick(ms){if(!(state==='play'||state==='raid')||document.hidden){PERF.bad=0;PERF.good=0;return}ms=Math.min(ms,100);PERF.ema+=(ms-PERF.ema)*0.08;
+  if(PERF.ema>24){PERF.bad+=ms;PERF.good=0;if(PERF.bad>1500&&PERF.lv<3){PERF.lv++;PERF.enAt[PERF.lv]=enemies.length;PERF.bad=0;PERF.ema=17;perfApply()}}
+  else if(PERF.ema<19){PERF.good+=ms;PERF.bad=0;if(PERF.good>8000&&PERF.lv>0&&enemies.length<PERF.enAt[PERF.lv]*0.7){PERF.lv--;PERF.good=0;perfApply()}}
+  else PERF.bad=Math.max(0,PERF.bad-ms)}
 (()=>{const D=Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype,'shadowBlur');if(!D||!D.set)return;
   Object.defineProperty(ctx,'shadowBlur',{configurable:true,get(){return D.get.call(this)},set(v){D.set.call(this,lowGfx()?0:v)}})})();
 let W=0,H=0,DPR=1,VS=1; // VS: 월드 확대 비율
 const WH=1800; // v96 월드 반경 (월드 크기 3600x3600, 이전 2400/4800)
 const FONT='"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR","Noto Sans CJK KR","Gothic A1",sans-serif';
 function resize(){
-  DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;
+  DPR=Math.max(0.5,Math.min(2,window.devicePixelRatio||1)*((typeof PERF!=='undefined'&&PERF.rs)||1));W=innerWidth;H=innerHeight;
   cv.width=Math.floor(W*DPR);cv.height=Math.floor(H*DPR);cv.style.width=W+'px';cv.style.height=H+'px';
   VS=Math.max(0.62,Math.min(1.1,Math.min(W,H)/720));
 }
@@ -319,11 +326,11 @@ function buildSprites(){
   const SC=2;
   for(const k in ETYPES){
     const t=ETYPES[k];
-    for(const flash of [false,true]){
-      const pad=12,size=Math.ceil((t.r+pad)*2*SC),c=makeCanvas(size,size),g=c.getContext('2d');
+    for(const lite of [false,true])for(const flash of [false,true]){ // v109 lite: 글로우 없는 작은 스프라이트(저사양/자동 성능)
+      const pad=lite?3:12,size=Math.ceil((t.r+pad)*2*SC),c=makeCanvas(size,size),g=c.getContext('2d');
       g.translate(size/2,size/2);g.scale(SC,SC);
       const col=flash?'#ffffff':t.color;
-      g.shadowColor=col;g.shadowBlur=10;g.lineWidth=2.5;g.strokeStyle=col;g.fillStyle=flash?'#ffffff':shade(t.color,0.28);
+      g.shadowColor=col;g.shadowBlur=lite?0:10;g.lineWidth=2.5;g.strokeStyle=col;g.fillStyle=flash?'#ffffff':shade(t.color,0.28);
       const r=t.r;g.beginPath();
       if(k==='grunt'){g.arc(0,0,r,0,TAU)}
       else if(k==='bat'){g.moveTo(0,-r*0.4);g.lineTo(r*1.2,-r*0.9);g.lineTo(r*0.8,r*0.2);g.lineTo(0,r*0.8);g.lineTo(-r*0.8,r*0.2);g.lineTo(-r*1.2,-r*0.9);g.closePath()}
@@ -349,7 +356,7 @@ function buildSprites(){
         if(k==='boss'){g.fillStyle='#fff';g.beginPath();g.arc(-16,-8,7,0,TAU);g.arc(16,-8,7,0,TAU);g.fill();g.fillStyle='#ff2e63';g.beginPath();g.arc(-16,-8,3,0,TAU);g.arc(16,-8,3,0,TAU);g.fill();
           g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.moveTo(-18,14);for(let i=0;i<7;i++)g.lineTo(-18+i*6,i%2?20:12);g.stroke()}
       }
-      SPR[k+(flash?'_f':'')]={c,size:size/SC};
+      SPR[k+(flash?'_f':'')+(lite?'_l':'')]={c,size:size/SC};
     }
   }
   // 발사체/보석 등
@@ -536,7 +543,7 @@ function spawnEnemy(type,x,y){
     orbT:-9,auraT:-9,slowT:0,shootT:rand(1,2.5)*(isHard()?0.8:1),st:0,stT:rand(2,4),dx:0,dy:0,rot:0,dead:false};
   if(type==='boss'){G.bossN++;const cz=isCrazy();e.r=T.r*(cz?1.9:1);e.hp=e.maxHp=T.hp*Math.pow(2.3,G.bossN-1)*(1+diffT()/900)*(isHard()?1.85:1)*(cz?18:bossLvMul())*UPD();e.dmg=T.dmg*(1+G.bossN*0.25)*(isHard()?1.45:1)*(cz?4.5:1);e.shootT=cz?0.8:isHard()?1.7:2.5;e.dashT=cz?1.6:isHard()?3.4:5;G.boss=e}
   {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff==='story'&&type!=='boss'){const m=_r.storyHard?3.5:1.25,md=_r.storyHard?2.5:1.25;e.hp=e.maxHp=e.hp*m;if(_r.storyHard)e.dmg=T.dmg*2.5;else e.dmg*=md}}
-  {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff!=='vs'){e.hp*=1.3;e.maxHp*=1.3}if(state==='raid'&&_r&&_r.diff==='tower'&&type!=='boss'){e.hp*=1.35;e.maxHp*=1.35;e.dmg*=1.35}if(state==='raid'&&_r&&_r.diff!=='vs'&&_r.diff!=='tower'){e.hp*=1.3;e.maxHp*=1.3;e.dmg*=1.2}if(state==='raid'&&_r&&_r.crazy&&type!=='boss'){e.hp*=1.6;e.maxHp*=1.6;e.dmg*=1.4}} // v71 + v87 타워 레이드 + v103 레이드 기본 강화(인원 무관 동일)
+  {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff!=='vs'){e.hp*=1.3;e.maxHp*=1.3}if(state==='raid'&&_r&&_r.diff==='tower'&&type!=='boss'){e.hp*=1.35;e.maxHp*=1.35;e.dmg*=1.35}if(state==='raid'&&_r&&_r.diff!=='vs'&&_r.diff!=='tower'){e.hp*=1.3;e.maxHp*=1.3;e.dmg*=1.2}if(state==='raid'&&_r&&_r.crazy&&type!=='boss'){e.hp*=1.6;e.maxHp*=1.6;e.dmg*=1.4}if(state==='raid'&&_r&&_r.godArmy&&_r.diff==='story'&&type!=='boss'){const A=window.__ARMY;e.hp*=A.hp;e.maxHp*=A.hp;e.dmg*=A.dmg;e.spd*=A.spd}} // v109 신의 군대(강산 처치 후) // v71 + v87 타워 레이드 + v103 레이드 기본 강화(인원 무관 동일)
   if(soloEasy()){e.hp*=0.8;e.maxHp*=0.8;e.dmg*=0.8} // v65/66 솔로 일반·하드·전사 난이도 완화
   if(isTower()&&state!=='raid'){e.hp*=1.25;e.maxHp*=1.25;e.dmg*=1.2} // v101 솔로 TD 강화
   if(isTower())e.aim=tdPickAim(type);enemies.push(e);return e;
@@ -766,7 +773,7 @@ function updateTips(dt){if(G.tip){G.tip.t-=dt;if(G.tip.t<=0)G.tip=null}if(!G.tip
 // ================== 이펙트 ==================
 function burst(x,y,col,n,spd,life,size){if(lowGfx()){n=Math.ceil(n*0.35)}const cap=lowGfx()?500:1400;const ov=parts.length+n-cap-1;if(ov>0)parts.splice(0,Math.min(ov,parts.length));for(let i=0;i<n;i++){const a=rand(0,TAU),s=rand(0.3,1)*spd;
   parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:life*rand(0.6,1),max:life,c:col,s:size*rand(0.6,1.2)})}}
-function dmgText(x,y,v,col,size,always){if(!always&&!SET.dmgNum)return;if(texts.length>90)texts.shift();texts.push({x:x+rand(-6,6),y:y-8,v:typeof v==='number'?Math.round(v):v,c:col,s:size,life:0.7})}
+function dmgText(x,y,v,col,size,always){if(!always&&!SET.dmgNum)return;if(texts.length>(lowGfx()?40:90))texts.shift();texts.push({x:x+rand(-6,6),y:y-8,v:typeof v==='number'?Math.round(v):v,c:col,s:size,life:0.7})}
 function showBanner(txt,col){banner={txt,col,t:2.4}}
 function addShake(v){shake=Math.min(quakeT>0?42:18,Math.max(shake,v))}
 
@@ -1076,8 +1083,8 @@ function render(){
     else drawIcon(ctx,it.type==='heart'?'heart':it.type==='magnet'?'magnet':'bomb',30);
     ctx.restore()}
   // 적
-  for(const e of enemies){if(e.x<L-60||e.x>R+60||e.y<T-60||e.y>B+60)continue;
-    const s=SPR[e.type+(e.flash>0?'_f':'')];
+  const _lt=lowGfx()?'_l':'';for(const e of enemies){if(e.x<L-60||e.x>R+60||e.y<T-60||e.y>B+60)continue;
+    const s=SPR[e.type+(e.flash>0?'_f':'')+_lt]||SPR[e.type+(e.flash>0?'_f':'')];
     if(e.type==='charger'||e.type==='boss'){ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.rot);
       if(e.st===1){ctx.globalAlpha=0.5+Math.sin(G.t*40)*0.5}ctx.drawImage(s.c,-s.size/2,-s.size/2,s.size,s.size);ctx.restore();ctx.globalAlpha=1;
       if(e.st===1){ctx.strokeStyle='rgba(255,60,60,.45)';ctx.lineWidth=e.type==='boss'?20:6;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+e.dx*(e.type==='boss'?330:260),e.y+e.dy*(e.type==='boss'?330:260));ctx.stroke()}}
@@ -1379,7 +1386,7 @@ function pauseGame(){if(state!=='play')return;state='paused';joy=null;
   const inv=$('inv');inv.innerHTML='';for(const id of P.wOrder)inv.insertAdjacentHTML('beforeend',`<div>${WEAPONS[id].name} Lv.${P.weapons[id]}</div>`);
   for(const id of P.pOrder)inv.insertAdjacentHTML('beforeend',`<div style="border-color:#2a7bff">${PASSIVES[id].name} Lv.${P.passives[id]}</div>`);
   $('soundBtn').textContent='소리: '+(muted?'꺼짐':'켜짐');$('musicBtn').textContent='음악: '+(musicOn?'켜짐':'꺼짐');updSetBtns();$('errMsg').style.display='none';$('pause').classList.add('show')}
-function updSetBtns(){$('dmgBtn').textContent='데미지 숫자: '+(SET.dmgNum?'켜짐':'꺼짐');$('gfxBtn').textContent='그래픽: '+(lowGfx()?'낮음':'높음')}
+function updSetBtns(){$('dmgBtn').textContent='데미지 숫자: '+(SET.dmgNum?'켜짐':'꺼짐');$('gfxBtn').textContent='그래픽: '+(SET.gfx==='low'?'낮음':'높음')}
 function resumeGame(){if(state!=='paused')return;$('pause').classList.remove('show');state='play'}
 let runNewRec=false;
 let nextGod=false,runGod=false; // next-run invincibility (code); not saved
@@ -1418,7 +1425,7 @@ $('contBtn').onclick=()=>{$('victory').classList.remove('show');state='play';sho
 $('vicTitleBtn').onclick=()=>{$('victory').classList.remove('show');openGameOver();$('over').querySelector('.big').textContent='생존 완료!'};
 $('soundBtn').onclick=()=>setMuted(!muted);
 $('dmgBtn').onclick=()=>{SET.dmgNum=!SET.dmgNum;if(!SET.dmgNum)texts=[];saveSettings();updSetBtns()};
-$('gfxBtn').onclick=()=>{SET.gfx=lowGfx()?'high':'low';if(lowGfx()&&parts.length>500)parts.splice(0,parts.length-500);saveSettings();updSetBtns()};
+$('gfxBtn').onclick=()=>{SET.gfx=SET.gfx==='low'?'high':'low';if(lowGfx()&&parts.length>500)parts.splice(0,parts.length-500);saveSettings();updSetBtns()};
 $('musicBtn').onclick=()=>{musicOn=!musicOn;try{localStorage.setItem('neonSurvivorMusic',musicOn?'1':'0')}catch(e){}$('musicBtn').textContent='음악: '+(musicOn?'켜짐':'꺼짐')};
 
 // ================== 입력 ==================
@@ -1452,7 +1459,7 @@ let workMs=0,last=performance.now(),fpsAcc=0,fpsN=0,fps=60,frameErr=false;
 function onFrameError(err){if(!frameErr){frameErr=true;console.error('[neon-survivor] frame error',err)}
   if(state==='play'||state==='dying'||state==='levelup'){$('levelup').classList.remove('show');if(state!=='play')state='play';pauseGame();$('errMsg').style.display='block'}}
 function frame(now){
-  let dt=(now-last)/1000;last=now;const w0=performance.now();fpsAcc+=dt;fpsN++;if(fpsAcc>=0.5){fps=fpsN/fpsAcc;fpsAcc=0;fpsN=0}
+  let dt=(now-last)/1000;try{perfTick(now-last)}catch(_){}last=now;const w0=performance.now();fpsAcc+=dt;fpsN++;if(fpsAcc>=0.5){fps=fpsN/fpsAcc;fpsAcc=0;fpsN=0}
   dt=Math.min(dt,0.05);
   try{
     if(window.__raid&&__raid.vsPrepTick)__raid.vsPrepTick(dt);
@@ -2036,10 +2043,11 @@ const STORY6_DL=[
   {sp:'네온 생존자',t:'미친놈 내가 너를 막겠다!!!!'},
   {sp:'God',t:'불가능할 것이다.'},
 ];
+const ARMY=window.__ARMY={hp:1.3,dmg:1.2,spd:1.15,rate:2.0,cap:1.3,mix:0.35,eliteEvery:25,eliteGap:20}; // v109 강산 처치 후 신의 군대 (인원 무관 동일)
 const GOD_DELAY=180; // v108 대화 후 God 강림까지(초)
 function story6Begin(){if(!R||(R.s6&&R.s6.done))return;R.s6={stage:'dlg',i:0,done:0};R.phase='story5';story5KillMobs();
   story3Show(STORY6_DL[0],'tap');bcast({t:'s6',stage:'dlg',i:0})}
-function story6Resume(){if(!R||!R.s6)return;storyHide();R.s6.stage='done';R.s6.done=1;R.phase='wave3';R.boss2At=R.t+GOD_DELAY;R.godWarn=0;
+function story6Resume(){if(!R||!R.s6)return;storyHide();R.s6.stage='done';R.s6.done=1;R.phase='wave3';R.boss2At=R.t+GOD_DELAY;R.godWarn=0;R.godArmy=1;R.armyBanAt=R.t+4.5;R.nextElite=R.t+ARMY.eliteEvery;R.lastElite=-1e9;
   for(const p of RP)if(!p.dead&&!p.left)p.hp=p.maxHp;rbanner('God 강림까지 3분! 버텨라','#ffd84d',4);bcast({t:'s6',stage:'done'})}
 function story6OnMsg(d){if(!R||R.diff!=='story'||!d)return;R.s6=R.s6||{};R.s6.stage=d.stage;R.s6.i=d.i|0;
   if(d.stage==='dlg'){R.phase='story5';story3Show(STORY6_DL[d.i|0],'tap')}
@@ -2182,19 +2190,21 @@ function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;const tdRush=
   if(raidNK())rate*=1.3; // v103 레이드 기본 x1.3(인원 무관)
   if(R.crazy)rate*=1.4; // v107 레이드 크레이지 (상한 cap은 그대로)
   if(R.gozRush)rate*=4.2;else if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6; // v99 고자라부터 폭주
+  if(R.godArmy&&R.diff==='story')rate*=ARMY.rate; // v109
   rate*=SPWN;
-  const cap=Math.round(Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)))*SPWN*(R.gozRush?1.7:1));
+  const cap=Math.round((R.godArmy&&R.diff==='story'?ARMY.cap:1)*Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)))*SPWN*(R.gozRush?1.7:1));
+  if(R.armyBanAt&&R.t>=R.armyBanAt){R.armyBanAt=0;rbanner('⚠ 신의 군대가 몰려온다! 난이도 급상승 ⚠','#ff5a5a',4)}
   R.spawnAcc+=rate*dt;const ps=alive();if(!ps.length&&!(R.diff==='tower'&&G.tower&&G.tower.hp>0))return;
   while(R.spawnAcc>=1){R.spawnAcc-=1;if(enemies.length>=cap)continue;const tp=ps.length?ps[Math.random()*ps.length|0]:G.tower;P=tp||P;
-    let type=pickType();if(R.crazy&&type==='grunt'&&Math.random()<0.2)type=Math.random()<0.5?'brute':'charger';const pos=offscreenPos(R.diff==='tower'?G.tower:null);
+    let type=pickType();if(R.godArmy&&R.diff==='story'){if(type==='grunt'&&Math.random()<ARMY.mix)type=Math.random()<0.5?'brute':'charger'}else if(R.crazy&&type==='grunt'&&Math.random()<0.2)type=Math.random()<0.5?'brute':'charger';const pos=offscreenPos(R.diff==='tower'?G.tower:null);
     if(type==='grunt'&&Math.random()<Math.min(isHard()?0.4:(tdRush?0.45:0.25),st/(isHard()?380:600))){const n=(isHard()?7:5)*(tdRush?2:1);for(let i=0;i<n;i++)spawnEnemy('grunt',pos.x+rand(-40,40),pos.y+rand(-40,40))}
     else spawnEnemy(type,pos.x,pos.y)}
-  if(R.t>=R.nextElite&&canElite()){R.nextElite=R.t+NUM.eliteEvery;const tp=ps[Math.random()*ps.length|0];const a=rand(0,TAU),d=520;
+  if(R.t>=R.nextElite&&canElite()){R.nextElite=R.t+(R.godArmy?ARMY.eliteEvery:NUM.eliteEvery);const tp=ps[Math.random()*ps.length|0];const a=rand(0,TAU),d=520;
     const x=clamp(tp.x+Math.cos(a)*d,-WH+60,WH-60),y=clamp(tp.y+Math.sin(a)*d,-WH+60,WH-60);G.elite=spawnEnemy('elite',x,y);G.elite.st=0;G.elite.stT=2.5;G.elite.slams=0;eliteSpawned(G.elite);
     showBanner('👑 거대 엘리트 습격! 처치하면 큰 보상','#ffcf40')}}
 // 엘리트 중복 방지: 호스트만, 웨이브 단계에서만, 살아 있는 엘리트 없음 + 최소 간격
-function canElite(ex){return !!(R&&R.host&&(R.phase==='wave1'||R.phase==='wave2')&&R.t-R.lastElite>=NUM.eliteMinGap&&!enemies.some(e=>e!==ex&&e.type==='elite'&&!e.dead))}
-function eliteSpawned(e){R.lastElite=R.t;R.nextElite=Math.max(R.nextElite,R.t+NUM.eliteMinGap);R.eliteCount=(R.eliteCount||0)+1;const sc=0.6+0.4*R.n;e.hp*=sc;e.maxHp*=sc}
+function canElite(ex){return !!(R&&R.host&&(R.phase==='wave1'||R.phase==='wave2'||(R.godArmy&&R.phase==='wave3'))&&R.t-R.lastElite>=(R.godArmy?ARMY.eliteGap:NUM.eliteMinGap)&&!enemies.some(e=>e!==ex&&e.type==='elite'&&!e.dead))}
+function eliteSpawned(e){R.lastElite=R.t;R.nextElite=Math.max(R.nextElite,R.t+(R.godArmy?ARMY.eliteGap:NUM.eliteMinGap));R.eliteCount=(R.eliteCount||0)+1;const sc=0.6+0.4*R.n;e.hp*=sc;e.maxHp*=sc}
 // 일반 모드 이벤트(원본 updateEvents 그대로) — 호스트에서 기준 플레이어를 돌아가며 P로 두고 실행, 플레이어 피해/끌림은 전원 적용
 function raidEvents(dt){const ps=alive();if(!ps.length||R.phase==='ending')return;const prevEv=G.ev;
   P=ps[(R.evI++)%ps.length];const bossE=enemies.filter(e=>e.type==='raidboss');if(bossE.length)enemies=enemies.filter(e=>e.type!=='raidboss');
