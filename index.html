@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v114</title>
+<title>네온 생존자 - NEON SURVIVOR v115</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v114</div>
+  <div class="sub">NEON SURVIVOR v115</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -3124,16 +3124,27 @@ const SKIN2={
    g.strokeStyle=bl?'#fff':col;g.lineWidth=2;g.beginPath();g.moveTo(-4,-7);g.lineTo(-5,-13);g.moveTo(4,-7);g.lineTo(5,-13);g.stroke(); // 눈 자루
    g.fillStyle='#fff';g.beginPath();g.arc(-5,-14,3.2,0,TAU);g.arc(5,-14,3.2,0,TAU);g.fill();g.fillStyle='#1a1a1a';g.beginPath();g.arc(-4.4,-14,1.5,0,TAU);g.arc(5.6,-14,1.5,0,TAU);g.fill();
    g.strokeStyle='#ffd0c0';g.lineWidth=1.5;g.beginPath();g.arc(0,3,4,0.3,Math.PI-0.3);g.stroke();g.fillStyle='#ffb3a0';g.beginPath();g.arc(-8,1,1.6,0,TAU);g.arc(8,1,1.6,0,TAU);g.fill()},
- gozskull(g,col,bl){const F=(c)=>bl?'#fff':c; // 고자라(청록 글로우·보라 등가시·붉은 눈) 정면 두개골
-   g.fillStyle=F('#c77dff');g.strokeStyle=bl?'#fff':'#e9b8ff';g.lineWidth=2;for(const [x,h] of [[-10,7],[0,11],[10,7]]){g.beginPath();g.moveTo(x-5,-13);g.lineTo(x,-13-h);g.lineTo(x+5,-13);g.closePath();g.fill();g.stroke()}
-   g.lineWidth=3;g.strokeStyle=bl?'#fff':'#3dffc8';g.shadowColor='#3dffc8';g.fillStyle=F('#e6fff7');
-   g.beginPath();g.moveTo(-17,-4);g.quadraticCurveTo(-18,-17,0,-17);g.quadraticCurveTo(18,-17,17,-4);g.lineTo(14,6);g.lineTo(-14,6);g.closePath();g.fill();g.stroke(); // 머리뼈
-   g.beginPath();g.moveTo(-12,7);g.lineTo(12,7);g.lineTo(9,17);g.lineTo(-9,17);g.closePath();g.fill();g.stroke();g.shadowBlur=0; // 턱
-   g.fillStyle='#1a0610';g.beginPath();g.ellipse(-7,-6,5,4.5,0.25,0,TAU);g.ellipse(7,-6,5,4.5,-0.25,0,TAU);g.fill(); // 눈구멍
-   g.fillStyle='#ff3c3c';g.shadowColor='#ff3c3c';g.shadowBlur=lowGfx()?0:8;g.beginPath();g.arc(-7,-6,1.9,0,TAU);g.arc(7,-6,1.9,0,TAU);g.fill();g.shadowBlur=0;
-   g.fillStyle='#0d3b36';g.beginPath();g.moveTo(-2,1);g.lineTo(0,-2);g.lineTo(2,1);g.closePath();g.fill(); // 콧구멍
-   g.fillStyle=F('#ffffff');g.strokeStyle='#0d3b36';g.lineWidth=1;for(let i=0;i<5;i++){const x=-10+i*5;g.beginPath();g.moveTo(x,6);g.lineTo(x+2.5,11);g.lineTo(x+5,6);g.closePath();g.fill();g.stroke()} // 이빨
-   g.fillStyle='#ff8c1a';g.beginPath();g.arc(-12,-12,1.6,0,TAU);g.arc(12,-12,1.6,0,TAU);g.fill()}};
+ gozskull(g,col,bl){const F=c=>bl?'#fff':c,LG=lowGfx(); // v115 고자라 머리(긴 주둥이·눈썹뼈·보라 등가시·흰 송곳니·주황 눈) 정면 두개골 · 커피&인절미 고자라 참고
+   g.save();g.lineJoin='round';g.lineCap='round';
+   g.fillStyle=F('#c77dff');g.strokeStyle=bl?'#fff':'#e9b8ff';g.lineWidth=1.5;g.shadowColor='#c77dff';g.shadowBlur=LG?0:6; // 등가시 5장(머리 뒤로 부채꼴)
+   for(const [a,L,w] of [[-2.75,21,5.2],[-2.17,24,6],[-1.5708,26,6.4],[-0.97,24,6],[-0.39,21,5.2]]){const ca=Math.cos(a),sa=Math.sin(a),bx=ca*12,by=-7+sa*10,tx=ca*L*0.95,ty=-7+sa*L*0.9,px=-sa*w,py=ca*w;
+     g.beginPath();g.moveTo(bx+px,by+py);g.quadraticCurveTo(bx+px*0.6+(tx-bx)*0.55,by+py*0.6+(ty-by)*0.55,tx,ty);g.quadraticCurveTo(bx-px*0.2+(tx-bx)*0.45,by-py*0.2+(ty-by)*0.45,bx-px,by-py);g.closePath();g.fill();g.stroke()}
+   g.strokeStyle=bl?'#fff':'#3dffc8';g.shadowColor='#3dffc8';g.shadowBlur=LG?0:10;g.lineWidth=2.4;g.fillStyle=F('#eef7f1');
+   g.beginPath();g.moveTo(0,-17);g.bezierCurveTo(10,-17,19,-13,19.5,-6);g.quadraticCurveTo(20,-1,14,0.5);g.quadraticCurveTo(10,1.5,8.5,5);g.lineTo(8,10.5);g.quadraticCurveTo(7,13.5,0,13.5);g.quadraticCurveTo(-7,13.5,-8,10.5);g.lineTo(-8.5,5);g.quadraticCurveTo(-10,1.5,-14,0.5);g.quadraticCurveTo(-20,-1,-19.5,-6);g.bezierCurveTo(-19,-13,-10,-17,0,-17);g.closePath();g.fill();g.stroke(); // 넓은 머리뼈 + 긴 주둥이
+   g.beginPath();g.moveTo(-6.5,15);g.quadraticCurveTo(0,16.5,6.5,15);g.quadraticCurveTo(6,19.5,0,20);g.quadraticCurveTo(-6,19.5,-6.5,15);g.closePath();g.fill();g.stroke(); // 아래턱(살짝 벌림)
+   g.shadowBlur=0;
+   g.strokeStyle=F('#9fc7b8');g.lineWidth=1.3;g.beginPath();for(const [x1,y1,x2,y2] of [[-3,-14.5,0,-14],[3,-14,5.5,-13],[-1.5,-11,1.5,-10.5],[-2,3,2,3.2],[-1.5,7,1.5,7.2]]){g.moveTo(x1,y1);g.lineTo(x2,y2)}g.stroke(); // 고자라 몸 무늬(대시)
+   g.fillStyle=F('#d6ebe2');g.strokeStyle=bl?'#fff':'#5d7a72';g.lineWidth=1.2; // 두꺼운 눈썹뼈(바깥으로 튀어나온 뿔혹)
+   for(const s of [-1,1]){g.beginPath();g.moveTo(s*4,-8.5);g.quadraticCurveTo(s*12,-13,s*21,-10);g.quadraticCurveTo(s*19.5,-7.2,s*16.5,-6.6);g.quadraticCurveTo(s*10,-8.3,s*4.5,-6.6);g.closePath();g.fill();g.stroke()}
+   g.fillStyle='#0b1f1b';for(const s of [-1,1]){g.beginPath();g.moveTo(s*4.5,-6.4);g.quadraticCurveTo(s*11,-8,s*16.5,-6.3);g.quadraticCurveTo(s*16,-1.5,s*11.5,-1);g.quadraticCurveTo(s*6,-1.4,s*4.5,-6.4);g.closePath();g.fill()} // 눈구멍(옆으로 넓게)
+   g.fillStyle=F('#ff8c1a');g.shadowColor='#ff8c1a';g.shadowBlur=LG?0:8;g.beginPath();g.arc(-10.5,-4.2,1.9,0,TAU);g.arc(10.5,-4.2,1.9,0,TAU);g.fill();g.shadowBlur=0; // 희미한 주황 눈빛(보스 눈 색)
+   g.fillStyle='#0b1f1b';g.beginPath();g.ellipse(-2.8,9.3,1.4,2,0.4,0,TAU);g.ellipse(2.8,9.3,1.4,2,-0.4,0,TAU);g.fill(); // 콧구멍(주둥이 끝)
+   g.strokeStyle='#3b5f55';g.lineWidth=1;g.beginPath();g.moveTo(-6,-16.5);g.lineTo(-7.5,-13.5);g.lineTo(-6,-11.5);g.lineTo(-8,-9);g.moveTo(15,-13);g.lineTo(12.5,-11.8);g.lineTo(13.5,-10.2);g.moveTo(6.5,0.5);g.lineTo(5,3);g.stroke(); // 금
+   g.fillStyle=F('#ffffff');g.strokeStyle='#3b5f55';g.lineWidth=0.8;
+   for(const x of [-2.6,0,2.6]){g.beginPath();g.moveTo(x-1.2,13.2);g.lineTo(x,15.4);g.lineTo(x+1.2,13.2);g.closePath();g.fill();g.stroke()} // 윗니
+   for(const s of [-1,1]){g.beginPath();g.moveTo(s*4.4,12.6);g.lineTo(s*6.6,19);g.lineTo(s*8.2,10.6);g.closePath();g.fill();g.stroke()} // 큰 흰 송곳니(보스의 흰 이빨)
+   for(const x of [-2.5,0,2.5]){g.beginPath();g.moveTo(x-1.1,16.6);g.lineTo(x,14.8);g.lineTo(x+1.1,16.6);g.closePath();g.fill();g.stroke()} // 아랫니
+   g.restore()}};
 const SKIN2_FLIP=new Set(['poodle','guinea','crab']); // 고자라 두개골은 항상 정면(회전·반전 없음)
 const _dp=drawPlayer;
 drawPlayer=function(){const p=P;if(!p)return _dp();const cs=cosOf(p);drawTrailFx(p);const ci=ALL[cs.c],sv=p.col;if(ci)p.col=ci.col;try{_dp()}finally{p.col=sv}
