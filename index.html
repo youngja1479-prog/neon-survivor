@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v113</title>
+<title>네온 생존자 - NEON SURVIVOR v114</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v113</div>
+  <div class="sub">NEON SURVIVOR v114</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -2748,9 +2748,9 @@ function fireSkill(id,ax,ay,tx,ty){if(P&&P.down)return;const l=Math.hypot(ax,ay)
   if(id==='bolt'){for(const q of projs)if(q.k==='Sarrow'&&q.stuck&&q.ow===P){q.life=0;if(q.z)q.z.until=0}for(let k=0;k<4;k++){const aa=a+k*Math.PI/2;projs.push({k:'Sarrow',x,y,vx:Math.cos(aa)*1300,vy:Math.sin(aa)*1300,r:57,dmg:D*10,life:8,hit:new Set(),rot:aa,ow:P})}S.shoot();S.zap()} // v96 4방향
   else if(id==='orbit'){for(let i=0;i<8;i++)projs.push({k:'Sblade',x,y,a0:i/8*TAU,t:0,dx:ax,dy:ay,r:24,dmg:D*2.5,hm:new Map(),rot:0,life:4.4});S.shoot()}
   else if(id==='pulse'){doPulse(x,y,D,am);projs.push({k:'Spulse',x,y,r:1,t:0,n:2,life:3,D,am,rot:0})} // v75 3연속
-  else if(id==='chain'){{const hs=densest();const wp=[];if(hs)wp.push({x:hs.x,y:hs.y});else wp.push({x:x+ax*500,y:y+ay*500});projs.push({k:'Sdash',x,y,r:30,px:x,py:y,ox:x,oy:y,wp,hops:8,D,am,zt:0,life:5,rot:0,ch:new Set(),pz:0});rings.push({x,y,r:0,max:180,t:0,dur:0.35,c:'#fff27a'});burst(x,y,'#fff27a',30,480,0.4,4);skShake(6);S.zap()}}
+  else if(id==='chain'){{const hs=densest();const wp=[];if(hs){let hx=hs.x-x,hy=hs.y-y;const hd=Math.hypot(hx,hy),CL=650;if(hd>CL){hx*=CL/hd;hy*=CL/hd}wp.push({x:x+hx,y:y+hy})}else wp.push({x:x+ax*340,y:y+ay*340});projs.push({k:'Sdash',x,y,r:30,px:x,py:y,ox:x,oy:y,wp,hops:8,D,am,zt:0,life:5,rot:0,ch:new Set(),pz:0});rings.push({x,y,r:0,max:180,t:0,dur:0.35,c:'#fff27a'});burst(x,y,'#fff27a',30,480,0.4,4);skShake(6);S.zap()}}
   else if(id==='boom'){for(const o of [-0.7,-0.35,0,0.35,0.7]){const b=a+o;projs.push({k:'Sboom',x,y,dx:Math.cos(b),dy:Math.sin(b),t:0,out:true,dist:0,r:34,dmg:D*4,hit:new Set(),rot:0})}S.shoot()}
-  else if(id==='seek'){const tg=nearestN(x,y,50,1200);for(let i=0;i<50;i++){const b=a+(i/49-0.5)*3.2;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*2,life:5.5,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
+  else if(id==='seek'){const tg=nearestN(x,y,50,1200);for(let i=0;i<50;i++){const b=a+(i/49-0.5)*3.2;projs.push({k:'seek',x,y,vx:Math.cos(b)*260,vy:Math.sin(b)*260,r:10,dmg:D*4,life:5.5,hit:new Set(),tgt:tg.length?tg[i%tg.length]:null,rot:0})}S.shoot()}
   else if(id==='aura'){const Rr=Math.min(690,st.rad*3.5*am);projs.push({k:'Saura',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:10,tick:0,dmg:D*2.5,rot:0});rings.push({x,y,r:0,max:Rr,t:0,dur:0.5,c:'#ff7a3c'});S.pulse()}
   else if(id==='meteor'){let mx=tx,my=ty;if(mx==null||!isFinite(mx)||!isFinite(my)){mx=x+ax*260;my=y+ay*260}const dd=Math.hypot(mx-x,my-y);if(dd>1400){mx=x+(mx-x)/dd*1400;my=y+(my-y)/dd*1400}
     meteors.push({x:mx,y:my,t:0,warn:4.2,dmg:D*10,rad:Math.max(260,st.rad*2.6*am),hit:false,big:1,all:1});S.pulse()} // v83 거대 메테오 연출
@@ -2760,8 +2760,8 @@ function fireSkill(id,ax,ay,tx,ty){if(P&&P.down)return;const l=Math.hypot(ax,ay)
 }
 const fireSkR=(st,am)=>Math.min(500,(340+(st.len||150)*0.3)*am); // 불바다 반경: 기본 ~385, 화염 방사기 레벨(사거리)에 따라 소폭 증가
 // 충격파 밀어내기: kbRes 무시, 감속(ease-out) 속도, 밀리는 동안(1.2초) 자체 이동 없음
-function skPush(e,x,y){if(e.dead||e.type==='raidboss')return;let dx=e.x-x,dy=e.y-y;const d=Math.hypot(dx,dy);if(d<1){const b=rand(0,TAU);dx=Math.cos(b);dy=Math.sin(b)}else{dx/=d;dy/=d}
-  const boss=e.type==='boss',ex=Math.min(W*0.5/VS/(Math.abs(dx)||1e-6),H*0.5/VS/(Math.abs(dy)||1e-6))*0.92,dist=boss?70:Math.max(260,ex-Math.max(d,0)),T=1.2,k=3.2,v0=dist*k/(1-Math.exp(-k*T));
+function skPush(e,x,y,kf){if(e.dead||e.type==='raidboss')return;kf=kf||1;let dx=e.x-x,dy=e.y-y;const d=Math.hypot(dx,dy);if(d<1){const b=rand(0,TAU);dx=Math.cos(b);dy=Math.sin(b)}else{dx/=d;dy/=d}
+  const boss=e.type==='boss',ex=Math.min(W*0.5/VS/(Math.abs(dx)||1e-6),H*0.5/VS/(Math.abs(dy)||1e-6))*0.92,dist=(boss?70:Math.max(260,ex-Math.max(d,0)))*kf,T=1.2,k=3.2,v0=dist*k/(1-Math.exp(-k*T));
   e.pT=T;e.pvx=dx*v0;e.pvy=dy*v0;e.kbx=e.kby=0}
 function doPulse(x,y,D,am){const Rr=380*am;rings.push({x,y,r:0,max:Rr,t:0,dur:0.6,c:'#8ff6ff'});rings.push({x,y,r:0,max:Rr*0.65,t:0,dur:0.45,c:'#ffffff'});
     buildGrid();query(x,y,Rr,(e,dx,dy)=>{hurtEnemy(e,D*4,0,0,0);skPush(e,x,y)});burst(x,y,'#8ff6ff',40,420,0.6,4);skShake(10);S.pulse();S.boom()}
@@ -2772,17 +2772,17 @@ function dashImpact(e,p){const sx=e.x,sy=e.y,D=p.D||16;
       zaps.push({pts:[{x:f.x,y:f.y},{x:(f.x+g.x)/2+rand(-12,12),y:(f.y+g.y)/2+rand(-12,12)},{x:g.x,y:g.y}],t:0.12});hurtEnemy(g,D*1.6,g.x-f.x,g.y-f.y,30)}}
   if((p.pz||0)>0)return;p.pz=0.12;const Rr=240*(p.am||1);
   rings.push({x:sx,y:sy,r:0,max:Rr,t:0,dur:0.4,c:'#8ff6ff'});rings.push({x:sx,y:sy,r:0,max:Rr*0.55,t:0,dur:0.28,c:'#fff27a'});
-  query(sx,sy,Rr,(f)=>{if(f===e||f.dead)return;hurtEnemy(f,D*3,0,0,0);skPush(f,sx,sy)});burst(sx,sy,'#8ff6ff',22,340,0.45,3);skShake(5);S.pulse();S.zap()}
+  query(sx,sy,Rr,(f)=>{if(f===e||f.dead)return;hurtEnemy(f,D*1.9,0,0,0);if(f.type!=='elite'&&!f.elite)skPush(f,sx,sy,0.62)});burst(sx,sy,'#8ff6ff',22,340,0.45,3);skShake(5);S.pulse();S.zap()}
 // v76 맵 전체에서 몬스터가 가장 많이 뭉친 곳
 function densest(){const C=220,m=new Map();let best=null,bn=0;
   for(const e of enemies){if(e.dead||e.hp<=0)continue;const k=Math.floor(e.x/C)+','+Math.floor(e.y/C);let o=m.get(k);if(!o){o={n:0,sx:0,sy:0};m.set(k,o)}o.n++;o.sx+=e.x;o.sy+=e.y;if(o.n>bn){bn=o.n;best=o}}
   return best?{x:best.sx/best.n,y:best.sy/best.n}:null}
 function skProj(p,dt){
   if(p.k==='Sdash'){p.life-=dt;p.pz=(p.pz||0)-dt;P.inv=Math.max(P.inv||0,0.35); // v77 슈퍼히어로 번개 돌진
-    const isB=e=>e.type==='boss'||e.type==='raidboss'||e.boss||e.isBoss;
+    const isB=e=>e.type==='boss'||e.type==='raidboss'||e.boss||e.isBoss||e.type==='elite'||e.elite; // v114 엘리트도 보스처럼 제외
     let mv=2800*dt;while(mv>0&&p.wp.length){const w=p.wp[0],dx=w.x-p.px,dy=w.y-p.py,l=Math.hypot(dx,dy);
       if(l<=mv){p.px=w.x;p.py=w.y;mv-=l;p.wp.shift();rings.push({x:p.px,y:p.py,r:0,max:110,t:0,dur:0.25,c:'#fff27a'});skShake(3);S.zap();
-        if(p.hops>0){p.hops--;const c=nearestN(p.px,p.py,10,340).filter(e=>!isB(e)&&(e.x-p.px)**2+(e.y-p.py)**2>60*60);if(c.length){const e=c[(Math.random()*c.length)|0];p.wp.push({x:e.x,y:e.y})}}}
+        if(p.hops>0){p.hops--;const c=nearestN(p.px,p.py,10,230).filter(e=>!isB(e)&&(e.x-p.px)**2+(e.y-p.py)**2>60*60);if(c.length){const e=c[(Math.random()*c.length)|0];p.wp.push({x:e.x,y:e.y})}}}
       else{p.px+=dx/l*mv;p.py+=dy/l*mv;mv=0}}
     p.px=clamp(p.px,-WH+20,WH-20);p.py=clamp(p.py,-WH+20,WH-20);P.x=p.px;P.y=p.py;p.x=P.x;p.y=P.y;
     if(Math.random()<0.8)parts.push({x:P.x+rand(-14,14),y:P.y+rand(-14,14),vx:rand(-60,60),vy:rand(-60,60),life:0.3,max:0.3,c:Math.random()<0.5?'#fff27a':'#ffffff',s:5});
@@ -2922,7 +2922,7 @@ function drawSkillWorld(){lzFrame();ctx.save();ctx.globalCompositeOperation='lig
   const circ=(cx,cy,r)=>{ctx.beginPath();ctx.arc(cx,cy,r,0,TAU);ctx.fill();ctx.stroke()};
   if(id==='bolt')line(1100,28);else if(id==='orbit'){circ(x,y,120);line(900,60)}else if(id==='beam')line(760*am,22);else if(id==='boom'){line(950,34);const s0=fx,s1=fy;for(const o of [-0.7,-0.35,0.35,0.7]){const c=Math.cos(o),sn=Math.sin(o);fx=s0*c-s1*sn;fy=s0*sn+s1*c;line(950,34)}fx=s0;fy=s1}
   else if(id==='pulse')circ(x,y,380*am);else if(id==='aura'){const sv=P;P=me;const r=Math.min(650,skBase('aura').rad*3.3*am);P=sv;circ(x,y,r)}else if(id==='flame'){const sv=P;P=me;const r=fireSkR(skBase('flame'),am);P=sv;circ(x,y,r)}
-  else if(id==='meteor'&&skAimP){const sv=P;P=me;const r=Math.max(260,skBase('meteor').rad*2.6*am);P=sv;ctx.setLineDash([]);ctx.lineWidth=4;circ(skAimP.x,skAimP.y,r);ctx.beginPath();ctx.moveTo(skAimP.x-r-14,skAimP.y);ctx.lineTo(skAimP.x+r+14,skAimP.y);ctx.moveTo(skAimP.x,skAimP.y-r-14);ctx.lineTo(skAimP.x,skAimP.y+r+14);ctx.stroke()}else if(id==='chain')circ(x,y,480);else if(id==='seek'){circ(x,y,1200);line(200,10)}
+  else if(id==='meteor'&&skAimP){const sv=P;P=me;const r=Math.max(260,skBase('meteor').rad*2.6*am);P=sv;ctx.setLineDash([]);ctx.lineWidth=4;circ(skAimP.x,skAimP.y,r);ctx.beginPath();ctx.moveTo(skAimP.x-r-14,skAimP.y);ctx.lineTo(skAimP.x+r+14,skAimP.y);ctx.moveTo(skAimP.x,skAimP.y-r-14);ctx.lineTo(skAimP.x,skAimP.y+r+14);ctx.stroke()}else if(id==='chain')circ(x,y,330);else if(id==='seek'){circ(x,y,1200);line(200,10)}
   ctx.setLineDash([]);ctx.restore()}
 // ---------- 입력 ----------
 // 조준(유성우) · 취소 구역 · 착탄 연출
