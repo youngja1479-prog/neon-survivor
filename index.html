@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v111</title>
+<title>네온 생존자 - NEON SURVIVOR v112</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v111</div>
+  <div class="sub">NEON SURVIVOR v112</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -2569,7 +2569,9 @@ function drawGodRaw(ctx,b){ctx.save();const glow=b.flash>0?'#fff':b.enr?'#ff4d6d
 let GODGLOW=null;const GOD_SC=0.7; // God 스프라이트 표시 배율 (판정 반경 r은 그대로)
 function drawGod(b){const dk=godDustK();if(dk>=1)return;if(dk>0){ctx.save();ctx.globalAlpha=Math.max(0,1-dk);drawBossSpr(b,1);ctx.restore();const s0=b.r/100*GOD_SC;if(parts.length<(lowGfx()?400:900))for(let i=0;i<(lowGfx()?2:5);i++)parts.push({x:b.x+rand(-150,150)*s0,y:b.y+rand(-240,200)*s0,vx:rand(-40,40),vy:rand(-120,-30),life:1.1,max:1.1,c:Math.random()<0.6?'#ffd84d':'#fff6c8',s:rand(2,5)});return}drawBossSpr(b,1);if(!GODGLOW){const c=makeCanvas(128,128),g=c.getContext('2d'),gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(255,250,210,0.75)');gr.addColorStop(0.5,'rgba(255,216,77,0.35)');gr.addColorStop(1,'rgba(255,216,77,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);GODGLOW=c}
   const i=Math.floor(G.t*1.6)%5,f=GOD_FACES[i],s=b.r/100*GOD_SC,R0=(i?58:96)*s*(1+0.08*Math.sin(G.t*10));ctx.save();ctx.globalCompositeOperation='lighter';ctx.drawImage(GODGLOW,b.x+f[0]*s-R0,b.y-(b.z||0)+f[1]*s-R0,R0*2,R0*2);ctx.restore()}
-function drawGozara(b){drawBossSpr(b,b.face*-1)}
+function drawGozara(b){ // v112 이동 방향을 바라봄(좌우 반전만, 데드존), 멈춰서 공격할 때는 대상 쪽
+  const px=b._gpx==null?b.x:b._gpx;b._gpx=b.x;b._gvx=(b._gvx||0)*0.8+(b.x-px)*0.2;const tgt=(b.mode==='breathPrep'||b.mode==='breath')?-(b.face||1):(b.face||1);
+  if(Math.abs(b._gvx)>0.6)b._gdir=b._gvx<0?-1:1;else if(Math.abs(b._gvx)<0.25)b._gdir=tgt;drawBossSpr(b,b._gdir||tgt)}
 function drawKangsan(b){drawBossSpr(b,b.face<0?1:-1)}
 let camP=null;
 const hexRGB=h=>{h=(h||'#ff4dff').replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16)||0xff4dff;return [(n>>16)&255,(n>>8)&255,n&255]};
@@ -3021,7 +3023,7 @@ window.__skill={SKILLS,skCD,skAct,skQ,fireSkill,hostSkill,skPress,skRelease,get 
 #shop .tab.sel{border-color:#ffd84d;color:#ffd84d}
 #shopList{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:720px;margin:6px auto;max-height:52vh;overflow:auto}
 .sitem{width:112px;background:#1c1840;border:2px solid #4a3aa0;border-radius:12px;padding:6px;color:#cfd3ff;font-size:12px;font-weight:700}
-.sitem canvas{width:64px;height:64px;display:block;margin:0 auto 2px}
+.sitem canvas{position:static;width:64px;height:64px;display:block;margin:0 auto 2px}
 .sitem.eq{border-color:#5dff8a;box-shadow:0 0 12px #5dff8a}
 .sitem button{margin-top:4px;width:100%;padding:4px 0;border-radius:7px;border:0;font-weight:900;font-family:inherit;cursor:pointer;background:#4df3ff;color:#0a0820}
 .sitem button.own{background:#5dff8a}.sitem button.uneq{background:#ff8c8c}.sitem button:disabled{background:#555a80;color:#aaa;cursor:not-allowed}
@@ -3049,7 +3051,7 @@ const KEY='neonSurvivorProfile';
 const ITEMS={
  c:[['pink','분홍','#ff6ad5'],['green','초록','#5dff8a'],['gold','금색','#ffd84d'],['orange','주황','#ff8c3a'],['violet','보라','#b46bff'],['white','순백','#ffffff'],['red','진홍','#ff4d6d']].map(a=>({id:'c_'+a[0],k:'c',n:a[1],col:a[2],p:30})),
  t:[['spark','불꽃 입자'],['bubble','물방울 링'],['star','별가루'],['pixel','네온 픽셀'],['rainbow','무지개 띠']].map(a=>({id:'t_'+a[0],k:'t',n:a[1],tk:a[0],p:60})),
- s:[['star','별'],['skull','해골'],['robot','로봇'],['cat','고양이'],['ghost','유령'],['gem','다이아']].map(a=>({id:'s_'+a[0],k:'s',n:a[1],sk:a[0],p:100})),
+ s:[['star','별'],['skull','해골'],['robot','로봇'],['cat','고양이'],['ghost','유령'],['gem','다이아'],['poodle','푸들'],['guinea','기니피그'],['crab','게'],['gozskull','고자라 두개골']].map(a=>({id:'s_'+a[0],k:'s',n:a[1],sk:a[0],p:100})), // v112 푸들·기니피그·게·고자라 두개골
  tw:[['sapphire','사파이어','#4da6ff',80],['ruby','루비','#ff4d6d',80],['gold','황금','#ffd84d',120],['obsidian','흑요석','#b46bff',120],['ice','얼음','#9ef6ff',100],['sun','태양','#ff8c3a',100]].map(a=>({id:'tw_'+a[0],k:'tw',n:a[1],col:a[2],p:a[3]})),
  k:Object.keys(SKILLS).filter(skOK).map(w=>({id:'sk_'+w,k:'k',n:WEAPONS[w].name,sw:w,p:100})),
  m:[{id:'mayday',k:'m',n:'메이데이',p:1000}]};
@@ -3091,10 +3093,49 @@ function shapePath(g,sk,col,blink){g.lineWidth=3;g.strokeStyle=blink?'#fff':col;
   else if(sk==='cat'){g.moveTo(-15,-4);g.lineTo(-13,-22);g.lineTo(-4,-13);g.lineTo(4,-13);g.lineTo(13,-22);g.lineTo(15,-4);g.arc(0,-2,15,0.13,Math.PI-0.13);g.closePath();g.fill();g.stroke();g.shadowBlur=0;g.fillStyle=col;g.beginPath();g.ellipse(-6,-3,2.5,4,0,0,TAU);g.ellipse(6,-3,2.5,4,0,0,TAU);g.fill();g.strokeStyle=col;g.lineWidth=1.5;g.beginPath();g.moveTo(-8,5);g.lineTo(-20,3);g.moveTo(8,5);g.lineTo(20,3);g.stroke()}
   else if(sk==='ghost'){g.arc(0,-6,15,Math.PI,0);g.lineTo(15,12);for(let i=0;i<4;i++)g.quadraticCurveTo(11.25-i*7.5,i%2?16:6,7.5-i*7.5,12);g.closePath();g.fill();g.stroke();g.shadowBlur=0;g.fillStyle='#fff';g.beginPath();g.ellipse(-5,-6,3,4.5,0,0,TAU);g.ellipse(5,-6,3,4.5,0,0,TAU);g.fill()}
   else if(sk==='gem'){g.moveTo(0,-22);g.lineTo(16,-6);g.lineTo(0,16);g.lineTo(-16,-6);g.closePath();g.fill();g.stroke();g.shadowBlur=0;g.strokeStyle=col;g.lineWidth=1.5;g.beginPath();g.moveTo(-16,-6);g.lineTo(16,-6);g.moveTo(0,-22);g.lineTo(-5,-6);g.lineTo(0,16);g.lineTo(5,-6);g.closePath();g.stroke()}
+  else if(SKIN2[sk])SKIN2[sk](g,col,blink);
   g.shadowBlur=0}
+// v112 새 모양 스킨 (오른쪽을 보는 그림, 왼쪽 이동 시 좌우만 반전) — 푸들/기니피그는 「커피 & 인절미」의 커피·인절미 색과 생김새
+const SKIN2={
+ poodle(g,col,bl){const F=(c)=>bl?'#fff':c;g.beginPath();g.fillStyle=F('#8b5a2b');
+   const fur=()=>{g.beginPath();for(const [x,y,r] of [[-7,-15,6.5],[0,-18,7],[7,-15,6.5],[-11,-8,6],[11,-8,6]]){g.moveTo(x+r,y);g.arc(x,y,r,0,TAU)}g.moveTo(13,-2);g.ellipse(0,-2,13,12,0,0,TAU)};
+   fur();g.stroke();g.shadowBlur=0;fur();g.fill(); // 곱슬 털+얼굴: 바깥 윤곽만 네온
+   g.fillStyle=F('#9c6a38');g.beginPath();for(const [x,y] of [[-7,-15],[0,-18],[7,-15]]){g.moveTo(x+3,y-1);g.arc(x,y-1,3,0,TAU)}g.fill();
+   g.fillStyle=F('#6e4220');g.beginPath();g.ellipse(-12,0,5,8.5,0.15,0,TAU);g.fill();g.strokeStyle=col;g.lineWidth=1.5;g.stroke(); // 귀
+   g.fillStyle=F('#a8703c');g.beginPath();g.ellipse(7,4,7,5,0,0,TAU);g.fill(); // 주둥이
+   g.fillStyle='#fff';g.beginPath();g.arc(-1,-5,3.4,0,TAU);g.arc(7,-5,3.4,0,TAU);g.fill();g.fillStyle='#1a1a1a';g.beginPath();g.arc(0,-5,1.6,0,TAU);g.arc(8,-5,1.6,0,TAU);g.fill();
+   g.fillStyle='#2a1810';g.beginPath();g.ellipse(11,2,3.2,2.3,0,0,TAU);g.fill();g.strokeStyle='#2a1810';g.lineWidth=1.2;g.beginPath();g.arc(8,6,2.4,0.2,Math.PI-0.2);g.stroke()},
+ guinea(g,col,bl){const F=(c)=>bl?'#fff':c;g.fillStyle=F('#c9863a');g.beginPath();g.ellipse(-2,2,17,12,0,0,TAU);g.fill();g.stroke(); // 몸
+   g.beginPath();g.ellipse(7,-6,10,9,0,0,TAU);g.fill();g.stroke();g.shadowBlur=0; // 머리
+   g.fillStyle=F('#e8b86a');g.beginPath();g.ellipse(-2,6,11,6,0,0,TAU);g.fill(); // 인절미 배
+   g.fillStyle=F('#a86a28');g.beginPath();g.ellipse(-1,-13,4,5,-0.4,0,TAU);g.ellipse(13,-13,4,5,0.4,0,TAU);g.fill();g.strokeStyle=col;g.lineWidth=1.3;g.stroke(); // 귀
+   g.fillStyle='#fff';g.beginPath();g.arc(5,-7,2.8,0,TAU);g.arc(11,-7,2.8,0,TAU);g.fill();g.fillStyle='#1a1a1a';g.beginPath();g.arc(6,-7,1.3,0,TAU);g.arc(12,-7,1.3,0,TAU);g.fill();
+   g.fillStyle='#3e2723';g.beginPath();g.ellipse(14,-3,2.4,1.8,0,0,TAU);g.fill();
+   g.fillStyle='#f5c6c6';g.beginPath();g.ellipse(3,-2,2.4,1.5,0,0,TAU);g.ellipse(15,1,1.8,1.3,0,0,TAU);g.fill()},
+ crab(g,col,bl){const F=(c)=>bl?'#fff':c;const red=F('#ff5d3a');g.strokeStyle=bl?'#fff':'#ff8a5c';g.lineWidth=2.4;g.lineCap='round';g.beginPath(); // 다리(빨강)
+   for(const s2 of [-1,1])for(let i=0;i<3;i++){g.moveTo(s2*12,3+i*3);g.lineTo(s2*20,6+i*4);g.lineTo(s2*22,11+i*4)}g.stroke();
+   g.lineWidth=3.5;g.beginPath();g.moveTo(-11,-3);g.lineTo(-15,-12);g.moveTo(11,-3);g.lineTo(15,-12);g.stroke(); // 팔
+   g.strokeStyle=bl?'#fff':col;g.lineWidth=2.5;g.fillStyle=red;const sb=g.shadowBlur;for(const s2 of [-1,1]){g.beginPath();g.arc(s2*16,-17,6.5,0,TAU);g.stroke();g.shadowBlur=0;g.fill();g.shadowBlur=sb} // 집게(윤곽 글로우 먼저, 속은 선명한 빨강)
+   g.fillStyle='#07060f';for(const s2 of [-1,1]){g.beginPath();g.moveTo(s2*16,-17);g.lineTo(s2*13,-25);g.lineTo(s2*19.5,-24);g.closePath();g.fill()} // 집게 홈
+   g.lineWidth=3;g.fillStyle=red;g.beginPath();g.ellipse(0,1,17,11,0,0,TAU);g.fill();g.stroke();g.shadowBlur=0; // 등딱지
+   g.fillStyle=F('#ff8a5c');g.beginPath();g.ellipse(0,-3,11,5,0,Math.PI,TAU);g.fill(); // 등 무늬
+   g.strokeStyle=bl?'#fff':col;g.lineWidth=2;g.beginPath();g.moveTo(-4,-7);g.lineTo(-5,-13);g.moveTo(4,-7);g.lineTo(5,-13);g.stroke(); // 눈 자루
+   g.fillStyle='#fff';g.beginPath();g.arc(-5,-14,3.2,0,TAU);g.arc(5,-14,3.2,0,TAU);g.fill();g.fillStyle='#1a1a1a';g.beginPath();g.arc(-4.4,-14,1.5,0,TAU);g.arc(5.6,-14,1.5,0,TAU);g.fill();
+   g.strokeStyle='#ffd0c0';g.lineWidth=1.5;g.beginPath();g.arc(0,3,4,0.3,Math.PI-0.3);g.stroke();g.fillStyle='#ffb3a0';g.beginPath();g.arc(-8,1,1.6,0,TAU);g.arc(8,1,1.6,0,TAU);g.fill()},
+ gozskull(g,col,bl){const F=(c)=>bl?'#fff':c; // 고자라(청록 글로우·보라 등가시·붉은 눈) 정면 두개골
+   g.fillStyle=F('#c77dff');g.strokeStyle=bl?'#fff':'#e9b8ff';g.lineWidth=2;for(const [x,h] of [[-10,7],[0,11],[10,7]]){g.beginPath();g.moveTo(x-5,-13);g.lineTo(x,-13-h);g.lineTo(x+5,-13);g.closePath();g.fill();g.stroke()}
+   g.lineWidth=3;g.strokeStyle=bl?'#fff':'#3dffc8';g.shadowColor='#3dffc8';g.fillStyle=F('#e6fff7');
+   g.beginPath();g.moveTo(-17,-4);g.quadraticCurveTo(-18,-17,0,-17);g.quadraticCurveTo(18,-17,17,-4);g.lineTo(14,6);g.lineTo(-14,6);g.closePath();g.fill();g.stroke(); // 머리뼈
+   g.beginPath();g.moveTo(-12,7);g.lineTo(12,7);g.lineTo(9,17);g.lineTo(-9,17);g.closePath();g.fill();g.stroke();g.shadowBlur=0; // 턱
+   g.fillStyle='#1a0610';g.beginPath();g.ellipse(-7,-6,5,4.5,0.25,0,TAU);g.ellipse(7,-6,5,4.5,-0.25,0,TAU);g.fill(); // 눈구멍
+   g.fillStyle='#ff3c3c';g.shadowColor='#ff3c3c';g.shadowBlur=lowGfx()?0:8;g.beginPath();g.arc(-7,-6,1.9,0,TAU);g.arc(7,-6,1.9,0,TAU);g.fill();g.shadowBlur=0;
+   g.fillStyle='#0d3b36';g.beginPath();g.moveTo(-2,1);g.lineTo(0,-2);g.lineTo(2,1);g.closePath();g.fill(); // 콧구멍
+   g.fillStyle=F('#ffffff');g.strokeStyle='#0d3b36';g.lineWidth=1;for(let i=0;i<5;i++){const x=-10+i*5;g.beginPath();g.moveTo(x,6);g.lineTo(x+2.5,11);g.lineTo(x+5,6);g.closePath();g.fill();g.stroke()} // 이빨
+   g.fillStyle='#ff8c1a';g.beginPath();g.arc(-12,-12,1.6,0,TAU);g.arc(12,-12,1.6,0,TAU);g.fill()}};
+const SKIN2_FLIP=new Set(['poodle','guinea','crab']); // 고자라 두개골은 항상 정면(회전·반전 없음)
 const _dp=drawPlayer;
 drawPlayer=function(){const p=P;if(!p)return _dp();const cs=cosOf(p);drawTrailFx(p);const ci=ALL[cs.c],sv=p.col;if(ci)p.col=ci.col;try{_dp()}finally{p.col=sv}
-  const si=ALL[cs.s];if(si){const blink=p.inv>0&&G&&Math.floor(G.t*30)%2===0;const bob=p.moving?Math.sin(p.walk||0)*2:0;ctx.save();ctx.translate(p.x,p.y+bob);ctx.fillStyle='#0d2a44';ctx.beginPath();ctx.arc(0,0,(p.r||14)+2,0,TAU);ctx.fill();ctx.beginPath();ctx.moveTo(-12,-9);ctx.lineTo(12,-9);ctx.lineTo(2,-29);ctx.closePath();ctx.fill();
+  const si=ALL[cs.s];if(si){const blink=p.inv>0&&G&&Math.floor(G.t*30)%2===0;const bob=p.moving?Math.sin(p.walk||0)*2:0;ctx.save();ctx.translate(p.x,p.y+bob);if(SKIN2_FLIP.has(si.sk)){const fx=p.fx||0;if(fx<-0.15)p._skF=-1;else if(fx>0.15)p._skF=1;if(p._skF<0)ctx.scale(-1,1)}ctx.fillStyle='#0d2a44';ctx.beginPath();ctx.arc(0,0,(p.r||14)+2,0,TAU);ctx.fill();ctx.beginPath();ctx.moveTo(-12,-9);ctx.lineTo(12,-9);ctx.lineTo(2,-29);ctx.closePath();ctx.fill();
     shapePath(ctx,si.sk,ci?ci.col:(sv||'#4df3ff'),blink);ctx.restore()}};
 // ---- 궤적 ----
 let TP=[];const lastPos={};
