@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v112</title>
+<title>네온 생존자 - NEON SURVIVOR v113</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v112</div>
+  <div class="sub">NEON SURVIVOR v113</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -2572,7 +2572,9 @@ function drawGod(b){const dk=godDustK();if(dk>=1)return;if(dk>0){ctx.save();ctx.
 function drawGozara(b){ // v112 이동 방향을 바라봄(좌우 반전만, 데드존), 멈춰서 공격할 때는 대상 쪽
   const px=b._gpx==null?b.x:b._gpx;b._gpx=b.x;b._gvx=(b._gvx||0)*0.8+(b.x-px)*0.2;const tgt=(b.mode==='breathPrep'||b.mode==='breath')?-(b.face||1):(b.face||1);
   if(Math.abs(b._gvx)>0.6)b._gdir=b._gvx<0?-1:1;else if(Math.abs(b._gvx)<0.25)b._gdir=tgt;drawBossSpr(b,b._gdir||tgt)}
-function drawKangsan(b){drawBossSpr(b,b.face<0?1:-1)}
+function drawKangsan(b){ // v113 원작은 오른쪽을 봄 → 이동 방향을 바라봄(데드존), 멈춰서 공격할 때는 대상 쪽
+  const px=b._gpx==null?b.x:b._gpx;b._gpx=b.x;b._gvx=(b._gvx||0)*0.8+(b.x-px)*0.2;const tgt=b.face||1;
+  if(Math.abs(b._gvx)>0.6)b._gdir=b._gvx<0?-1:1;else if(Math.abs(b._gvx)<0.25)b._gdir=tgt;drawBossSpr(b,b._gdir||tgt)}
 let camP=null;
 const hexRGB=h=>{h=(h||'#ff4dff').replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16)||0xff4dff;return [(n>>16)&255,(n>>8)&255,n&255]};
 function raidTrails(){const ma=trailAge(),gold=onBeat();ctx.lineCap='round';ctx.lineJoin='round';ctx.globalCompositeOperation='lighter';
