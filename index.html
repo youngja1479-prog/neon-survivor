@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v110</title>
+<title>네온 생존자 - NEON SURVIVOR v111</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v110</div>
+  <div class="sub">NEON SURVIVOR v111</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -1636,7 +1636,7 @@ function createRoom(tries,slot){tries=tries||0;stopProbe();cleanupNet();myId='p0
       if(c.metadata&&c.metadata.probe){const h=lobby.players[0];try{c.send({t:'info',name:h?h.name:'P1',n:lobby.players.length,diff:lobby.diff,st:R?'game':'wait'})}catch(e){}setTimeout(()=>{try{c.close()}catch(e){}},300);return}
       if(lobby.players.length>=4||R){c.send({t:'full'});setTimeout(()=>c.close(),400);return}
       let n=0;while(lobby.players.some(p=>p.id==='p'+n))n++;const id='p'+n;c.pid=id;conns.push(c);
-      lobby.players.push({id,name:'P'+(n+1),col:COLS[n],w:'bolt'});c.send({t:'hello',id});syncLobby()});
+      lobby.players.push({id,name:'P'+(n+1),col:COLS[n],w:'bolt'});c.send({t:'hello',id,ver:(document.title.match(/v\d+/)||[''])[0]});syncLobby()});
     c.on('data',d=>onHostData(c,d));
     c.on('close',()=>{if(!c.pid)return;conns=conns.filter(x=>x!==c);lobby.players=lobby.players.filter(p=>p.id!==c.pid);if(R){const p=RP.find(p=>p.id===c.pid);if(p){p.dead=true;p.left=true;p.hp=0}}else syncLobby()})});
   peer.on('error',err=>{if(net!==my)return;if(err.type==='unavailable-id'){if(pub){if(slot<10){createRoom(0,slot+1);return}$('rPubChk').checked=false;pubFull=true;createRoom(0);return}if(tries<4){createRoom(tries+1);return}}if(!my.open){clearTimeout(to);offlineHost('서버 오류('+err.type+')',again)}});
@@ -1678,7 +1678,7 @@ function renderPub(res,partial){const L=$('rPubList');L.innerHTML='';const ks=Ob
 addEventListener('beforeunload',()=>{try{cleanupNet();stopProbe()}catch(e){}});
 function onClientData(d){
   if(d.t==='full'){msg('방이 가득 찼거나 이미 시작했어요.');return}
-  if(d.t==='hello'){myId=d.id;enterRoom(net.code);const pw=prefW();if(pw!=='bolt')hostConn.send({t:'wpick',w:pw});if(window.__cry)hostConn.send({t:'cos',c:__cry.eq()});msg('호스트가 시작하기를 기다리는 중…');return}
+  if(d.t==='hello'){myId=d.id;enterRoom(net.code);const pw=prefW();if(pw!=='bolt')hostConn.send({t:'wpick',w:pw});if(window.__cry)hostConn.send({t:'cos',c:__cry.eq()});const _mv=(document.title.match(/v\d+/)||[''])[0];msg(d.ver&&_mv&&d.ver!==_mv?'⚠ 방장과 버전이 달라요 (방장 '+d.ver+' / 나 '+_mv+') — 새로고침 후 다시 접속하세요':'호스트가 시작하기를 기다리는 중…');return}
   if(d.t==='lobby'){lobby.players=d.players;lobby.diff=RDIFF[d.diff]?d.diff:'normal';renderLobby();return}
   if(d.t==='chat'){addChat(d.n,d.c,d.m);return}
   if(d.t==='mdv'){if(window.__md)__md.fx(d);return}
@@ -2041,7 +2041,7 @@ const STORY6_DL=[
   {sp:'God',t:'정확히는 강산 차은우 원빈 박보검 강동원 신이지.'},
   {sp:'네온 생존자',t:'너.... 너는?'},
   {sp:'네온 생존자',t:'한##씨가 주먹 돌리기로 파괴했다고 들었는데?'},
-  {sp:'God',t:'정확히는 지구에서 믿는 사람이 0이 된거지. 내가 완전히 파괴된 건 아니다.'},
+  {sp:'God',t:'정확히는 지구에서 내가 추방된거지.'},{sp:'God',t:'내가 완전히 파괴된 건 아니다.'},
   {sp:'God',t:'나는 "강산 차은우 원빈 박보검 강동원교"를 다시 부활시킬 것이다.'},
   {sp:'God',t:'모두가 토요일 오전 4시에 일어나서 나에게 예배를 드리게 할 것 이다.'},
   {sp:'네온 생존자',t:'미친놈 내가 너를 막겠다!!!!'},
@@ -2389,7 +2389,7 @@ function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||
   let PJ='',np=0;for(const p of projs){if(np>=300)break;if(!inV(p.x,p.y,40))continue;np++;const n=nid(p);PJ+=B64[n>>6]+B64[n&63]+e1(PK.indexOf(p.k))+e2(p.x-ox)+e2(p.y-oy)+e2(wrapA(p.rot||0)*600)+e1(r1(p.r))}
   const PL=RP.map(p=>{const fast=[p.id,r1(p.x),r1(p.y),r1(p.hp),r2(p.fx),r2(p.fy),p.moving?1:0,r2(p.walk),r2(p.inv),p.dead?1:0,p.level,r1(p.xp),r2(Math.max(0,p.chooseT))];
     const heavy=[p.name,p.col,p.maxHp,p.weapons,p.passives,p.wOrder,p.pOrder,p.need,p.opts];const hk=JSON.stringify(heavy);if(full||pk[p.id]!==hk){pk[p.id]=hk;fast.push(heavy)}return fast});
-  const o={t:'s',T:r2(R.t),ph:R.phase,diff:R.diff,si:R.storyI,ba:R.bossAt,s3:R.s3?{stage:R.s3.stage,i:R.s3.i|0,done:R.s3.done?1:0}:null,s4:R.s4?{stage:R.s4.stage,i:R.s4.i|0,done:R.s4.done?1:0}:null,s5:R.s5?{stage:R.s5.stage,i:R.s5.i|0,done:R.s5.done?1:0}:null,pMax6:R.pMax6?1:0,pMax7:R.pMax7?1:0,c10:R.cap10?1:0,wMax6:R.wMax6?1:0,hard:R.storyHard?1:0,skLock:R.skLockT>0?r1(R.skLockT):0,k:G.kills,sh:r1(shake),b2:R.boss2At,v:R.votes,bn:R.banner,gb:banner&&banner.t>0.05?[banner.txt,banner.col,r2(banner.t)]:null,TW:isTower()&&G.tower?{hp:r1(G.tower.hp),mx:G.tower.maxHp|0,co:G.cores|0,up:Object.assign({},G.tower.up||{}),fl:r2(G.tower.flash||0),rot:r2(G.tower.rot||0),ru:G.tdRush?1:0}:null,
+  const o={t:'s',T:r2(R.t),ph:R.phase,diff:R.diff,si:R.storyI,ba:R.bossAt,s3:R.s3?{stage:R.s3.stage,i:R.s3.i|0,done:R.s3.done?1:0}:null,s4:R.s4?{stage:R.s4.stage,i:R.s4.i|0,done:R.s4.done?1:0}:null,s5:R.s5?{stage:R.s5.stage,i:R.s5.i|0,done:R.s5.done?1:0}:null,s6:R.s6?{stage:R.s6.stage,i:R.s6.i|0}:null,s7:R.s7?{stage:R.s7.stage,i:R.s7.i|0}:null,pMax6:R.pMax6?1:0,pMax7:R.pMax7?1:0,c10:R.cap10?1:0,wMax6:R.wMax6?1:0,hard:R.storyHard?1:0,skLock:R.skLockT>0?r1(R.skLockT):0,k:G.kills,sh:r1(shake),b2:R.boss2At,v:R.votes,bn:R.banner,gb:banner&&banner.t>0.05?[banner.txt,banner.col,r2(banner.t)]:null,TW:isTower()&&G.tower?{hp:r1(G.tower.hp),mx:G.tower.maxHp|0,co:G.cores|0,up:Object.assign({},G.tower.up||{}),fl:r2(G.tower.flash||0),rot:r2(G.tower.rot||0),ru:G.tdRush?1:0}:null,
   O:[ox,oy],AQ:me?me.ack|0:0,P:PL,TR:RP.map(p=>{const t=trailSnap(p);let S='';if(t)for(let j=0;j<t.length;j+=3)S+=e3(t[j])+e3(t[j+1])+e1(t[j+2]);return [S,p.combo|0]}),RV:RP.map(p=>p.dead&&!p.left&&p.reviveT>0?r1(p.reviveT):0),BT:Math.round(G.beatPh*1000)/1000,LF:G.loopFx.map(f=>[f.perfect?1:0,r2(f.t),f.poly.filter((q,i)=>i%2===0||i===f.poly.length-1).flatMap(q=>[r1(q.x),r1(q.y)])]),CL:G.calls.map(c=>[r1(c.x),r1(c.y),c.txt,c.c,r2(c.life),c.s]),E,PJ,EB,
   EV:evSnap(),MT:meteors.map(m=>[r1(m.x),r1(m.y),r2(m.t),m.warn,r1(m.rad)]),RG:rings.map(r=>[r1(r.x),r1(r.y),r1(r.max),r2(r.t),r.dur,r.c]),
   ZP:zaps.filter(z=>z.pts.length&&inV(z.pts[0].x,z.pts[0].y,300)).map(z=>[z.pts.map(q=>[r1(q.x),r1(q.y)]),r2(z.t)]),BM:beams.map(b=>[r1(b.x1),r1(b.y1),r1(b.x2),r1(b.y2),r2(b.t),b.dur,r2(b.w)]),FA:RP.map(p=>p.weapons&&p.weapons.flame&&p.flA!=null?r2(p.flA):null),
@@ -2401,7 +2401,10 @@ function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||
   return o}
 function sendSnaps(){for(const c of conns)if(c.open&&!(c.metadata&&c.metadata.probe))try{c.send(snapFor(c))}catch(e){}}
 let lastMyHp=null;
-function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;if(d.TW){if(!G.tower)G.tower={x:0,y:0,r:80,cd:0,pulse:0,rot:0,flash:0,up:{},hp:3000,maxHp:3000};G.tower.hp=d.TW.hp;G.tower.maxHp=d.TW.mx;G.tower.flash=d.TW.fl;G.tower.rot=d.TW.rot;G.tower.up=d.TW.up||G.tower.up||{};G.cores=d.TW.co|0;if(d.TW.ru)G.tdRush=true;tdSyncBtn()}if(d.ba!=null)R.bossAt=d.ba;if(d.si!=null){R.storyI=d.si;if(R.diff==='story'&&!(d.s3&&d.s3.stage&&d.s3.stage!=='done')&&!(d.s4&&d.s4.stage&&d.s4.stage!=='done')&&!(d.s5&&d.s5.stage&&d.s5.stage!=='done')){if(storyActive())storyRender();else if(!(R.s3&&(R.s3.stage==='lines'||R.s3.stage==='after'||R.s3.stage==='bossdlg'))&&!(R.s4&&R.s4.stage==='dlg')&&!(R.s5&&R.s5.stage&&R.s5.stage!=='done')&&!(R.s6&&R.s6.stage==='dlg')&&!(R.s7&&(R.s7.stage==='dlg'||R.s7.stage==='last')))storyHide()}}if(d.s3)story3OnMsg(d.s3);if(d.s4)story4OnMsg(Object.assign({},d.s4,{pMax6:d.pMax6,hard:d.hard,skLock:d.skLock}));if(d.s5)story5OnMsg(Object.assign({},d.s5,{pMax7:d.pMax7,wMax6:d.wMax6,pMax6:d.pMax6,skLock:d.skLock}));if(d.pMax6)R.pMax6=1;if(d.pMax7)R.pMax7=1;if(d.c10)R.cap10=1;if(d.wMax6)R.wMax6=1;if(d.hard)R.storyHard=1;if(d.skLock!=null)R.skLockT=+d.skLock;G.kills=R.kills=d.k;shake=Math.max(shake,d.sh);R.boss2At=d.b2;R.votes=d.v||{};R.banner=d.bn;
+function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;if(d.TW){if(!G.tower)G.tower={x:0,y:0,r:80,cd:0,pulse:0,rot:0,flash:0,up:{},hp:3000,maxHp:3000};G.tower.hp=d.TW.hp;G.tower.maxHp=d.TW.mx;G.tower.flash=d.TW.fl;G.tower.rot=d.TW.rot;G.tower.up=d.TW.up||G.tower.up||{};G.cores=d.TW.co|0;if(d.TW.ru)G.tdRush=true;tdSyncBtn()}if(d.ba!=null)R.bossAt=d.ba;if(d.si!=null){R.storyI=d.si;if(R.diff==='story'&&!(d.s3&&d.s3.stage&&d.s3.stage!=='done')&&!(d.s4&&d.s4.stage&&d.s4.stage!=='done')&&!(d.s5&&d.s5.stage&&d.s5.stage!=='done')){if(storyActive())storyRender();else if(!(R.s3&&(R.s3.stage==='lines'||R.s3.stage==='after'||R.s3.stage==='bossdlg'))&&!(R.s4&&R.s4.stage==='dlg')&&!(R.s5&&R.s5.stage&&R.s5.stage!=='done')&&!(R.s6&&R.s6.stage==='dlg')&&!(R.s7&&(R.s7.stage==='dlg'||R.s7.stage==='last')))storyHide()}}const _sc=(k,o)=>!!o&&(!R[k]||R[k].stage!==o.stage||(R[k].i|0)!==(o.i|0)); // v111 게스트 대사: 단계가 바뀔 때만 적용
+  const _sf={s3:()=>story3OnMsg(d.s3),s4:()=>story4OnMsg(Object.assign({},d.s4,{pMax6:d.pMax6,hard:d.hard,skLock:d.skLock})),s5:()=>story5OnMsg(Object.assign({},d.s5,{pMax7:d.pMax7,wMax6:d.wMax6,pMax6:d.pMax6,skLock:d.skLock})),s6:()=>story6OnMsg(d.s6),s7:()=>story7OnMsg(d.s7)};let _ch='';
+  for(const k of ['s3','s4','s5','s6','s7'])if(_sc(k,d[k])){_sf[k]();_ch=k}
+  if(_ch)for(const k of ['s7','s6','s5','s4','s3']){const o=d[k];if(o&&o.stage&&o.stage!=='done'){if(k!==_ch)_sf[k]();break}} // 이전 단계의 'done'이 현재 대사를 끄지 않도록 최신 단계를 다시 표시if(d.pMax6)R.pMax6=1;if(d.pMax7)R.pMax7=1;if(d.c10)R.cap10=1;if(d.wMax6)R.wMax6=1;if(d.hard)R.storyHard=1;if(d.skLock!=null)R.skLockT=+d.skLock;G.kills=R.kills=d.k;shake=Math.max(shake,d.sh);R.boss2At=d.b2;R.votes=d.v||{};R.banner=d.bn;
   if(d.gb&&(!banner||banner.txt!==d.gb[0]))banner={txt:d.gb[0],col:d.gb[1],t:d.gb[2]};
   const old={};for(const p of RP)old[p.id]=p;const OX=d.O?d.O[0]:0,OY=d.O?d.O[1]:0;
   RP=d.P.map(a=>{const p=old[a[0]]||{r:14,baseSpd:210,hurtT:0,name:'?',col:'#fff',maxHp:100,weapons:{},passives:{},wOrder:[],pOrder:[],need:1,opts:null};Object.assign(p,{id:a[0],x:a[1],y:a[2],hp:a[3],fx:a[4],fy:a[5],moving:!!a[6],walk:a[7],inv:a[8],dead:!!a[9],level:a[10],xp:a[11],chooseT:a[12]});
