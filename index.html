@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v117</title>
+<title>네온 생존자 - NEON SURVIVOR v118</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v117</div>
+  <div class="sub">NEON SURVIVOR v118</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -1256,7 +1256,7 @@ function drawHUD(){
   // 무기/패시브 아이콘
   // 크레이지는 무기 10종·패시브 9종을 모두 가지므로 아이콘을 작게(20px) 촘촘히 2줄 배치
   const cz=isCrazy(),SZ=cz?20:28,GAP=cz?23:34,IC=cz?15:22,ROW=cz?30:40;
-  let ix=hx+SZ/2,iy=hy+hh+(cz?52:58);
+  let ix=hx+SZ/2,iy=hy+hh+(cz?52:58)+(isTower()&&G.tower?46:0); // v118: 타워 체력바·코어 표시와 겹치지 않게 아래로
   const slot=(id,lv,col,ml)=>{const h=SZ/2;ctx.fillStyle='#14113088';ctx.strokeStyle=col;ctx.lineWidth=cz?1:1.5;roundRect(ix-h,iy-h,SZ,SZ,cz?4:6);ctx.fill();ctx.stroke();ctx.save();ctx.translate(ix,iy);drawIcon(ctx,id,IC);ctx.restore();
     const pw=(SZ-4)/ml;for(let i=0;i<ml;i++){ctx.fillStyle=i<lv?'#ffd84d':'#ffffff30';ctx.fillRect(ix-h+2+i*pw,iy+h+2,Math.max(1,pw-1),cz?2:3)}ix+=GAP};
   const _wM=wMaxLv(),_pM=pMaxLv();
