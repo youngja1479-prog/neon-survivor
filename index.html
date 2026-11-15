@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v118</title>
+<title>네온 생존자 - NEON SURVIVOR v119</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v118</div>
+  <div class="sub">NEON SURVIVOR v119</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -2547,7 +2547,7 @@ function updUI(){const me=RP.find(p=>p.id===myId);const lv=$('raidLvl');
   if(ph==='vsprep'||ph==='vsarena'||ph==='vsend'){/* VS는 vsShowEnd가 결과창을 담당 */if(ph==='vsend')endShown=k}
   else if(k!==endShown){endShown=k;const E=$('raidEnd');
     if(ph==='inter'||ph==='clear'||ph==='fail'){lv.classList.remove('show');lvKey='';
-      $('rEndTitle').textContent=ph==='inter'?'고자라 처치! (중간 결과)':ph==='clear'?'레이드 클리어!':((G&&G.tdFail)?'타워가 파괴되었습니다!':'레이드 실패…');
+      $('rEndTitle').textContent=ph==='inter'?'고자라 처치! (중간 결과)':ph==='clear'?'레이드 클리어!':((G&&G.tdFail)||(R.diff==='tower'&&G&&G.tower&&G.tower.hp<=0)?'타워가 파괴되었습니다!':'레이드 실패…');
       $('rEndTitle').style.color=ph==='fail'?'#ff4d6d':'#ffd84d';
       let s=`난이도: <span>${rDiffOf(R.diff).label}</span> · 시간: <span>${fmtTime(R.t)}</span> · 처치: <span>${G.kills}</span><br>`+RP.map(p=>`<span style="color:${p.col}">●</span> ${p.name} 레벨 ${p.level}${p.dead?' 💀':''}`+(ph==='inter'&&!p.dead?(R.votes[p.id]?' ✅ 계속':' ⏳ 대기'):'')).join('<br>');
       if(ph==='inter')s+='<br><small style="color:#cfd3ff">살아있는 모든 플레이어가 「계속」을 눌러야 진행됩니다. 5분 뒤 두 번째 보스!</small><br><button class="btn" id="rContBtn">계속</button>';
@@ -2690,7 +2690,8 @@ function drawRaidWorld(){drawTele();
     ctx.fillStyle=p.col;ctx.font='900 13px '+FONT;ctx.textAlign='center';ctx.fillText(p.name+(p.id===myId?' (나)':''),p.x,p.y-32)}
   P=cam}
 function raidHUD(){const ph=R.phase;ctx.textAlign='center';
-  let tl='';if(ph==='wave1')tl='보스까지 '+fmtTime(Math.max(0,(R.bossAt||300)-R.t));else if(ph==='wave2'&&R.boss2At)tl='두 번째 보스까지 '+fmtTime(Math.max(0,R.boss2At-R.t));else if(ph==='wave3'&&R.boss2At)tl='God 강림까지 '+fmtTime(Math.max(0,R.boss2At-R.t));
+  let tl='';if(ph==='wave1'&&R.diff==='tower')tl=R.t<(R.bossAt||300)?'적 대습격까지 '+fmtTime(Math.max(0,(R.bossAt||300)-R.t)):'⚠ 대습격! 타워를 끝까지 지켜라'; // v119 레이드 타워: 보스 없음
+  else if(ph==='wave1')tl='보스까지 '+fmtTime(Math.max(0,(R.bossAt||300)-R.t));else if(ph==='wave2'&&R.boss2At)tl='두 번째 보스까지 '+fmtTime(Math.max(0,R.boss2At-R.t));else if(ph==='wave3'&&R.boss2At)tl='God 강림까지 '+fmtTime(Math.max(0,R.boss2At-R.t));
   if(tl){ctx.font='800 14px '+FONT;ctx.fillStyle='#ffd84d';ctx.fillText(tl,W/2,84)}
   if(R.boss){const b=R.boss,bw=Math.min(W-40,760),x=(W-bw)/2,y=76;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x-4,y-4,bw+8,34);ctx.fillStyle=b.kind==='god'?(b.enr?'#ff4d6d':'#ffd84d'):b.kind==='gozara'?'#3dffc8':b.enr?'#ff2e63':'#ff8c3a';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=14;ctx.fillRect(x,y,bw*Math.max(0,b.hp)/b.maxHp,26);ctx.shadowBlur=0;
     ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(x,y,bw,26);ctx.fillStyle='#fff';ctx.font='bold 16px '+FONT;ctx.fillText(`${b.name}${b.enr?' (격노)':''}  ${Math.max(0,b.hp)|0} / ${b.maxHp|0}`,W/2,y+19);ctx.font='bold 12px '+FONT;ctx.fillText(RP.length+'인 체력 보정',W/2,y+44)}
