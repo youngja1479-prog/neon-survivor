@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v122</title>
+<title>네온 생존자 - NEON SURVIVOR v123</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v122</div>
+  <div class="sub">NEON SURVIVOR v123</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -292,8 +292,8 @@ const PASSIVES={
 };
 const MAXLV=5, MAX_WEAPONS=6, CRAZY_ITEM_MAX=10, ITEM_TBL_MAX=15;window.LV_GOLD=10;const LV_GOLD=window.LV_GOLD;
 const maxLv=()=>isCrazy()?CRAZY_ITEM_MAX:MAXLV; // 크레이지만 무기·패시브 Lv10까지
-const pMaxLv=()=>{const r=typeof window!=='undefined'&&window.__raid&&window.__raid.R;if(r&&r.diff==='story'){if(r.crazy)return ITEM_TBL_MAX;if(r.cap10)return 10;if(r.pMax7)return 7;if(r.pMax6)return 6}return maxLv()}; // v110 레이드 크레이지 Lv15, 스토리 강산 처치 후 Lv10
-const wMaxLv=()=>{const r=typeof window!=='undefined'&&window.__raid&&window.__raid.R;if(r&&r.diff==='story'){if(r.crazy)return ITEM_TBL_MAX;if(r.cap10)return 10}return (r&&r.diff==='story'&&r.wMax6)?6:maxLv()};
+const pMaxLv=()=>{const r=typeof window!=='undefined'&&window.__raid&&window.__raid.R;if(r&&r.diff==='normal'&&r.lvCap)return Math.min(ITEM_TBL_MAX,r.lvCap);if(r&&r.diff==='story'){if(r.crazy)return ITEM_TBL_MAX;if(r.cap10)return 10;if(r.pMax7)return 7;if(r.pMax6)return 6}return maxLv()}; // v110 레이드 크레이지 Lv15, 스토리 강산 처치 후 Lv10
+const wMaxLv=()=>{const r=typeof window!=='undefined'&&window.__raid&&window.__raid.R;if(r&&r.diff==='normal'&&r.lvCap)return Math.min(ITEM_TBL_MAX,r.lvCap);if(r&&r.diff==='story'){if(r.crazy)return ITEM_TBL_MAX;if(r.cap10)return 10}return (r&&r.diff==='story'&&r.wMax6)?6:maxLv()};
 // 크레이지 전용 Lv6~10 무기 수치: Lv5 이후 성장 공식을 연장 (피해 +18%/레벨, 쿨 ×0.93(최소 0.35초), 범위·사거리 +6%, 개수·관통 2레벨마다 +1)
 for(const id in WEAPONS){const L=WEAPONS[id].lv;while(L.length<CRAZY_ITEM_MAX){const a=L[L.length-1],k=L.length+1,o={};
   for(const s in a){const v=a[s];o[s]=s==='dmg'?Math.round(v*1.18):s==='cd'?Math.max(0.35,+(v*0.93).toFixed(2)):(s==='rad'||s==='len')?Math.round(v*1.06):(s==='n'||s==='pierce')?v+(k%2===0?1:0):v}
@@ -2257,7 +2257,8 @@ function applyPick(p,i){if(!p.opts||!p.opts[i]||p.dead)return;const o=p.opts[i];
   else if(o.kind==='p'){if(!P.passives[o.id]){P.passives[o.id]=1;P.pOrder.push(o.id)}else P.passives[o.id]++;if(o.id==='heart'){P.maxHp+=20;P.hp=Math.min(P.maxHp,P.hp+20)}}
   else if(o.kind==='g')cryTo(p.id,window.LV_GOLD||10,'lvup');
   burst(P.x,P.y,'#ffd84d',24,220,0.6,3);P=prev;p.opts=null;p.chooseT=0;p.storyPick=0;if(p.id===myId)S.level()}
-function vote(p){if(R.phase!=='inter'||p.dead)return;R.votes[p.id]=1;if(R.afterK&&alive().every(q=>R.votes[q.id])){R.afterK=2;R.phase='wave3';R.boss2At=R.t+300;R.godWarn=0;R.nextElite=R.t+60;rbanner('몹 웨이브 재개! 5분 뒤 God가 강림한다…','#ffd84d',4);return}if(alive().every(q=>R.votes[q.id])){R.phase='wave2';R.boss2At=R.t+NUM.boss2Delay;R.nextElite=R.t+60;rbanner('몹 웨이브 재개! 5분 뒤 두 번째 보스가 온다…','#ffd84d',4)}}
+function mdBoostK(){if(R.mdK)return;R.mdK=1;for(const p of RP){if(p.left)continue;p.mdMax=(p.mdMax||1)+1;p.mdUses=p.mdUsed?Math.max(p.mdUses|0,1):(p.mdUses|0);p.mdUsed=p.mdUses>=p.mdMax}if(!R.host&&window.__md&&__md.resetLocal)__md.resetLocal()} // v123 일반: 강산 처치 시 메이데이 최대 +1(1회 충전), story6Boost와 같은 방식
+function vote(p){if(R.phase!=='inter'||p.dead)return;R.votes[p.id]=1;if(R.afterK&&alive().every(q=>R.votes[q.id])){R.afterK=2;R.lvCap=15;R.surge=3;R.phase='wave3';R.boss2At=R.t+300;R.godWarn=0;R.nextElite=R.t+60;rbanner('무기·패시브 Lv15 해제! 몬스터 무진장 몰려온다 · 5분 뒤 God 강림','#ffd84d',5);return}if(alive().every(q=>R.votes[q.id])){R.phase='wave2';R.boss2At=R.t+NUM.boss2Delay;R.nextElite=R.t+60;if(R.diff==='normal'){R.lvCap=10;R.surge=2;rbanner('무기·패시브 Lv10 해제! 몬스터 대폭 증가 · 5분 뒤 두 번째 보스','#ffd84d',5)}else rbanner('몹 웨이브 재개! 5분 뒤 두 번째 보스가 온다…','#ffd84d',4)}}
 // 일반 모드 스폰 공식 재사용 (pickType/spawnEnemy/offscreenPos 원본 그대로)
 function gozRushBurst(){if(!R||R.gozBurst)return;R.gozBurst=1;R.gozRush=1;const ps=alive();const c=ps[0]||{x:0,y:0};const n=Math.round(74+16*(R.n||1)); // v103 v99(40+16n)+34 동일, v99 고자라 출현 시 한꺼번에
   for(let i=0;i<n;i++){const a=i/n*TAU+rand(-0.06,0.06),d=440+rand(0,200),ty=pickType();spawnEnemy(ty,clamp(c.x+Math.cos(a)*d,-WH+20,WH-20),clamp(c.y+Math.sin(a)*d,-WH+20,WH-20))}}
@@ -2271,8 +2272,9 @@ function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;const tdRush=
   if(R.gozRush)rate*=4.2;else if(R.phase==='boss1')rate*=0.45;else if(R.phase==='boss2')rate*=0.6; // v99 고자라부터 폭주
   if(R.godArmy&&R.diff==='story')rate*=ARMY.rate; // v109
   if(R.endless)rate*=1+(ENDLESS.rate-1)*enK();
+  if(R.diff==='normal'&&R.surge)rate*=R.surge>=3?3.5:2; // v123 일반: 2구간 x2, 3구간~ x3.5
   rate*=SPWN;if(R.diff!=='vs')rate*=RAID_DENS.rate; // v120 레이드 전 모드 적 수 증가(인원 무관 동일)
-  let cap=Math.round((R.godArmy&&R.diff==='story'?ARMY.cap:R.endless?1+(ENDLESS.cap-1)*enK():1)*Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)))*SPWN*(R.gozRush?1.7:1));if(R.diff!=='vs')cap=Math.max(cap,Math.min(RAID_DENS.ceil,Math.round(cap*RAID_DENS.cap))); // v120 상한도 늘림(최대 ceil까지, 기존보다 낮아지지 않음)
+  let cap=Math.round((R.godArmy&&R.diff==='story'?ARMY.cap:R.endless?1+(ENDLESS.cap-1)*enK():1)*Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)))*SPWN*(R.gozRush?1.7:1));if(R.diff!=='vs')cap=Math.max(cap,Math.min(RAID_DENS.ceil,Math.round(cap*RAID_DENS.cap)));if(R.diff==='normal'&&R.surge)cap=Math.max(cap,Math.min(R.surge>=3?1700:1450,Math.round(cap*(R.surge>=3?1.5:1.25)))); // v120 상한도 늘림(최대 ceil까지, 기존보다 낮아지지 않음)
   if(R.armyBanAt&&R.t>=R.armyBanAt){R.armyBanAt=0;rbanner('⚠ 신의 군대가 몰려온다! 난이도 급상승 ⚠','#ff5a5a',4)}
   if(R.capBanAt&&R.t>=R.capBanAt){R.capBanAt=0;rbanner(R.crazy?'메이데이 +1 충전! (최대 +1)':'레벨 한도 해제! 무기·패시브 Lv10 · 메이데이 +1','#7dffb3',4)}
   R.spawnAcc+=rate*dt;const ps=alive();if(!ps.length&&!(R.diff==='tower'&&G.tower&&G.tower.hp>0))return;
@@ -2424,7 +2426,7 @@ function hostUpdate(dt){
         if(R.diff==='story'&&!(R.s4&&R.s4.done))story4Begin();else{R.phase='inter';R.votes={}}}
       else if(k==='kangsan'&&R.diff==='story'&&!(R.s6&&R.s6.done)){for(let i=0;i<30;i++)dropGem(b.x+rand(-90,90),b.y+rand(-90,90),8);pickups.push({type:'chest',x:b.x,y:b.y,t:0});story6Begin()}
       else if(k==='god'&&R.diff==='story'&&!(R.s7&&R.s7.done))story7Begin(b);
-      else if(k==='kangsan'&&R.diff==='normal'){for(let i=0;i<30;i++)dropGem(b.x+rand(-90,90),b.y+rand(-90,90),8);pickups.push({type:'chest',x:b.x,y:b.y,t:0});R.afterK=1;R.phase='inter';R.votes={}} // v122 일반: 강산 → 투표 → 5분 → God
+      else if(k==='kangsan'&&R.diff==='normal'){for(let i=0;i<30;i++)dropGem(b.x+rand(-90,90),b.y+rand(-90,90),8);pickups.push({type:'chest',x:b.x,y:b.y,t:0});R.afterK=1;mdBoostK();R.phase='inter';R.votes={};rbanner('메이데이 +1 충전!','#ff4d6d',4)} // v122 일반: 강산 → 투표 → 5분 → God
       else if(k==='god'&&R.diff==='normal'){for(let i=0;i<40;i++)dropGem(b.x+rand(-90,90),b.y+rand(-90,90),8);pickups.push({type:'chest',x:b.x,y:b.y,t:0});R.endless=1;R.endlessAt=R.t;R.phase='endless';R.nextElite=R.t+30;rbanner('∞ 무한 모드 돌입! 끝까지 살아남아라','#ff00e5',5)} // v122 God 처치 → 무한 모드
       else{R.phase='ending';R.endT=3;enemies=[];gems=[];projs=[];pickups=[];rbanner(k==='god'?'신이 쓰러졌다. 세상이 정화되었다.':'세상이 정화되었다.','#ffffff',3.2)}}}
   for(const tl of R.tele){tl.t+=dt;if(tl.hitL&&!tl.done&&tl.t>=tl.warn){tl.done=1;addShake(8);for(const p of alive())if(segD(p.x,p.y,tl)<tl.w/2+10)hurtP(p,tl.hitL)}if(tl.hit&&!tl.done&&tl.t>=tl.warn){tl.done=1;addShake(10);for(const p of alive())if(Math.hypot(p.x-tl.x,p.y-tl.y)<tl.r)hurtP(p,tl.hit)}}R.tele=R.tele.filter(tl=>tl.t<tl.warn+0.25);
@@ -2466,7 +2468,7 @@ function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||
   let PJ='',np=0;for(const p of projs){if(np>=300)break;if(!inV(p.x,p.y,40))continue;np++;const n=nid(p);PJ+=B64[n>>6]+B64[n&63]+e1(PK.indexOf(p.k))+e2(p.x-ox)+e2(p.y-oy)+e2(wrapA(p.rot||0)*600)+e1(r1(p.r))}
   const PL=RP.map(p=>{const fast=[p.id,r1(p.x),r1(p.y),r1(p.hp),r2(p.fx),r2(p.fy),p.moving?1:0,r2(p.walk),r2(p.inv),p.dead?1:0,p.level,r1(p.xp),r2(Math.max(0,p.chooseT))];
     const heavy=[p.name,p.col,p.maxHp,p.weapons,p.passives,p.wOrder,p.pOrder,p.need,p.opts];const hk=JSON.stringify(heavy);if(full||pk[p.id]!==hk){pk[p.id]=hk;fast.push(heavy)}return fast});
-  const o={t:'s',T:r2(R.t),ph:R.phase,diff:R.diff,si:R.storyI,ba:R.bossAt,s3:R.s3?{stage:R.s3.stage,i:R.s3.i|0,done:R.s3.done?1:0}:null,s4:R.s4?{stage:R.s4.stage,i:R.s4.i|0,done:R.s4.done?1:0}:null,s5:R.s5?{stage:R.s5.stage,i:R.s5.i|0,done:R.s5.done?1:0}:null,s6:R.s6?{stage:R.s6.stage,i:R.s6.i|0}:null,s7:R.s7?{stage:R.s7.stage,i:R.s7.i|0}:null,pMax6:R.pMax6?1:0,pMax7:R.pMax7?1:0,c10:R.cap10?1:0,wMax6:R.wMax6?1:0,hard:R.storyHard?1:0,skLock:R.skLockT>0?r1(R.skLockT):0,k:G.kills,sh:r1(shake),b2:R.boss2At,v:R.votes,enl:R.endless?R.endlessAt:-1,akk:R.afterK|0,bn:R.banner,gb:banner&&banner.t>0.05?[banner.txt,banner.col,r2(banner.t)]:null,TW:isTower()&&G.tower?{hp:r1(G.tower.hp),mx:G.tower.maxHp|0,co:G.cores|0,up:Object.assign({},G.tower.up||{}),fl:r2(G.tower.flash||0),rot:r2(G.tower.rot||0),ru:G.tdRush?1:0}:null,
+  const o={t:'s',T:r2(R.t),ph:R.phase,diff:R.diff,si:R.storyI,ba:R.bossAt,s3:R.s3?{stage:R.s3.stage,i:R.s3.i|0,done:R.s3.done?1:0}:null,s4:R.s4?{stage:R.s4.stage,i:R.s4.i|0,done:R.s4.done?1:0}:null,s5:R.s5?{stage:R.s5.stage,i:R.s5.i|0,done:R.s5.done?1:0}:null,s6:R.s6?{stage:R.s6.stage,i:R.s6.i|0}:null,s7:R.s7?{stage:R.s7.stage,i:R.s7.i|0}:null,pMax6:R.pMax6?1:0,pMax7:R.pMax7?1:0,c10:R.cap10?1:0,wMax6:R.wMax6?1:0,hard:R.storyHard?1:0,skLock:R.skLockT>0?r1(R.skLockT):0,k:G.kills,sh:r1(shake),b2:R.boss2At,v:R.votes,enl:R.endless?R.endlessAt:-1,akk:R.afterK|0,lvc:R.lvCap|0,sg:R.surge|0,bn:R.banner,gb:banner&&banner.t>0.05?[banner.txt,banner.col,r2(banner.t)]:null,TW:isTower()&&G.tower?{hp:r1(G.tower.hp),mx:G.tower.maxHp|0,co:G.cores|0,up:Object.assign({},G.tower.up||{}),fl:r2(G.tower.flash||0),rot:r2(G.tower.rot||0),ru:G.tdRush?1:0}:null,
   O:[ox,oy],AQ:me?me.ack|0:0,P:PL,TR:RP.map(p=>{const t=trailSnap(p);let S='';if(t)for(let j=0;j<t.length;j+=3)S+=e3(t[j])+e3(t[j+1])+e1(t[j+2]);return [S,p.combo|0]}),RV:RP.map(p=>p.dead&&!p.left&&p.reviveT>0?r1(p.reviveT):0),BT:Math.round(G.beatPh*1000)/1000,LF:G.loopFx.map(f=>[f.perfect?1:0,r2(f.t),f.poly.filter((q,i)=>i%2===0||i===f.poly.length-1).flatMap(q=>[r1(q.x),r1(q.y)])]),CL:G.calls.map(c=>[r1(c.x),r1(c.y),c.txt,c.c,r2(c.life),c.s]),E,PJ,EB,
   EV:evSnap(),MT:meteors.map(m=>[r1(m.x),r1(m.y),r2(m.t),m.warn,r1(m.rad)]),RG:rings.map(r=>[r1(r.x),r1(r.y),r1(r.max),r2(r.t),r.dur,r.c]),
   ZP:zaps.filter(z=>z.pts.length&&inV(z.pts[0].x,z.pts[0].y,300)).map(z=>[z.pts.map(q=>[r1(q.x),r1(q.y)]),r2(z.t)]),BM:beams.map(b=>[r1(b.x1),r1(b.y1),r1(b.x2),r1(b.y2),r2(b.t),b.dur,r2(b.w)]),FA:RP.map(p=>p.weapons&&p.weapons.flame&&p.flA!=null?r2(p.flA):null),
@@ -2482,7 +2484,7 @@ function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;if(d.TW){if(!G.
   const _sf={s3:()=>story3OnMsg(d.s3),s4:()=>story4OnMsg(Object.assign({},d.s4,{pMax6:d.pMax6,hard:d.hard,skLock:d.skLock})),s5:()=>story5OnMsg(Object.assign({},d.s5,{pMax7:d.pMax7,wMax6:d.wMax6,pMax6:d.pMax6,skLock:d.skLock})),s6:()=>story6OnMsg(d.s6),s7:()=>story7OnMsg(d.s7)};let _ch='';
   for(const k of ['s3','s4','s5','s6','s7'])if(_sc(k,d[k])){_sf[k]();_ch=k}
   if(_ch)for(const k of ['s7','s6','s5','s4','s3']){const o=d[k];if(o&&o.stage&&o.stage!=='done'){if(k!==_ch)_sf[k]();break}} // 이전 단계의 'done'이 현재 대사를 끄지 않도록 최신 단계를 다시 표시
-  if(d.pMax6)R.pMax6=1;if(d.pMax7)R.pMax7=1;if(d.c10)R.cap10=1;if(d.wMax6)R.wMax6=1;if(d.hard)R.storyHard=1;if(d.skLock!=null)R.skLockT=+d.skLock;G.kills=R.kills=d.k;shake=Math.max(shake,d.sh);R.boss2At=d.b2;R.votes=d.v||{};R.endless=d.enl>=0?1:0;R.endlessAt=d.enl;R.afterK=d.akk|0;R.banner=d.bn;
+  if(d.pMax6)R.pMax6=1;if(d.pMax7)R.pMax7=1;if(d.c10)R.cap10=1;if(d.wMax6)R.wMax6=1;if(d.hard)R.storyHard=1;if(d.skLock!=null)R.skLockT=+d.skLock;G.kills=R.kills=d.k;shake=Math.max(shake,d.sh);R.boss2At=d.b2;R.votes=d.v||{};R.endless=d.enl>=0?1:0;R.endlessAt=d.enl;R.afterK=d.akk|0;R.lvCap=d.lvc|0;R.surge=d.sg|0;if(R.diff==='normal'&&R.afterK&&!R.mdK)mdBoostK();R.banner=d.bn;
   if(d.gb&&(!banner||banner.txt!==d.gb[0]))banner={txt:d.gb[0],col:d.gb[1],t:d.gb[2]};
   const old={};for(const p of RP)old[p.id]=p;const OX=d.O?d.O[0]:0,OY=d.O?d.O[1]:0;
   RP=d.P.map(a=>{const p=old[a[0]]||{r:14,baseSpd:210,hurtT:0,name:'?',col:'#fff',maxHp:100,weapons:{},passives:{},wOrder:[],pOrder:[],need:1,opts:null};Object.assign(p,{id:a[0],x:a[1],y:a[2],hp:a[3],fx:a[4],fy:a[5],moving:!!a[6],walk:a[7],inv:a[8],dead:!!a[9],level:a[10],xp:a[11],chooseT:a[12]});
