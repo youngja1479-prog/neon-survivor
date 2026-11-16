@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v125</title>
+<title>네온 생존자 - NEON SURVIVOR v126</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v125</div>
+  <div class="sub">NEON SURVIVOR v126</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -290,7 +290,7 @@ const PASSIVES={
   trail:{name:'네온 잉크',desc:'궤적 길이 +15%, 올가미 피해 +20%'},
   armor:{name:'방어의 갑옷',desc:'받는 피해 -7%'},
 };
-const MAXLV=5, MAX_WEAPONS=6, CRAZY_ITEM_MAX=10, ITEM_TBL_MAX=15;window.LV_GOLD=10;const LV_GOLD=window.LV_GOLD;
+const MAXLV=5, MAX_WEAPONS=99, CRAZY_ITEM_MAX=10, ITEM_TBL_MAX=15;window.LV_GOLD=10;const LV_GOLD=window.LV_GOLD;
 const maxLv=()=>isCrazy()?CRAZY_ITEM_MAX:MAXLV; // 크레이지만 무기·패시브 Lv10까지
 const pMaxLv=()=>{const r=typeof window!=='undefined'&&window.__raid&&window.__raid.R;if(r&&r.diff==='normal'&&r.lvCap)return Math.min(ITEM_TBL_MAX,r.lvCap);if(r&&r.diff==='story'){if(r.crazy)return ITEM_TBL_MAX;if(r.cap10)return 10;if(r.pMax7)return 7;if(r.pMax6)return 6}return maxLv()}; // v110 레이드 크레이지 Lv15, 스토리 강산 처치 후 Lv10
 const wMaxLv=()=>{const r=typeof window!=='undefined'&&window.__raid&&window.__raid.R;if(r&&r.diff==='normal'&&r.lvCap)return Math.min(ITEM_TBL_MAX,r.lvCap);if(r&&r.diff==='story'){if(r.crazy)return ITEM_TBL_MAX;if(r.cap10)return 10}return (r&&r.diff==='story'&&r.wMax6)?6:maxLv()};
@@ -1262,13 +1262,14 @@ function drawHUD(){
   if(G.combo>1){ctx.font=`900 15px ${FONT}`;ctx.fillStyle='#ffd84d';ctx.fillText(`🎵 콤보 x${G.combo}`,W-12,ry)}
   // 무기/패시브 아이콘
   // 크레이지는 무기 10종·패시브 9종을 모두 가지므로 아이콘을 작게(20px) 촘촘히 2줄 배치
-  const cz=isCrazy(),SZ=cz?20:28,GAP=cz?23:34,IC=cz?15:22,ROW=cz?30:40;
+  const cz=isCrazy()||P.wOrder.length>7||P.pOrder.length>9,SZ=cz?20:28,GAP=cz?23:34,IC=cz?15:22,ROW=cz?30:40; // v126 무기 6개 한도 삭제 → 많으면 작게
+  const PER=Math.max(5,Math.floor(Math.min(W*0.62,cz?300:420)/GAP));let _n=0;
   let ix=hx+SZ/2,iy=hy+hh+(cz?52:58)+(isTower()&&G.tower?46:0); // v118: 타워 체력바·코어 표시와 겹치지 않게 아래로
   const slot=(id,lv,col,ml)=>{const h=SZ/2;ctx.fillStyle='#14113088';ctx.strokeStyle=col;ctx.lineWidth=cz?1:1.5;roundRect(ix-h,iy-h,SZ,SZ,cz?4:6);ctx.fill();ctx.stroke();ctx.save();ctx.translate(ix,iy);drawIcon(ctx,id,IC);ctx.restore();
-    const pw=(SZ-4)/ml;for(let i=0;i<ml;i++){ctx.fillStyle=i<lv?'#ffd84d':'#ffffff30';ctx.fillRect(ix-h+2+i*pw,iy+h+2,Math.max(1,pw-1),cz?2:3)}ix+=GAP};
+    const pw=(SZ-4)/ml;for(let i=0;i<ml;i++){ctx.fillStyle=i<lv?'#ffd84d':'#ffffff30';ctx.fillRect(ix-h+2+i*pw,iy+h+2,Math.max(1,pw-1),cz?2:3)}ix+=GAP;if(++_n>=PER){_n=0;ix=hx+SZ/2;iy+=ROW}};
   const _wM=wMaxLv(),_pM=pMaxLv();
   for(const id of P.wOrder)slot(id,P.weapons[id],'#ff3c9d',_wM);
-  ix=hx+SZ/2;iy+=ROW;for(const id of P.pOrder)slot(id,P.passives[id],'#4df3ff',_pM);
+  if(_n){ix=hx+SZ/2;iy+=ROW}_n=0;for(const id of P.pOrder)slot(id,P.passives[id],'#4df3ff',_pM);
   // 보스 체력
   if(G.boss&&!G.boss.dead){const bw=Math.min(420,W*0.6),bx=W/2-bw/2,by=H-40;ctx.fillStyle='#000b';roundRect(bx,by,bw,16,8);ctx.fill();ctx.fillStyle='#ff2e63';roundRect(bx,by,Math.max(16,bw*G.boss.hp/G.boss.maxHp),16,8);ctx.fill();
     ctx.fillStyle='#fff';ctx.font=`900 14px ${FONT}`;ctx.textAlign='center';ctx.fillText(`보스 Lv.${G.bossN}`,W/2,by-12)}
