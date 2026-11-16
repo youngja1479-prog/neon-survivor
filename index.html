@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v124</title>
+<title>네온 생존자 - NEON SURVIVOR v125</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v124</div>
+  <div class="sub">NEON SURVIVOR v125</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -1055,8 +1055,7 @@ function render(){
   for(const m of meteors){if(m.t<0)continue;const k=Math.min(1,Math.max(0,m.t)/m.warn);const nuke=!!(m.all||m.warn>=3);
     if(!nuke){ctx.fillStyle=`rgba(255,154,93,${0.06+0.16*k})`;ctx.beginPath();ctx.arc(m.x,m.y,m.rad,0,TAU);ctx.fill();
       ctx.strokeStyle='rgba(255,154,93,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,m.rad,0,TAU);ctx.stroke();ctx.fillStyle='rgba(255,200,120,.3)';ctx.beginPath();ctx.arc(m.x,m.y,m.rad*k,0,TAU);ctx.fill();
-      const f=1-k*k,rx=m.x+f*110,ry=m.y-f*330;ctx.strokeStyle='rgba(255,154,93,.55)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+f*70+10,ry-f*210-10);ctx.stroke();
-      ctx.fillStyle='#ffd0a0';ctx.shadowColor='#ff9a5d';ctx.shadowBlur=14;ctx.beginPath();ctx.arc(rx,ry,9,0,TAU);ctx.fill();ctx.shadowBlur=0;continue}
+      continue} // v125 떨어지는 유성은 적 위에 그림(아래 '유성 위층')
     const hit=m.t>=m.warn,e=hit?1:k*k,a=hit?Math.max(0,1-(m.t-m.warn)/1.2):1;
     const grd=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,m.rad*1.6);
     grd.addColorStop(0,`rgba(255,90,20,${(0.16+0.32*k)*a})`);grd.addColorStop(0.5,`rgba(255,140,40,${(0.1+0.18*k)*a})`);grd.addColorStop(1,'rgba(255,80,20,0)');
@@ -1108,6 +1107,11 @@ function render(){
   // 회전 칼날
   const os=wstat('orbit');if(os){const R=os.rad*areaMul();for(let i=0;i<os.n;i++){const a=G.t*3.4+i/os.n*TAU;ctx.save();ctx.translate(P.x+Math.cos(a)*R,P.y+Math.sin(a)*R);ctx.rotate(a+G.t*10);const sz=os.size||1;ctx.scale(sz,sz);
     fxBlade('#d9b8ff','#b9f',14);ctx.restore()}ctx.shadowBlur=0}
+  // 유성 위층 (v125: 적이 많으면 유성우가 적 밑에 가려 안 보이던 문제)
+  for(const m of meteors){if(m.t<0||m.all||m.warn>=3)continue;const k=Math.min(1,Math.max(0,m.t)/m.warn);
+    ctx.strokeStyle=`rgba(255,170,100,${0.45+0.45*k})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(m.x,m.y,m.rad,0,TAU);ctx.stroke();
+    const f=1-k*k,rx=m.x+f*110,ry=m.y-f*330;ctx.strokeStyle='rgba(255,154,93,.7)';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+f*70+12,ry-f*210-12);ctx.stroke();
+    ctx.fillStyle='#ffd0a0';ctx.shadowColor='#ff9a5d';ctx.shadowBlur=16;ctx.beginPath();ctx.arc(rx,ry,12,0,TAU);ctx.fill();ctx.shadowBlur=0}
   // 파동
   for(const r of rings){const k=r.t/r.dur;ctx.strokeStyle=r.c;ctx.globalAlpha=1-k;ctx.lineWidth=10*(1-k)+2;ctx.beginPath();ctx.arc(r.x,r.y,r.max*(0.2+0.8*Math.sqrt(k)),0,TAU);ctx.stroke()}ctx.globalAlpha=1;
   // 번개
