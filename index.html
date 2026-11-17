@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v127</title>
+<title>네온 생존자 - NEON SURVIVOR v128</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;background:#07060f;color:#fff;
@@ -76,7 +76,7 @@ h1{font-size:clamp(40px,9vw,84px);font-weight:900;letter-spacing:2px;
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">NEON SURVIVOR v127</div>
+  <div class="sub">NEON SURVIVOR v128</div>
   <div class="box">
     🎮 <b>이동</b>: WASD / 방향키 (모바일: 화면 아무 곳이나 드래그)<br>
     ⚔️ <b>모드</b>와 시작 무기를 고른 뒤, 무기는 <b>자동으로 공격</b>합니다. 피하는 데만 집중하세요!<br>
@@ -1460,7 +1460,7 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;pauseGame()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseGame()});
 cv.addEventListener('pointerdown',e=>{initAudio();if(state!=='play')return;joy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY};try{cv.setPointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){joy.x=e.clientX;joy.y=e.clientY}});
-const endJoy=e=>{if(joy&&e.pointerId===joy.id)joy=null};cv.addEventListener('pointerup',endJoy);cv.addEventListener('pointercancel',endJoy);
+const endJoy=e=>{if(joy&&e.pointerId===joy.id)joy=null};cv.addEventListener('pointerup',endJoy);cv.addEventListener('pointercancel',endJoy);cv.addEventListener('lostpointercapture',endJoy); // v128 터치 캡처가 끊기면 조이스틱 해제(멈춤 없이 계속 움직이는 현상 방지)
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b)b.blur()});
 document.addEventListener('contextmenu',e=>e.preventDefault());
 if('ontouchstart' in window)document.querySelector('#title .box').insertAdjacentHTML('beforeend','<div class="hint">📱 터치: 화면을 누른 채 드래그하면 가상 조이스틱으로 이동합니다</div>');
@@ -2546,7 +2546,7 @@ function guestSendInput(inp){if(!hostConn||!hostConn.open)return;const mx=Math.r
 let rjoy=null;
 cv.addEventListener('pointerdown',e=>{if(state!=='raid')return;initAudio();if(rjoy)return;rjoy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY};joy=rjoy;try{cv.setPointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener('pointermove',e=>{if(rjoy&&e.pointerId===rjoy.id){rjoy.x=e.clientX;rjoy.y=e.clientY}});
-const ej=e=>{if(rjoy&&e.pointerId===rjoy.id){rjoy=null;if(state==='raid')joy=null}};cv.addEventListener('pointerup',ej);cv.addEventListener('pointercancel',ej);
+const ej=e=>{if(rjoy&&e.pointerId===rjoy.id){rjoy=null;if(state==='raid')joy=null}};cv.addEventListener('pointerup',ej);cv.addEventListener('pointercancel',ej);cv.addEventListener('lostpointercapture',ej);
 function myInput(){if(chatOpen)return {x:0,y:0};let x=0,y=0;if(keys.KeyA||keys.ArrowLeft)x--;if(keys.KeyD||keys.ArrowRight)x++;if(keys.KeyW||keys.ArrowUp)y--;if(keys.KeyS||keys.ArrowDown)y++;
   if(rjoy){const dx=rjoy.x-rjoy.ox,dy=rjoy.y-rjoy.oy,d=Math.hypot(dx,dy);if(d>6){const k=Math.min(1,d/55);x=dx/d*k;y=dy/d*k}}return {x,y}}
 addEventListener('keydown',e=>{if(state!=='raid'||!R||chatOpen)return;const n={Digit1:0,Digit2:1,Digit3:2,Numpad1:0,Numpad2:1,Numpad3:2}[e.code];if(n!==undefined)pick(n)});
