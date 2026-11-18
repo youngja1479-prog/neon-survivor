@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<title>네온 생존자 2 v10</title>
+<title>네온 생존자 2 v11</title>
 <style>
   :root{
     --sat:env(safe-area-inset-top,0px);
@@ -47,7 +47,7 @@
 "use strict";
 const canvas=document.getElementById("c");
 const ctx=canvas.getContext("2d",{alpha:false});
-let OX=0,W=0,H=0,DPR=1,scale=1,dprCap=2,perfN=0,perfSum=0,vgCan=null,vgW=0,vgH=0;
+let W=0,H=0,DPR=1,scale=1,dprCap=2,perfN=0,perfSum=0,vgCan=null,vgW=0,vgH=0;
 function perfTick(raw){
   if(raw>250) return;
   perfN++;perfSum+=raw;
@@ -65,12 +65,11 @@ function resize(){
   DPR=Math.min(dprCap,window.devicePixelRatio||1,2);
   vgCan=null;
   const v=viewportSize();
-  // v10 가로 화면이면 가운데 세로 비율(9:16) 화면 + 양옆 어둡게 (GKC 선호)
-  H=Math.max(1,v.h);W=Math.max(1,v.w>v.h?Math.min(v.w,Math.round(v.h*9/16)):v.w);OX=Math.round((v.w-W)/2);
+  W=Math.max(1,v.w);H=Math.max(1,v.h);
   canvas.width=Math.floor(W*DPR);canvas.height=Math.floor(H*DPR);
   canvas.style.width=W+"px";canvas.style.height=H+"px";
   canvas.style.position="fixed";
-  canvas.style.left=(v.x+OX)+"px";
+  canvas.style.left=v.x+"px";
   canvas.style.top=v.y+"px";
   ctx.setTransform(DPR,0,0,DPR,0,0);
   scale=Math.max(0.62,Math.min(1.1,Math.min(W,H)/720)); // v9 1편과 같은 화면 확대 비율
@@ -189,11 +188,11 @@ window.addEventListener("keyup",e=>{
   if(e.code==="KeyE") skillHeld.shield=false;
   if(e.code==="KeyR") skillHeld.magnet=false;
 });
-window.addEventListener("mousemove",e=>{mouse.x=e.clientX-OX;mouse.y=e.clientY;});
+window.addEventListener("mousemove",e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
 window.addEventListener("mousedown",e=>{
   if(performance.now()-lastTouchAt<700) return;
   ensureAudio();
-  onPointer(e.clientX-OX,e.clientY,false);
+  onPointer(e.clientX,e.clientY,false);
 });
 window.addEventListener("mouseup",()=>{dashHeld=false;});
 window.addEventListener("contextmenu",e=>e.preventDefault());
@@ -215,14 +214,14 @@ function onTouchStart(e){
   tryFullscreen();
   for(let i=0;i<e.changedTouches.length;i++){
     const t=e.changedTouches[i];
-    onPointer(t.clientX-OX,t.clientY,true,t.identifier);
+    onPointer(t.clientX,t.clientY,true,t.identifier);
   }
 }
 function onTouchMove(e){
   e.preventDefault();
   for(let i=0;i<e.changedTouches.length;i++){
     const t=e.changedTouches[i];
-    if(joy.active&&t.identifier===joy.id) moveJoy(t.clientX-OX,t.clientY);
+    if(joy.active&&t.identifier===joy.id) moveJoy(t.clientX,t.clientY);
   }
 }
 function onTouchEnd(e){
@@ -1502,7 +1501,7 @@ function drawTitle(){
   ctx.textAlign="center";
   ctx.font="bold "+Math.max(14,16*u)+"px "+FONT;
   ctx.fillStyle="rgba(94,231,255,0.7)";
-  ctx.fillText("PROTOTYPE  ·  미완성  ·  v10",W/2,ins.t+H*(portrait?0.18:0.16));
+  ctx.fillText("PROTOTYPE  ·  미완성  ·  v11",W/2,ins.t+H*(portrait?0.18:0.16));
   const titleSize=Math.min(portrait?56:72,W*0.14);
   ctx.font="bold "+titleSize+"px "+FONT;
   ctx.shadowColor="#5ee7ff";ctx.shadowBlur=16+pulse*16;
