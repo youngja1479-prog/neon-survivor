@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<title>네온 생존자 2 v13</title>
+<title>네온 생존자 2 v14</title>
 <style>
   :root{
     --sat:env(safe-area-inset-top,0px);
@@ -271,6 +271,7 @@ function onKey(code){
   else if((state==="notice"||state==="story"||state==="chapter")&&(code==="Enter"||code==="Space")) storyAdvance();
   else if(state==="story"&&(code==="KeyS"||code==="Escape")) storySkip();
   else if(state==="over"&&(code==="Enter"||code==="Space")) startGame(false);
+  else if(state==="arrive"&&(code==="Enter"||code==="Space")) dismissArrive();
   else if(state==="levelup"){
     if(code==="Digit1"||code==="Numpad1") pickIdx(0);
     if(code==="Digit2"||code==="Numpad2") pickIdx(1);
@@ -290,6 +291,7 @@ function onPointer(x,y,isTouch,id){
   if(state==="party"){onPartyPointer(x,y);return;}
   if(state==="notice"||state==="story"||state==="chapter"){onStoryPointer(x,y);return;}
   if(state==="over"){startGame(false);return;}
+  if(state==="arrive"){onArrivePointer(x,y);return;}
   if(state==="levelup"){pickCardAt(x,y);return;}
   if(state==="pause"){
     if(hitRect(x,y,uiResume)||hitCirc(x,y,uiPause,10)) togglePause();
@@ -353,6 +355,7 @@ function reset(){
   time=0;kills=0;shake=0;spawnAcc=0;eliteAcc=0;grace=0.25;
   cam.x=0;cam.y=0;cards=[];cardRects=[];
   endJoy();dashHeld=false;dashTouchId=null;skillHeld=Object.create(null);
+  neonBase=null;arriveShown=false;arriveBtns=[];
 }
 function startGame(fromOpening){
   ensureAudio();
@@ -361,6 +364,7 @@ function startGame(fromOpening){
   reset();
   if(net.role==="host"||net.role==="client") setupAllies();
   else allies=[];
+  placeNeonBase();
   state="play";
   beep(420,0.1,"square",0.07,880);
   burst((player&&player.x)||0,(player&&player.y)||0,"#5ee7ff",24,220,0.45);
@@ -1017,7 +1021,7 @@ function update(dt){
     return;
   }
   if(state==="chapter"){tickStory(dt);return;}
-  if(state==="levelup"||state==="pause") return;
+  if(state==="levelup"||state==="pause"||state==="arrive") return;
   if(levelupWho&&levelupWho!==myId){if(isNetHost()){netSendT+=dt;if(netSendT>=0.08){netSendT=0;sendSnap();}}return;}
   if(isNetClient()){clientPlay(dt);return;}
 
@@ -1081,6 +1085,7 @@ function update(dt){
   cam.y+=(player.y-cam.y)*Math.min(1,dt*8);
 
   if(isNetHost()) hostMoveAllies(dt);
+  checkArrive();
   updateWeapons(dt);
 
   const rate=1.1+Math.min(3.2,time/28);
@@ -1246,6 +1251,7 @@ function draw(){
   if(state==="chapter"){drawChapter();return;}
 
   drawGrid();
+  drawNeonBase();
 
   // v8 지뢰 (1편 그림)
   for(const m of mines){const c=wrld(m.x,m.y);const blink=m.t<0.4?0.4:(Math.sin(time*10+m.x)>0?1:0.55);ctx.fillStyle="rgba(255,93,93,"+blink+")";ctx.beginPath();ctx.arc(c.x,c.y,7*scale,0,Math.PI*2);ctx.fill();
@@ -1373,12 +1379,14 @@ function draw(){
 
   if(player&&player.hp/player.maxHp<0.3&&state==="play"){const a=0.18+Math.sin(time*6)*0.1;const gr=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.max(W,H)*0.75);gr.addColorStop(0,"rgba(255,0,40,0)");gr.addColorStop(1,"rgba(255,0,40,"+a+")");ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);}
 
-  if(state==="play"||state==="pause"){
+  if(state==="play"||state==="pause"||state==="arrive"){
     drawHud();
     drawTouchControls();
+    drawBaseNav();
   }
   if(state==="levelup") drawLevelup();
   if(state==="pause") drawPause();
+  if(state==="arrive") drawArrive();
   if(state==="over") drawOver();
 }
 
@@ -1651,7 +1659,7 @@ function drawTitle(){
   const ty=ins.t+(short?H*0.14:H*(portrait?0.18:0.20));
   ctx.font="900 "+Math.max(11,12*u)+"px "+FONT;
   ctx.fillStyle="rgba(143,160,255,0.8)";
-  ctx.fillText("PROTOTYPE  ·  미완성  ·  v13",W/2,ty);
+  ctx.fillText("PROTOTYPE  ·  미완성  ·  v14",W/2,ty);
   ctx.font="900 "+titleSize+"px "+FONT;
   const label="네온 생존자 2";
   const tw=ctx.measureText(label).width;
@@ -1663,7 +1671,7 @@ function drawTitle(){
   ctx.shadowBlur=0;
   ctx.font="700 "+Math.max(11,short?11:16*u)+"px "+FONT;
   ctx.fillStyle="#8fa0ff";
-  spacedText("NEON SURVIVOR  v13",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
+  spacedText("NEON SURVIVOR  v14",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
 
   const bw=Math.min(520,W-ins.l-ins.r-24);
   const boxX=W/2-bw/2;
@@ -1969,7 +1977,7 @@ function storySkip(){
 }
 function beginPlayFromChapter(){
   startGame(true);
-  if(isNetHost()) bcast({t:'play'});
+  if(isNetHost()) bcast({t:'play',base:packNeonBase()});
 }
 
 function mkAlly(lp,i,n){
@@ -2023,7 +2031,7 @@ function createRoom(tries){
       let n=0;while(lobby.players.some(p=>p.id==='p'+n))n++;
       const id='p'+n;c.pid=id;conns.push(c);
       lobby.players.push({id,name:'P'+(n+1),col:NS2_COLS[n%4]});
-      try{c.send({t:'hello',id,code:net.code,ver:'v13'})}catch(e){}
+      try{c.send({t:'hello',id,code:net.code,ver:'v14'})}catch(e){}
       syncLobby();
     });
     c.on('data',d=>onHostData(c,d));
@@ -2060,7 +2068,7 @@ function joinRoom(code){
     hostConn.on('open',()=>{my.ok=true;clearTimeout(to);});
     hostConn.on('close',()=>{
       if(net!==my)return;
-      const wasPlay=state==='play'||state==='pause'||state==='levelup'||state==='over'||state==='notice'||state==='story'||state==='chapter';
+      const wasPlay=state==='play'||state==='pause'||state==='levelup'||state==='over'||state==='notice'||state==='story'||state==='chapter'||state==='arrive';
       cleanupNet();
       state='party';partyView='home';
       partyMsg=wasPlay?'호스트와 연결이 끊어졌어요.':'연결이 끊어졌어요.';
@@ -2083,7 +2091,8 @@ function onClientData(d){
   if(d.t==='begin'){hideJoinInput();state='notice';storyI=0;chapterT=0;return;}
   if(d.t==='story'){hideJoinInput();state='story';storyI=d.i|0;return;}
   if(d.t==='chapter'){enterChapter();return;}
-  if(d.t==='play'){startGame(true);return;}
+  if(d.t==='play'){startGame(true);if(d.base)placeNeonBase(d.base);return;}
+  if(d.t==='arrive'){if(d.base)placeNeonBase(d.base);onArriveNeonBase(true);return;}
   if(d.t==='lv'){if(d.id===myId){cards=d.cards||[];state='levelup';}else{levelupWho=d.id;}return;}
   if(d.t==='lvdone'){levelupWho=null;if(state==='levelup'){state='play';last=performance.now();cards=[];}return;}
   if(d.t==='over'){state='over';if(d.kills!=null)kills=d.kills;if(d.time!=null)time=d.time;return;}
@@ -2136,6 +2145,8 @@ function applySnap(d){
     enemies=d.en.map(s=>({x:s.x,y:s.y,hp:s.hp,max:s.max,r:s.r,kind:s.kind,col:s.col,hit:s.hit||0,elite:!!s.elite,xp:s.xp||1,spd:s.spd||40,orbCd:0}));
   }
   if(Array.isArray(d.gem)) gems=d.gem.map(s=>({x:s.x,y:s.y,v:s.v,vy:s.vy||0,life:s.life||0}));
+  if(d.base) placeNeonBase(d.base);
+  if(d.arrived && !arriveShown) onArriveNeonBase(true);
 }
 
 function sendSnap(){
@@ -2143,7 +2154,7 @@ function sendSnap(){
   const pl=(allies.length?allies:[player]).filter(Boolean).map(p=>({id:p.id,name:p.name,col:p.col,x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,facing:p.facing,dashT:p.dashT,iframe:p.iframe,level:p.level,xp:p.xp,next:p.next,dashCharges:p.dashCharges}));
   const en=enemies.map(e=>({x:e.x,y:e.y,hp:e.hp,max:e.max,r:e.r,kind:e.kind,col:e.col,hit:e.hit,elite:!!e.elite,xp:e.xp,spd:e.spd}));
   const gem=gems.map(g=>({x:g.x,y:g.y,v:g.v,vy:g.vy,life:g.life}));
-  bcast({t:'s',time,kills,pl,en,gem});
+  bcast({t:'s',time,kills,pl,en,gem,base:packNeonBase(),arrived:arriveShown});
 }
 function clientSendInput(){
   if(!isNetClient())return;
@@ -2480,6 +2491,306 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+
+// ===== v14: 챕터 1 네온 기지 여정 (방향 화살표 + 도착 훅) =====
+const BASE_DIST=6000, BASE_ANG=-0.62, BASE_PAD=110, BASE_M=20;
+let neonBase=null, arriveShown=false, arriveBtns=[];
+let navDebug={badge:null,arrow:null,label:null,safe:null};
+
+function placeNeonBase(from){
+  if(from&&from.x!=null&&from.y!=null){
+    neonBase={x:+from.x,y:+from.y,padR:+from.padR||BASE_PAD};
+    return;
+  }
+  if(typeof isNetClient==='function'&&isNetClient()) return;
+  neonBase={x:Math.cos(BASE_ANG)*BASE_DIST,y:Math.sin(BASE_ANG)*BASE_DIST,padR:BASE_PAD};
+}
+function packNeonBase(){return neonBase?{x:neonBase.x,y:neonBase.y,padR:neonBase.padR}:null;}
+function baseDistTo(u){return (!neonBase||!u)?1e15:Math.hypot(u.x-neonBase.x,u.y-neonBase.y);}
+function nearestBaseUnit(){
+  const units=(typeof partyUnits==='function'&&partyUnits().length)?partyUnits():(player?[player]:[]);
+  let best=null,bd=1e15;
+  for(const u of units){
+    if(!u||u.hp<=0||u.left) continue;
+    const d=baseDistTo(u);
+    if(d<bd){bd=d;best=u;}
+  }
+  if(!best&&player){best=player;bd=baseDistTo(player);}
+  return {u:best,d:bd};
+}
+function baseMeters(){const d=nearestBaseUnit().d;return Math.max(0,Math.round((isFinite(d)?d:0)/BASE_M));}
+function checkArrive(){
+  if(arriveShown||!neonBase) return;
+  if(typeof isSimHost==='function'&&!isSimHost()) return;
+  const {d}=nearestBaseUnit();
+  if(d<=(neonBase.padR||BASE_PAD)) onArriveNeonBase(false);
+}
+function onArriveNeonBase(fromNet){
+  if(arriveShown) return;
+  arriveShown=true;
+  endJoy();
+  state='arrive';
+  layoutArrive();
+  if(neonBase){
+    burst(neonBase.x,neonBase.y,'#4df3ff',28,240,0.5);
+    burst(neonBase.x,neonBase.y,'#b46bff',16,180,0.45);
+  }
+  beep(520,0.12,'square',0.07,1200);
+  vibe([16,30,24]);
+  if(!fromNet&&typeof isNetHost==='function'&&isNetHost()) bcast({t:'arrive',base:packNeonBase()});
+}
+function dismissArrive(){
+  if(state!=='arrive') return;
+  state='play';
+  last=performance.now();
+  beep(620,0.08,'triangle',0.05);
+}
+function arriveToTitle(){
+  backToTitle();
+}
+function layoutArrive(){
+  const ins=getInsets();
+  const u=clamp(Math.min(W,H)/390,0.85,1.35);
+  const bw=Math.min(300,W-ins.l-ins.r-32),bh=Math.max(48,52*u);
+  const gap=12;
+  let y=Math.min(H-ins.b-bh*2-gap-18, Math.max(H*0.52, H*0.36+70*u));
+  arriveBtns=[
+    {id:'arriveCont',x:W/2-bw/2,y,w:bw,h:bh,label:'계속 플레이',kind:'pri'},
+    {id:'arriveTitle',x:W/2-bw/2,y:y+bh+gap,w:bw,h:bh,label:'처음으로',kind:'sec'}
+  ];
+}
+function onArrivePointer(x,y){
+  for(const b of arriveBtns){
+    if(hitRect(x,y,b)){
+      if(b.id==='arriveCont') dismissArrive();
+      else if(b.id==='arriveTitle') arriveToTitle();
+      return;
+    }
+  }
+}
+
+function drawNeonBase(){
+  if(!neonBase) return;
+  const b=neonBase,c=wrld(b.x,b.y),S=scale,R=(b.padR||BASE_PAD)*S;
+  if(c.x<-R-80||c.x>W+R+80||c.y<-R-160||c.y>H+R+80) return;
+  const pulse=0.5+0.5*Math.sin(titleT*2.6);
+  ctx.save();
+  const grd=ctx.createRadialGradient(c.x,c.y,R*0.08,c.x,c.y,R*1.05);
+  grd.addColorStop(0,'rgba(77,243,255,'+(0.30+0.12*pulse)+')');
+  grd.addColorStop(0.45,'rgba(180,107,255,'+(0.16+0.08*pulse)+')');
+  grd.addColorStop(1,'rgba(77,243,255,0.03)');
+  ctx.fillStyle=grd;ctx.beginPath();ctx.arc(c.x,c.y,R,0,TAU);ctx.fill();
+  ctx.strokeStyle='rgba(77,243,255,0.85)';ctx.lineWidth=Math.max(2,2.4*S);
+  ctx.beginPath();ctx.arc(c.x,c.y,R,0,TAU);ctx.stroke();
+  ctx.globalCompositeOperation='lighter';
+  for(let i=0;i<3;i++){
+    const rr=R*(0.38+i*0.2)+Math.sin(titleT*3+i)*5*S;
+    ctx.strokeStyle='rgba(77,243,255,'+(0.42-i*0.1)+')';
+    ctx.lineWidth=Math.max(1.2,1.6*S);
+    ctx.beginPath();ctx.arc(c.x,c.y,Math.max(8,rr),0,TAU);ctx.stroke();
+  }
+  ctx.strokeStyle='rgba(180,107,255,'+(0.65+0.25*pulse)+')';
+  ctx.lineWidth=Math.max(1.6,2*S);
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    const a=i/6*TAU-Math.PI/2,x=c.x+Math.cos(a)*R*0.72,y=c.y+Math.sin(a)*R*0.72;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.closePath();ctx.stroke();
+  const pylons=[-0.95,0,0.95];
+  for(let i=0;i<3;i++){
+    const a=-Math.PI/2+pylons[i];
+    const px=c.x+Math.cos(a)*R*0.52,py=c.y+Math.sin(a)*R*0.52;
+    const tw=11*S,th=(i===1?58:44)*S;
+    ctx.globalCompositeOperation='source-over';
+    ctx.fillStyle='rgba(16,14,40,0.9)';
+    ctx.fillRect(px-tw/2,py-th,tw,th);
+    ctx.strokeStyle=i===1?'#4df3ff':'#b46bff';
+    ctx.lineWidth=Math.max(1.2,1.5*S);
+    ctx.strokeRect(px-tw/2,py-th,tw,th);
+    ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=i===1?'#4df3ff':'#d08cff';
+    ctx.beginPath();ctx.arc(px,py-th,4.2*S,0,TAU);ctx.fill();
+    ctx.strokeStyle='rgba(77,243,255,0.45)';
+    ctx.beginPath();ctx.arc(px,py-th,(7+pulse*3)*S,0,TAU);ctx.stroke();
+  }
+  ctx.globalCompositeOperation='lighter';
+  ctx.strokeStyle='#4df3ff';ctx.lineWidth=Math.max(1.8,2.2*S);
+  ctx.beginPath();ctx.moveTo(c.x,c.y+R*0.12);ctx.lineTo(c.x,c.y-R*1.05);ctx.stroke();
+  const ty=c.y-R*1.05;
+  ctx.beginPath();
+  ctx.moveTo(c.x,ty-14*S);ctx.lineTo(c.x+9*S,ty);ctx.lineTo(c.x,ty+14*S);ctx.lineTo(c.x-9*S,ty);
+  ctx.closePath();
+  ctx.fillStyle='rgba(77,243,255,'+(0.7+0.3*pulse)+')';ctx.fill();
+  for(let i=0;i<2;i++){
+    const br=(16+i*10+pulse*6)*S;
+    ctx.strokeStyle='rgba(180,107,255,'+(0.5-i*0.15)+')';
+    ctx.lineWidth=Math.max(1.2,1.4*S);
+    ctx.beginPath();ctx.arc(c.x,ty,br,0,TAU);ctx.stroke();
+  }
+  ctx.restore();
+  ctx.save();
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font='900 '+Math.max(13,Math.round(16*S))+'px '+FONT;
+  ctx.fillStyle='#f3feff';
+  ctx.shadowColor='#4df3ff';ctx.shadowBlur=12;
+  ctx.fillText('네온 기지',c.x,c.y-R-20*S);
+  ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+function navForbidden(){
+  const list=[{x:uiPause.x,y:uiPause.y,r:uiPause.r+26}];
+  if(isTouchUI()){
+    list.push({x:uiDash.x,y:uiDash.y,r:uiDash.r+26});
+    for(const s of uiSkills) list.push({x:s.x,y:s.y,r:s.r+20});
+    const ins=getInsets();
+    const jr=Math.max(52,Math.min(W,H)*0.13);
+    list.push({x:ins.l+jr+22,y:H-ins.b-jr-18,r:jr+26});
+  }
+  return list;
+}
+function navSafeRect(extra){
+  const ins=getInsets();
+  const pad=14;
+  let l=ins.l+pad, r=W-ins.r-pad;
+  let t=Math.max(ins.t+14+78, uiPause.y+uiPause.r+16);
+  let b=H-ins.b-pad-8;
+  if(isTouchUI()){
+    b=Math.min(b, uiDash.y-uiDash.r-24);
+    const jr=Math.max(52,Math.min(W,H)*0.13);
+    b=Math.min(b, H-ins.b-jr-18-jr-24);
+  }
+  if(extra&&extra.t!=null) t=Math.max(t,extra.t);
+  if(t>b-36){const mid=(t+b)/2;t=mid-18;b=mid+18;}
+  return {l,t,r,b};
+}
+function pushOutOfUI(x,y,rect,forbid){
+  x=clamp(x,rect.l,rect.r);y=clamp(y,rect.t,rect.b);
+  for(let k=0;k<5;k++){
+    for(const f of forbid){
+      const dx=x-f.x,dy=y-f.y,d=Math.hypot(dx,dy);
+      if(d<f.r){
+        const nx=d<0.01?0:dx/d, ny=d<0.01?-1:dy/d;
+        x=f.x+nx*f.r;y=f.y+ny*f.r;
+        x=clamp(x,rect.l,rect.r);y=clamp(y,rect.t,rect.b);
+      }
+    }
+  }
+  return {x,y};
+}
+function rayBoxExit(ox,oy,dx,dy,rect){
+  let t=Infinity;
+  if(dx>1e-6) t=Math.min(t,(rect.r-ox)/dx);
+  else if(dx<-1e-6) t=Math.min(t,(rect.l-ox)/dx);
+  if(dy>1e-6) t=Math.min(t,(rect.b-oy)/dy);
+  else if(dy<-1e-6) t=Math.min(t,(rect.t-oy)/dy);
+  if(!isFinite(t)||t<0) return {x:clamp(ox,rect.l,rect.r),y:clamp(oy,rect.t,rect.b)};
+  return {x:ox+dx*t,y:oy+dy*t};
+}
+
+function drawBaseNav(){
+  navDebug={badge:null,arrow:null,label:null,safe:null};
+  if(!neonBase||(state!=='play'&&state!=='pause'&&state!=='arrive')) return;
+  const m=baseMeters();
+  const badge=arriveShown?('네온 기지 도착'):('네온 기지로 이동  ·  '+m+'m');
+  const ins=getInsets();
+  const u=clamp(Math.min(W,H)/390,0.8,1.35);
+  const xpY=ins.t,xpH=14,hy=xpY+xpH+10,hh=18;
+  ctx.save();
+  ctx.font='800 '+Math.max(11,Math.round(13*u))+'px '+FONT;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  const tw=ctx.measureText(badge).width;
+  const bw=Math.min(W-ins.l-ins.r-24, tw+22), bh=Math.max(20,22*u);
+  const bx=W/2-bw/2;
+  const by=hy+hh+6;
+  ctx.fillStyle='rgba(10,12,36,0.78)';
+  rounded(bx,by,bw,bh,bh/2);ctx.fill();
+  ctx.strokeStyle='rgba(77,243,255,0.7)';ctx.lineWidth=1.4;
+  rounded(bx,by,bw,bh,bh/2);ctx.stroke();
+  ctx.fillStyle='#e8fbff';
+  ctx.shadowColor='#4df3ff';ctx.shadowBlur=8;
+  ctx.fillText(badge,W/2,by+bh/2+0.5);
+  ctx.shadowBlur=0;
+  ctx.restore();
+  navDebug.badge={x:bx,y:by,w:bw,h:bh};
+
+  const sc=wrld(neonBase.x,neonBase.y);
+  const margin=28;
+  const onScreen=sc.x>=margin&&sc.x<=W-margin&&sc.y>=margin&&sc.y<=H-margin;
+  const forbid=navForbidden();
+  const safe=navSafeRect({t:by+bh+14});
+  navDebug.safe=safe;
+  if(onScreen||arriveShown) return;
+
+  const exit=rayBoxExit(W/2,H/2,sc.x-W/2,sc.y-H/2,safe);
+  const pos=pushOutOfUI(exit.x,exit.y,safe,forbid);
+  const ang=Math.atan2(sc.y-pos.y,sc.x-pos.x);
+  const sz=Math.max(14,16*u);
+  ctx.save();
+  ctx.translate(pos.x,pos.y);ctx.rotate(ang);
+  ctx.shadowColor='#4df3ff';ctx.shadowBlur=14;
+  ctx.fillStyle='#4df3ff';
+  ctx.beginPath();
+  ctx.moveTo(sz,0);
+  ctx.lineTo(-sz*0.72,-sz*0.72);
+  ctx.lineTo(-sz*0.22,0);
+  ctx.lineTo(-sz*0.72,sz*0.72);
+  ctx.closePath();ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(243,254,255,0.85)';ctx.lineWidth=1.2;
+  ctx.stroke();
+  ctx.restore();
+  const ar={x:pos.x,y:pos.y,r:sz+6,ang};
+  navDebug.arrow=ar;
+
+  const lab='네온 기지 '+m+'m';
+  ctx.save();
+  ctx.font='800 '+Math.max(11,Math.round(13*u))+'px '+FONT;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  const lw=ctx.measureText(lab).width+16, lh=Math.max(18,20*u);
+  const inward=norm(W/2-pos.x,H/2-pos.y);
+  let lx=pos.x+inward.x*(sz+lh*0.2+lw*0.15);
+  let ly=pos.y+inward.y*(sz+lh+4);
+  if(Math.abs(inward.x)<0.35) lx=pos.x;
+  const labRect={x:lx-lw/2,y:ly-lh/2,w:lw,h:lh};
+  // keep label in safe area and off UI
+  labRect.x=clamp(labRect.x,safe.l,safe.r-labRect.w);
+  labRect.y=clamp(labRect.y,safe.t,safe.b-labRect.h);
+  const mid=pushOutOfUI(labRect.x+labRect.w/2,labRect.y+labRect.h/2,safe,forbid);
+  labRect.x=clamp(mid.x-labRect.w/2,safe.l,safe.r-labRect.w);
+  labRect.y=clamp(mid.y-labRect.h/2,safe.t,safe.b-labRect.h);
+  ctx.fillStyle='rgba(10,12,36,0.82)';
+  rounded(labRect.x,labRect.y,labRect.w,labRect.h,labRect.h/2);ctx.fill();
+  ctx.strokeStyle='rgba(180,107,255,0.7)';ctx.lineWidth=1.2;
+  rounded(labRect.x,labRect.y,labRect.w,labRect.h,labRect.h/2);ctx.stroke();
+  ctx.fillStyle='#f3feff';
+  ctx.shadowColor='#4df3ff';ctx.shadowBlur=8;
+  ctx.fillText(lab,labRect.x+labRect.w/2,labRect.y+labRect.h/2+0.5);
+  ctx.shadowBlur=0;
+  ctx.restore();
+  navDebug.label=labRect;
+}
+
+function drawArrive(){
+  layoutArrive();
+  ctx.fillStyle='rgba(5,4,15,0.72)';
+  ctx.fillRect(0,0,W,H);
+  const u=clamp(Math.min(W,H)/390,0.85,1.35);
+  const ins=getInsets();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  const pulse=0.6+0.4*Math.sin(titleT*5);
+  ctx.font='900 '+Math.max(30,Math.min(52,42*u))+'px '+FONT;
+  ctx.fillStyle='#f3feff';
+  ctx.shadowColor='#4df3ff';ctx.shadowBlur=18+pulse*10;
+  ctx.fillText('네온 기지 도착!',W/2,Math.max(ins.t+80,H*0.32));
+  ctx.shadowBlur=0;
+  ctx.font='700 '+Math.max(14,16*u)+'px '+FONT;
+  ctx.fillStyle='#cfd3ff';
+  ctx.fillText('다음 스토리 준비 중',W/2,Math.max(ins.t+80,H*0.32)+Math.max(28,34*u));
+  for(const b of arriveBtns) drawPillBtn(b,b.kind==='pri');
+}
+
 </script>
 </body>
 </html>
