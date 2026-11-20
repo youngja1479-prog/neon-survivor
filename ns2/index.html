@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<title>네온 생존자 2 v17</title>
+<title>네온 생존자 2 v18</title>
 <style>
   :root{
     --sat:env(safe-area-inset-top,0px);
@@ -348,7 +348,7 @@ function reset(){
     x:0,y:0,r:16,facing:0,
     hp:100,maxHp:100,spd:215,atk:15,rate:0.40,proj:1,pierce:0,
     pickup:95,xp:0,level:1,next:8,
-    dashCd:0,dashMaxCd:1.55,dashCharges:1,dashMax:1,
+    dashCd:0,dashMaxCd:1.55,dashCharges:1,dashMax:1,dashDur:0.16,dashVamp:0,
     dashT:0,iframe:0,dashDmg:24,vamp:0,fireCd:0,
     dashVx:0,dashVy:0,dashed:null,
     wep:{bolt:1}, pas:{regen:1}, wepCd:{}, auraT:0,
@@ -661,7 +661,9 @@ const MAXLV=5, MAX_WEAPONS=6;
 const DASH_UPS=[
   {id:"dashcd",name:"대시 가속",desc:"대시 재사용 대기시간이 줄어든다",col:"#4cc9f0",kind:"dash",icon:"haste"},
   {id:"dashdmg",name:"돌진 충격",desc:"대시로 베는 피해가 크게 오른다",col:"#f72585",kind:"dash",icon:"power"},
-  {id:"charge",name:"대시 충전",desc:"대시 충전 횟수가 1 늘어난다",col:"#4895ef",kind:"dash",icon:"speed"}
+  {id:"charge",name:"대시 충전",desc:"대시 충전 횟수가 1 늘어난다",col:"#4895ef",kind:"dash",icon:"speed"},
+  {id:"dashlen",name:"대시 연장",desc:"대시 거리와 무적 시간이 25% 늘어난다",col:"#7b61ff",kind:"dash",icon:"area"}, // v18 대시 전용
+  {id:"dashvamp",name:"돌진 흡혈",desc:"대시로 벤 적 하나마다 체력 1 회복",col:"#ff4d8d",kind:"dash",icon:"regen"} // v18 대시 전용
 ];
 let beams=[],wprojs=[],mines=[],meteors=[],fburn=[];
 function wepLv(id){return (player&&player.wep&&player.wep[id])||0;}
@@ -826,6 +828,8 @@ function buildLevelPool(){
   }
   for(const u of DASH_UPS){
     if(u.id==="charge"&&player.dashMax>=3) continue;
+    if(u.id==="dashlen"&&(player.dashDur||0.16)>=0.24) continue;
+    if(u.id==="dashvamp"&&(player.dashVamp||0)>=3) continue;
     pool.push(u);
   }
   return pool;
@@ -852,8 +856,9 @@ function tryDash(who,fromNet){
   if(dx||dy) n=norm(dx,dy);
   else n={x:Math.cos(P.facing),y:Math.sin(P.facing)};
   if(!n.x&&!n.y) n={x:1,y:0};
-  P.dashT=0.16;
-  P.iframe=0.22;
+  const dd=P.dashDur||0.16; // v18 대시 연장
+  P.dashT=dd;
+  P.iframe=0.22+(dd-0.16);
   P.dashCharges--;
   P.dashVx=n.x*1020;
   P.dashVy=n.y*1020;
@@ -945,6 +950,8 @@ function applyUpgrade(u){
     case "dashcd": player.dashMaxCd=Math.max(0.5,player.dashMaxCd*0.75); break;
     case "dashdmg": player.dashDmg*=1.7; break;
     case "charge": player.dashMax+=1; player.dashCharges+=1; break;
+    case "dashlen": player.dashDur=Math.min(0.24,(player.dashDur||0.16)+0.04); break;
+    case "dashvamp": player.dashVamp=Math.min(3,(player.dashVamp||0)+1); break;
   }
   burst(player.x,player.y,u.col,20,200,0.4);
   state="play";
@@ -1074,6 +1081,7 @@ function update(dt){
         burst(e.x,e.y,"#5ee7ff",8,200,0.25);
         const n=norm(e.x-player.x,e.y-player.y);
         e.x+=n.x*36;e.y+=n.y*36;
+        if(player.dashVamp>0&&player.hp>0&&player.hp<player.maxHp){player.hp=Math.min(player.maxHp,player.hp+player.dashVamp);floatText(player.x,player.y-player.r-6,"+"+player.dashVamp,"#7dffb3",12);}
         if(e.hp<=0) killEnemy(e,i);
       }
     }
@@ -1709,7 +1717,7 @@ function drawTitle(){
   const ty=ins.t+(short?H*0.14:H*(portrait?0.18:0.20));
   ctx.font="900 "+Math.max(11,12*u)+"px "+FONT;
   ctx.fillStyle="rgba(143,160,255,0.8)";
-  ctx.fillText("PROTOTYPE  ·  미완성  ·  v17",W/2,ty);
+  ctx.fillText("PROTOTYPE  ·  미완성  ·  v18",W/2,ty);
   ctx.font="900 "+titleSize+"px "+FONT;
   const label="네온 생존자 2";
   const tw=ctx.measureText(label).width;
@@ -1721,7 +1729,7 @@ function drawTitle(){
   ctx.shadowBlur=0;
   ctx.font="700 "+Math.max(11,short?11:16*u)+"px "+FONT;
   ctx.fillStyle="#8fa0ff";
-  spacedText("NEON SURVIVOR  v17",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
+  spacedText("NEON SURVIVOR  v18",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
 
   const bw=Math.min(520,W-ins.l-ins.r-24);
   const boxX=W/2-bw/2;
@@ -2037,7 +2045,7 @@ function mkAlly(lp,i,n){
     x:Math.cos(ang)*rad,y:Math.sin(ang)*rad,r:16,facing:0,
     hp:100,maxHp:100,spd:215,atk:15,rate:0.40,proj:1,pierce:0,
     pickup:95,xp:0,level:1,next:8,
-    dashCd:0,dashMaxCd:1.55,dashCharges:1,dashMax:1,
+    dashCd:0,dashMaxCd:1.55,dashCharges:1,dashMax:1,dashDur:0.16,dashVamp:0,
     dashT:0,iframe:0,dashDmg:24,vamp:0,fireCd:0,
     dashVx:0,dashVy:0,dashed:null,
     wep:{bolt:1}, pas:{regen:1}, wepCd:{}, auraT:0,
@@ -2081,7 +2089,7 @@ function createRoom(tries){
       let n=0;while(lobby.players.some(p=>p.id==='p'+n))n++;
       const id='p'+n;c.pid=id;conns.push(c);
       lobby.players.push({id,name:'P'+(n+1),col:NS2_COLS[n%4]});
-      try{c.send({t:'hello',id,code:net.code,ver:'v17'})}catch(e){}
+      try{c.send({t:'hello',id,code:net.code,ver:'v18'})}catch(e){}
       syncLobby();
     });
     c.on('data',d=>onHostData(c,d));
@@ -2189,7 +2197,8 @@ function applySnap(d){
       if(p.id===myId && player){
         // light reconcile
         p.hp=s.hp;p.maxHp=s.maxHp;p.level=s.level;p.xp=s.xp;p.next=s.next;
-        p.dashCharges=s.dashCharges;p.dashT=s.dashT;p.iframe=s.iframe;p.facing=s.facing;
+        p.dashCharges=s.dashCharges;p.dashT=s.dashT;
+        if(s.dashMax) p.dashMax=s.dashMax; if(s.dashDur) p.dashDur=s.dashDur; // v18p.iframe=s.iframe;p.facing=s.facing;
         if(s.skin) p.skin=s.skin;
         if(s.chainCd!=null){p.skillCd=p.skillCd||{};p.skillCd.chain=s.chainCd;}
         if(s.buddy&&typeof applyBuddySnap==="function") applyBuddySnap(p,s.buddy);
@@ -2227,7 +2236,7 @@ function applySnap(d){
 
 function sendSnap(){
   if(!isNetHost()||!conns.length)return;
-  const pl=(allies.length?allies:[player]).filter(Boolean).map(p=>({id:p.id,name:p.name,col:p.col,x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,facing:p.facing,dashT:p.dashT,iframe:p.iframe,level:p.level,xp:p.xp,next:p.next,dashCharges:p.dashCharges,skin:p.skin||'hero',chainCd:(p.skillCd&&p.skillCd.chain)||0,buddy:p.buddy?{x:p.buddy.x,y:p.buddy.y,facing:p.buddy.facing,skin:p.buddy.skin}:null}));
+  const pl=(allies.length?allies:[player]).filter(Boolean).map(p=>({id:p.id,name:p.name,col:p.col,x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,facing:p.facing,dashT:p.dashT,iframe:p.iframe,level:p.level,xp:p.xp,next:p.next,dashCharges:p.dashCharges,dashMax:p.dashMax,dashDur:p.dashDur||0.16,skin:p.skin||'hero',chainCd:(p.skillCd&&p.skillCd.chain)||0,buddy:p.buddy?{x:p.buddy.x,y:p.buddy.y,facing:p.buddy.facing,skin:p.buddy.skin}:null}));
   const en=enemies.map(e=>({x:e.x,y:e.y,hp:e.hp,max:e.max,r:e.r,kind:e.kind,col:e.col,hit:e.hit,elite:!!e.elite,xp:e.xp,spd:e.spd,boss:!!e.boss,minion:!!e.minion,frozen:!!e.frozen,atk:e.atk,atkT:e.atkT,warnX:e.warnX,warnY:e.warnY,warnT:e.warnT,shotCd:e.shotCd,callCd:e.callCd,dashVx:e.dashVx,dashVy:e.dashVy,hard:!!e.hard}));
   const gem=gems.map(g=>({x:g.x,y:g.y,v:g.v,vy:g.vy,life:g.life}));
   const ep=eprojs.map(p=>({x:p.x,y:p.y,vx:p.vx,vy:p.vy,r:p.r,life:p.life,dmg:p.dmg,col:p.col}));
@@ -2307,6 +2316,7 @@ function hostMoveAllies(dt){
           const ddr=e.r+p.r+8,ddx=e.x-p.x,ddy=e.y-p.y;
           if(ddx*ddx+ddy*ddy<ddr*ddr){
             p.dashed.add(e);e.hp-=p.dashDmg;e.hit=0.12;
+            if(p.dashVamp>0&&p.hp>0&&p.hp<p.maxHp) p.hp=Math.min(p.maxHp,p.hp+p.dashVamp); // v18 돌진 흡혈
             floatText(e.x,e.y-e.r,String(Math.round(p.dashDmg)),"#ffffff",14);
             if(e.hp<=0) killEnemy(e,i);
           }
