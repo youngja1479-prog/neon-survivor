@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<title>네온 생존자 2 v12</title>
+<title>네온 생존자 2 v13</title>
 <style>
   :root{
     --sat:env(safe-area-inset-top,0px);
@@ -46,6 +46,9 @@
 </head>
 <body>
 <canvas id="c"></canvas>
+<input id="joinCode" maxlength="4" autocomplete="off" spellcheck="false" autocapitalize="characters" inputmode="text" aria-label="방 코드"
+  style="display:none;position:fixed;z-index:8;box-sizing:border-box;text-align:center;text-transform:uppercase;letter-spacing:0.35em;font:900 22px 'Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;color:#fff;background:#14122e;border:2px solid #4a3aa0;border-radius:12px;padding:8px 10px;caret-color:#4df3ff;outline:none;">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 "use strict";
 const canvas=document.getElementById("c");
@@ -78,6 +81,7 @@ function resize(){
   scale=Math.max(0.62,Math.min(1.1,Math.min(W,H)/720)); // v9 1편과 같은 화면 확대 비율
   layoutUI();
   if(typeof joy!=="undefined"&&joy.active) endJoy();
+  try{if(joinInputOn) showJoinInput();}catch(_){}
 }
 window.addEventListener("resize",resize);
 window.addEventListener("orientationchange",()=>setTimeout(resize,80));
@@ -258,8 +262,15 @@ function onTouchEnd(e){
 
 function onKey(code){
   ensureAudio();
-  if(state==="title"&&(code==="Enter"||code==="Space")) startGame();
-  else if(state==="over"&&(code==="Enter"||code==="Space")) startGame();
+  if(state==="title"&&(code==="Enter"||code==="Space")) openParty();
+  else if(state==="party"&&(code==="Enter"||code==="Space")){
+    if(partyView==="home") startSolo();
+    else if(partyView==="join"){const el=document.getElementById("joinCode");joinRoom(el?el.value:"");}
+    else if(partyView==="room"&&isNetHost()) hostStartParty();
+  }else if(state==="party"&&code==="Escape"){if(partyView==="home") backToTitle();else {hideJoinInput();cleanupNet();partyView="home";partyMsg="";}}
+  else if((state==="notice"||state==="story"||state==="chapter")&&(code==="Enter"||code==="Space")) storyAdvance();
+  else if(state==="story"&&(code==="KeyS"||code==="Escape")) storySkip();
+  else if(state==="over"&&(code==="Enter"||code==="Space")) startGame(false);
   else if(state==="levelup"){
     if(code==="Digit1"||code==="Numpad1") pickIdx(0);
     if(code==="Digit2"||code==="Numpad2") pickIdx(1);
@@ -275,7 +286,10 @@ function onKey(code){
 }
 function onPointer(x,y,isTouch,id){
   mouse.x=x;mouse.y=y;
-  if(state==="title"||state==="over"){startGame();return;}
+  if(state==="title"){openParty();return;}
+  if(state==="party"){onPartyPointer(x,y);return;}
+  if(state==="notice"||state==="story"||state==="chapter"){onStoryPointer(x,y);return;}
+  if(state==="over"){startGame(false);return;}
   if(state==="levelup"){pickCardAt(x,y);return;}
   if(state==="pause"){
     if(hitRect(x,y,uiResume)||hitCirc(x,y,uiPause,10)) togglePause();
@@ -340,13 +354,16 @@ function reset(){
   cam.x=0;cam.y=0;cards=[];cardRects=[];
   endJoy();dashHeld=false;dashTouchId=null;skillHeld=Object.create(null);
 }
-function startGame(){
+function startGame(fromOpening){
   ensureAudio();
   tryFullscreen();
+  hideJoinInput();
   reset();
+  if(net.role==="host"||net.role==="client") setupAllies();
+  else allies=[];
   state="play";
   beep(420,0.1,"square",0.07,880);
-  burst(0,0,"#5ee7ff",24,220,0.45);
+  burst((player&&player.x)||0,(player&&player.y)||0,"#5ee7ff",24,220,0.45);
 }
 function togglePause(){
   if(state==="play"){state="pause";endJoy();beep(320,0.08,"triangle",0.05);}
@@ -795,70 +812,79 @@ function buildLevelPool(){
   return pool;
 }
 
-function tryDash(){
+function tryDash(who,fromNet){
   if(state!=="play"||grace>0) return;
-  if(dashHeld) return;
-  dashHeld=true;
-  if(player.dashT>0||player.dashCharges<=0) return;
+  const P=who||player;
+  if(!P) return;
+  if(!fromNet){if(dashHeld) return;dashHeld=true;}
+  if(P.dashT>0||P.dashCharges<=0) return;
+  if(!fromNet&&isNetClient()){netSend({t:"dash"});/* predict below */}
   let dx=0,dy=0;
-  if(keys.KeyW||keys.ArrowUp) dy-=1;
-  if(keys.KeyS||keys.ArrowDown) dy+=1;
-  if(keys.KeyA||keys.ArrowLeft) dx-=1;
-  if(keys.KeyD||keys.ArrowRight) dx+=1;
-  if(joy.active&&(joy.dx||joy.dy)){dx=joy.dx;dy=joy.dy;}
+  if(!who||who===player){
+    if(keys.KeyW||keys.ArrowUp) dy-=1;
+    if(keys.KeyS||keys.ArrowDown) dy+=1;
+    if(keys.KeyA||keys.ArrowLeft) dx-=1;
+    if(keys.KeyD||keys.ArrowRight) dx+=1;
+    if(joy.active&&(joy.dx||joy.dy)){dx=joy.dx;dy=joy.dy;}
+  }else{
+    dx=P.mx||0;dy=P.my||0;
+  }
   let n;
   if(dx||dy) n=norm(dx,dy);
-  else n={x:Math.cos(player.facing),y:Math.sin(player.facing)};
+  else n={x:Math.cos(P.facing),y:Math.sin(P.facing)};
   if(!n.x&&!n.y) n={x:1,y:0};
-  player.dashT=0.16;
-  player.iframe=0.22;
-  player.dashCharges--;
-  player.dashVx=n.x*1020;
-  player.dashVy=n.y*1020;
-  player.facing=Math.atan2(n.y,n.x);
-  player.dashed=new Set();
-  shake=Math.max(shake,5);
-  ring(player.x,player.y,"#5ee7ff",70);
+  P.dashT=0.16;
+  P.iframe=0.22;
+  P.dashCharges--;
+  P.dashVx=n.x*1020;
+  P.dashVy=n.y*1020;
+  P.facing=Math.atan2(n.y,n.x);
+  P.dashed=new Set();
+  if(P===player) shake=Math.max(shake,5);
+  ring(P.x,P.y,"#5ee7ff",70);
   beep(220,0.13,"sawtooth",0.07,70);
   vibe(15);
 }
 
-function trySkill(id){
+function trySkill(id,who,fromNet){
   if(state!=="play") return;
-  if(skillHeld[id]) return;
-  skillHeld[id]=true;
+  const P=who||player;
+  if(!fromNet){if(skillHeld[id]) return;skillHeld[id]=true;}
   const def=SKILLS.find(s=>s.id===id);
-  if(!def||!player) return;
-  if((player.skillCd[id]||0)>0) return;
-  player.skillCd[id]=def.cd;
+  if(!def||!P) return;
+  if((P.skillCd[id]||0)>0) return;
+  if(!fromNet&&isNetClient()){netSend({t:"sk",id});}
+  P.skillCd[id]=def.cd;
   if(id==="shock"){
-    const rad=210,dmg=player.atk*2.4;
-    ring(player.x,player.y,"#ff5ea8",rad);
-    ring(player.x,player.y,"#ffd166",Math.floor(rad*0.55));
-    burst(player.x,player.y,"#ff5ea8",28,300,0.4);
-    shake=Math.max(shake,10);
+    const rad=210,dmg=P.atk*2.4;
+    ring(P.x,P.y,"#ff5ea8",rad);
+    ring(P.x,P.y,"#ffd166",Math.floor(rad*0.55));
+    burst(P.x,P.y,"#ff5ea8",28,300,0.4);
+    if(P===player) shake=Math.max(shake,10);
     beep(160,0.16,"sawtooth",0.08,50);
     vibe(25);
-    for(let i=enemies.length-1;i>=0;i--){
-      const e=enemies[i];
-      const d=Math.hypot(e.x-player.x,e.y-player.y);
-      if(d<rad+e.r){
-        const n=norm(e.x-player.x,e.y-player.y);
-        const k=1-d/(rad+e.r);
-        e.x+=n.x*(80+100*k);e.y+=n.y*(80+100*k);
-        hurtEnemy(e,i,dmg,"#ff5ea8");
+    if(isSimHost()){
+      for(let i=enemies.length-1;i>=0;i--){
+        const e=enemies[i];
+        const d=Math.hypot(e.x-P.x,e.y-P.y);
+        if(d<rad+e.r){
+          const n=norm(e.x-P.x,e.y-P.y);
+          const k=1-d/(rad+e.r);
+          e.x+=n.x*(80+100*k);e.y+=n.y*(80+100*k);
+          hurtEnemy(e,i,dmg,"#ff5ea8");
+        }
       }
     }
   }else if(id==="shield"){
-    player.shieldT=2.3;
-    ring(player.x,player.y,"#5ee7ff",56);
-    burst(player.x,player.y,"#5ee7ff",16,180,0.35);
+    P.shieldT=2.3;
+    ring(P.x,P.y,"#5ee7ff",56);
+    burst(P.x,P.y,"#5ee7ff",16,180,0.35);
     beep(620,0.12,"triangle",0.07,900);
     vibe(12);
   }else if(id==="magnet"){
-    player.magnetT=1.6;
-    ring(player.x,player.y,"#7cff6b",100);
-    burst(player.x,player.y,"#7cff6b",16,180,0.35);
+    P.magnetT=1.6;
+    ring(P.x,P.y,"#7cff6b",100);
+    burst(P.x,P.y,"#7cff6b",16,180,0.35);
     beep(880,0.1,"sine",0.06,1400);
     vibe(12);
   }
@@ -879,7 +905,11 @@ function offerLevelup(){
 }
 function pickIdx(i){
   if(i<0||i>=cards.length) return;
-  applyUpgrade(cards[i]);
+  if(isNetClient()){netSend({t:"pick",i});return;}
+  const who=(levelupWho&&allies.find(p=>p.id===levelupWho))||player;
+  if(who&&who!==player) applyUpgradeFor(who,cards[i]);
+  else applyUpgrade(cards[i]);
+  if(isNetHost()) bcast({t:"lvdone",id:(who&&who.id)||myId});
 }
 function pickCardAt(x,y){
   for(let i=0;i<cardRects.length;i++){
@@ -907,40 +937,56 @@ function applyUpgrade(u){
   beep(880,0.08,"square",0.06);
 }
 
-function gainXp(n){
+function gainXp(n,who){
+  const P=who||player;
+  if(!P) return;
+  const prev=player;player=P;
   player.xp+=n;
+  let leveled=false;
   while(player.xp>=player.next){
     player.xp-=player.next;
     player.level++;
     player.next=Math.floor(8*Math.pow(1.34,player.level-1));
     offerLevelup();
+    leveled=true;
+    levelupWho=P.id||null;
+    if(isNetHost()) bcast({t:"lv",id:P.id,cards});
   }
+  const remote=P.id&&P.id!==myId;
+  if(remote){player=prev;if(leveled)state="play";}
+  else player=P;
 }
 
-function hurtPlayer(dmg,ex,ey){
-  if(player.iframe>0) return;
-  if(player.shieldT>0){
-    burst(player.x,player.y,"#5ee7ff",10,160,0.25);
+function hurtPlayer(dmg,ex,ey,who){
+  const P=who||player;
+  if(!P||P.iframe>0) return;
+  if(P.shieldT>0){
+    burst(P.x,P.y,"#5ee7ff",10,160,0.25);
     beep(880,0.06,"triangle",0.05);
     return;
   }
+  const prev=player;player=P;
   dmg*=Math.max(0.3,1-0.07*pasLv("armor"));
-  player.hp-=dmg;
-  player.iframe=0.45;
-  shake=Math.max(shake,8);
-  const n=norm(player.x-ex,player.y-ey);
-  player.x+=n.x*28;player.y+=n.y*28;
-  burst(player.x,player.y,"#ff4d6d",14,200,0.35);
+  player=prev;
+  P.hp-=dmg;
+  P.iframe=0.45;
+  if(P===player) shake=Math.max(shake,8);
+  const n=norm(P.x-ex,P.y-ey);
+  P.x+=n.x*28;P.y+=n.y*28;
+  burst(P.x,P.y,"#ff4d6d",14,200,0.35);
   beep(140,0.15,"sawtooth",0.08,60);
   vibe(40);
-  if(player.hp<=0){
-    player.hp=0;
-    state="over";
-    endJoy();
-    burst(player.x,player.y,"#5ee7ff",40,320,0.7);
-    ring(player.x,player.y,"#ff4d6d",160);
-    beep(200,0.4,"sawtooth",0.1,40);
-    vibe([80,40,140]);
+  if(P.hp<=0){
+    P.hp=0;
+    if(!partyUnits().length){
+      state="over";
+      endJoy();
+      burst(P.x,P.y,"#5ee7ff",40,320,0.7);
+      ring(P.x,P.y,"#ff4d6d",160);
+      beep(200,0.4,"sawtooth",0.1,40);
+      vibe([80,40,140]);
+      if(isNetHost()) bcast({t:"over",kills,time});
+    }
   }
 }
 
@@ -962,7 +1008,7 @@ function killEnemy(e,i){
 
 function update(dt){
   titleT+=dt;
-  if(state==="title"||state==="over"){
+  if(state==="title"||state==="over"||state==="party"||state==="notice"||state==="story"){
     for(let i=particles.length-1;i>=0;i--){
       const p=particles[i];
       p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
@@ -970,7 +1016,10 @@ function update(dt){
     }
     return;
   }
+  if(state==="chapter"){tickStory(dt);return;}
   if(state==="levelup"||state==="pause") return;
+  if(levelupWho&&levelupWho!==myId){if(isNetHost()){netSendT+=dt;if(netSendT>=0.08){netSendT=0;sendSnap();}}return;}
+  if(isNetClient()){clientPlay(dt);return;}
 
   time+=dt;
   grace=Math.max(0,grace-dt);
@@ -1031,6 +1080,7 @@ function update(dt){
   cam.x+=(player.x-cam.x)*Math.min(1,dt*8);
   cam.y+=(player.y-cam.y)*Math.min(1,dt*8);
 
+  if(isNetHost()) hostMoveAllies(dt);
   updateWeapons(dt);
 
   const rate=1.1+Math.min(3.2,time/28);
@@ -1053,13 +1103,16 @@ function update(dt){
     const e=enemies[i];
     e.hit=Math.max(0,e.hit-dt);
     e.orbCd=Math.max(0,(e.orbCd||0)-dt);
-    const n=norm(player.x-e.x,player.y-e.y);
+    const tgt=nearestAlly(e.x,e.y);
+    const n=norm(tgt.x-e.x,tgt.y-e.y);
     e.x+=n.x*e.spd*dt;
     e.y+=n.y*e.spd*dt;
-    const pr=e.r+player.r-2,pdx=e.x-player.x,pdy=e.y-player.y;
-    if(pdx*pdx+pdy*pdy<pr*pr){
-      hurtPlayer(e.dmg,e.x,e.y);
+    let hitP=null;
+    for(const u of partyUnits()){
+      const pr=e.r+u.r-2,pdx=e.x-u.x,pdy=e.y-u.y;
+      if(pdx*pdx+pdy*pdy<pr*pr){hitP=u;break;}
     }
+    if(hitP) hurtPlayer(e.dmg,e.x,e.y,hitP);
   }
 
   buildGrid();
@@ -1096,14 +1149,20 @@ function update(dt){
   for(let i=gems.length-1;i>=0;i--){
     const g=gems[i];
     if(g.life>0){g.life-=dt;g.y+=g.vy*dt;g.vy+=180*dt;}
-    const dx=player.x-g.x,dy=player.y-g.y,d=Math.hypot(dx,dy);
-    if(player.magnetT>0||d<player.pickup+40){
-      const pull=norm(dx,dy);
-      const s=player.magnetT>0?980:(d<player.pickup?520:220);
-      g.x+=pull.x*s*dt;g.y+=pull.y*s*dt;
+    const units=partyUnits().length?partyUnits():(player?[player]:[]);
+    let best=null,bd=1e15,mag=false;
+    for(const u of units){
+      const d=Math.hypot(u.x-g.x,u.y-g.y);
+      if(u.magnetT>0) mag=true;
+      if(d<bd){bd=d;best=u;}
     }
-    if(d<18){
-      gainXp(g.v);
+    if(best&&(mag||bd<best.pickup+40)){
+      const pull=norm(best.x-g.x,best.y-g.y);
+      const sp=mag?980:(bd<best.pickup?520:220);
+      g.x+=pull.x*sp*dt;g.y+=pull.y*sp*dt;
+    }
+    if(best&&bd<18){
+      gainXp(g.v,best);
       gems.splice(i,1);
       beep(980,0.04,"sine",0.03,1400);
     }
@@ -1180,10 +1239,11 @@ function rounded(x,y,w,h,r){
 function draw(){
   ctx.fillStyle="#07060f";
   ctx.fillRect(0,0,W,H);
-  if(state==="title"){
-    drawTitle();
-    return;
-  }
+  if(state==="title"){drawTitle();return;}
+  if(state==="party"){drawParty();return;}
+  if(state==="notice"){drawNotice();return;}
+  if(state==="story"){drawStory();return;}
+  if(state==="chapter"){drawChapter();return;}
 
   drawGrid();
 
@@ -1287,6 +1347,19 @@ function draw(){
       ctx.beginPath();ctx.arc(s.x,s.y,rr,0,Math.PI*2);ctx.stroke();
       ctx.strokeStyle="rgba(94,231,255,"+(0.8*pulse)+")";ctx.lineWidth=2;
       ctx.beginPath();ctx.arc(s.x,s.y,rr,0,Math.PI*2);ctx.stroke();
+    }
+  }
+  if(allies&&allies.length){
+    for(const a of allies){
+      if(!a||a===player||a.hp<=0) continue;
+      const s=wrld(a.x,a.y);
+      const blink=a.iframe>0&&a.dashT<=0&&Math.floor(time*30)%2===0;
+      n1Player(s.x,s.y,1,blink,0,Math.cos(a.facing),Math.sin(a.facing),false);
+      const bw=36*scale,bh=5*scale,bx=s.x-bw/2,by=s.y+20*scale,k=Math.max(0,a.hp/a.maxHp);
+      ctx.fillStyle="#000a";ctx.fillRect(bx,by,bw,bh);ctx.fillStyle=k<0.3?"#ff4d6d":"#5dff8a";ctx.fillRect(bx,by,bw*k,bh);
+      ctx.fillStyle=a.col||"#4df3ff";ctx.font="700 11px "+FONT;ctx.textAlign="center";
+      ctx.fillText(a.name||"",s.x,by+bh+10);
+      if(a.shieldT>0){ctx.strokeStyle="rgba(94,231,255,0.7)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(s.x,s.y,(a.r+12)*scale,0,Math.PI*2);ctx.stroke();}
     }
   }
 
@@ -1578,7 +1651,7 @@ function drawTitle(){
   const ty=ins.t+(short?H*0.14:H*(portrait?0.18:0.20));
   ctx.font="900 "+Math.max(11,12*u)+"px "+FONT;
   ctx.fillStyle="rgba(143,160,255,0.8)";
-  ctx.fillText("PROTOTYPE  ·  미완성  ·  v12",W/2,ty);
+  ctx.fillText("PROTOTYPE  ·  미완성  ·  v13",W/2,ty);
   ctx.font="900 "+titleSize+"px "+FONT;
   const label="네온 생존자 2";
   const tw=ctx.measureText(label).width;
@@ -1590,7 +1663,7 @@ function drawTitle(){
   ctx.shadowBlur=0;
   ctx.font="700 "+Math.max(11,short?11:16*u)+"px "+FONT;
   ctx.fillStyle="#8fa0ff";
-  spacedText("NEON SURVIVOR  v12",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
+  spacedText("NEON SURVIVOR  v13",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
 
   const bw=Math.min(520,W-ins.l-ins.r-24);
   const boxX=W/2-bw/2;
@@ -1804,6 +1877,596 @@ function drawOver(){
   ctx.font=Math.max(12,13*u)+"px "+FONT;
   ctx.fillStyle="rgba(143,160,255,0.7)";
   ctx.fillText("키보드: Enter",W/2,by+bh+24);
+}
+
+// ===== v13: 온라인 인원 설정 + 챕터 1 오프닝 (1편 PeerJS 구조) =====
+const NS2_PREFIX='neons2-gkc1-',NS2_ALPH='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const NS2_ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun2.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'},{urls:'stun:global.stun.twilio.com:3478'},{urls:'stun:openrelay.metered.ca:80'},{urls:['turn:openrelay.metered.ca:80','turn:openrelay.metered.ca:443','turn:openrelay.metered.ca:443?transport=tcp'],username:'openrelayproject',credential:'openrelayproject'}]};
+const NS2_COLS=['#4df3ff','#ff4d9d','#ffd84d','#7dff6b'];
+const CH1_NOTICE='앞 부분 스토리를 모르면 스토리를 이해할 수 없습니다. 네온 생존자 1 스토리나 크레이지를 플레이하신 후, 네온 생존자 2를 즐겨주세요.';
+const CH1_STORY=[
+  '.......',
+  'God의 말대로라면',
+  '곧 본체 강산이 나타날거야.',
+  '그 못생긴 놈을 이기려면',
+  'God이 말한 3명을 찾아야하는데......',
+  '흠..... 분명 본체 강산을 이길 가능성이 있다면 그 녀석도 강산처럼 논외적 존재일 텐데.....',
+  '그러면 차원 이동을 해서 만나야할 가능성이 있다는 건데.....',
+  '...... !!!!',
+  '스피드가 너무 빠르다 못해',
+  '엄청난 속도로 차원 이동까지 가능하다는 그 친구를 만난다면.',
+  '그 3명이 있는 차원으로 갈 수 있을지도 몰라.',
+  '그렇다면 그 친구를 부르기 위해선',
+  '일단 네온 기지로 가서',
+  '요청 신호를 보내면 돼.',
+  '일단 네온 기지로 가자',
+  '근데 아직도 부하들이 남아있으니',
+  '처리하면서 네온 기지로 가야겠다.'
+];
+let peer=null,conns=[],hostConn=null,net={role:null,code:null},lobby={players:[]},myId='p0';
+let partyView='home',partyMsg='',partyBtns=[],joinInputOn=false,allies=[],netSendT=0,chapterT=0,storyI=0,levelupWho=null;
+let uiSkip={x:0,y:0,w:0,h:0};
+
+function genPartyCode(){let s='';for(let k=0;k<4;k++)s+=NS2_ALPH[Math.random()*NS2_ALPH.length|0];return s}
+function isNetHost(){return net.role==='host'}
+function isNetClient(){return net.role==='client'}
+function isSimHost(){return net.role!=='client'}
+function isStoryHost(){return net.role!=='client'}
+function partyUnits(){if(allies&&allies.length)return allies.filter(p=>p&&p.hp>0);return (player&&player.hp>0)?[player]:[]}
+function nearestAlly(x,y){const list=partyUnits();let best=list[0]||player,bd=1e15;for(const p of list){const d=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);if(d<bd){bd=d;best=p}}return best||player}
+function hideJoinInput(){const el=document.getElementById('joinCode');if(!el)return;el.style.display='none';joinInputOn=false;try{el.blur()}catch(e){}}
+function showJoinInput(){
+  const el=document.getElementById('joinCode');if(!el)return;
+  joinInputOn=true;
+  const ins=getInsets();
+  const bw=Math.min(280,W-ins.l-ins.r-40),bh=Math.max(48,Math.min(H,W)*0.1);
+  const x=(W/2-bw/2)+(parseFloat(canvas.style.left)||0), y=H*0.46+(parseFloat(canvas.style.top)||0);
+  el.style.display='block';
+  el.style.left=x+'px';el.style.top=y+'px';
+  el.style.width=bw+'px';el.style.height=bh+'px';
+  el.value=(el.value||'').toUpperCase();
+}
+function cleanupNet(){
+  for(const c of conns)try{c.close()}catch(e){}
+  conns=[];try{hostConn&&hostConn.close()}catch(e){}hostConn=null;
+  try{peer&&peer.destroy()}catch(e){}peer=null;
+  net={role:null,code:null};lobby={players:[]};myId='p0';allies=[];levelupWho=null;
+}
+function bcast(d){for(const c of conns)if(c.open)try{c.send(d)}catch(e){}}
+function netSend(d){if(hostConn&&hostConn.open)try{hostConn.send(d)}catch(e){}}
+
+function openParty(){
+  ensureAudio();tryFullscreen();
+  hideJoinInput();cleanupNet();
+  state='party';partyView='home';partyMsg='';partyBtns=[];
+  endJoy();
+}
+function backToTitle(){hideJoinInput();cleanupNet();state='title';partyView='home';partyMsg='';}
+
+function beginOpening(){
+  hideJoinInput();
+  state='notice';storyI=0;chapterT=0;
+  if(isNetHost()) bcast({t:'begin'});
+}
+function enterChapter(){
+  state='chapter';chapterT=1.8;
+  if(isNetHost()) bcast({t:'chapter'});
+}
+function storyAdvance(){
+  if(!isStoryHost()) return;
+  if(state==='notice'){state='story';storyI=0;if(isNetHost())bcast({t:'story',i:0});return;}
+  if(state==='story'){
+    storyI++;
+    if(storyI>=CH1_STORY.length){enterChapter();return;}
+    if(isNetHost())bcast({t:'story',i:storyI});
+    return;
+  }
+  if(state==='chapter') beginPlayFromChapter();
+}
+function storySkip(){
+  if(!isStoryHost()) return;
+  if(state==='story'||state==='notice') enterChapter();
+}
+function beginPlayFromChapter(){
+  startGame(true);
+  if(isNetHost()) bcast({t:'play'});
+}
+
+function mkAlly(lp,i,n){
+  const ang=-Math.PI/2+(i*TAU/Math.max(1,n)),rad=54;
+  const p={
+    id:lp.id,name:lp.name,col:lp.col||NS2_COLS[i%4],
+    x:Math.cos(ang)*rad,y:Math.sin(ang)*rad,r:16,facing:0,
+    hp:100,maxHp:100,spd:215,atk:15,rate:0.40,proj:1,pierce:0,
+    pickup:95,xp:0,level:1,next:8,
+    dashCd:0,dashMaxCd:1.55,dashCharges:1,dashMax:1,
+    dashT:0,iframe:0,dashDmg:24,vamp:0,fireCd:0,
+    dashVx:0,dashVy:0,dashed:null,
+    wep:{bolt:1}, pas:{}, wepCd:{}, auraT:0,
+    skillCd:{shock:0,shield:0,magnet:0}, shieldT:0, magnetT:0,
+    mx:0,my:0,left:false
+  };
+  return p;
+}
+function setupAllies(){
+  const list=lobby.players&&lobby.players.length?lobby.players:[{id:myId||'p0',name:'P1',col:NS2_COLS[0]}];
+  allies=list.map((lp,i)=>mkAlly(lp,i,list.length));
+  const me=allies.find(p=>p.id===myId)||allies[0];
+  player=me;
+}
+
+function startSolo(){cleanupNet();beginOpening();}
+
+function enterRoomView(code){
+  partyView='room';hideJoinInput();
+  renderParty();
+}
+function renderParty(){/* layout happens in drawParty */}
+
+function createRoom(tries){
+  tries=tries||0;
+  cleanupNet();
+  myId='p0';
+  lobby.players=[{id:'p0',name:'P1',col:NS2_COLS[0]}];
+  if(typeof Peer==='undefined'){partyMsg='PeerJS를 불러오지 못했어요. 인터넷 연결을 확인하세요.';partyView='home';return;}
+  const code=genPartyCode();
+  net={role:'host',code};const my=net;
+  partyView='room';partyMsg='서버 연결 중…';
+  const again=()=>{partyMsg='';createRoom();};
+  let to=setTimeout(()=>{if(net===my&&!my.open){cleanupNet();partyView='home';partyMsg='서버에 연결할 수 없어요. 다시 시도해 주세요.';}},12000);
+  try{peer=new Peer(NS2_PREFIX+code,{debug:0,config:NS2_ICE})}catch(e){clearTimeout(to);cleanupNet();partyView='home';partyMsg='연결 오류';return;}
+  peer.on('open',()=>{if(net!==my)return;my.open=true;clearTimeout(to);partyMsg='친구에게 코드를 알려주세요 (최대 4명)';});
+  peer.on('connection',c=>{
+    if(net!==my)return;
+    c.on('open',()=>{
+      if(lobby.players.length>=4||state!=='party'){try{c.send({t:'full'})}catch(e){}setTimeout(()=>{try{c.close()}catch(e){}},400);return;}
+      let n=0;while(lobby.players.some(p=>p.id==='p'+n))n++;
+      const id='p'+n;c.pid=id;conns.push(c);
+      lobby.players.push({id,name:'P'+(n+1),col:NS2_COLS[n%4]});
+      try{c.send({t:'hello',id,code:net.code,ver:'v13'})}catch(e){}
+      syncLobby();
+    });
+    c.on('data',d=>onHostData(c,d));
+    c.on('close',()=>{
+      if(!c.pid)return;
+      conns=conns.filter(x=>x!==c);
+      lobby.players=lobby.players.filter(p=>p.id!==c.pid);
+      if(allies&&allies.length){const p=allies.find(p=>p.id===c.pid);if(p){p.hp=0;p.left=true;}}
+      if(state==='party') syncLobby();
+    });
+  });
+  peer.on('error',err=>{
+    if(net!==my)return;
+    if(err.type==='unavailable-id'){if(tries<4){createRoom(tries+1);return;}}
+    if(!my.open){clearTimeout(to);cleanupNet();partyView='home';partyMsg='서버 오류('+(err.type||'')+')';}
+  });
+  peer.on('disconnected',()=>{if(net===my&&peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}});
+}
+function syncLobby(){bcast({t:'lobby',players:lobby.players,code:net.code});}
+
+function joinRoom(code){
+  code=(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(code.length!==4){partyMsg='4자리 코드를 입력하세요';return;}
+  cleanupNet();
+  if(typeof Peer==='undefined'){partyMsg='PeerJS를 불러오지 못했어요. 인터넷 연결을 확인하세요.';return;}
+  net={role:'client',code};const my=net;
+  partyView='join';partyMsg='접속 중…';
+  const to=setTimeout(()=>{if(net===my&&!my.ok){cleanupNet();partyView='join';partyMsg='시간 초과. 코드와 인터넷을 확인하세요.';showJoinInput();}},12000);
+  try{peer=new Peer({debug:0,config:NS2_ICE})}catch(e){clearTimeout(to);partyMsg='연결 오류';return;}
+  peer.on('open',()=>{
+    if(net!==my)return;
+    hostConn=peer.connect(NS2_PREFIX+code,{serialization:'json',reliable:true});
+    hostConn.on('data',d=>{if(net!==my)return;onClientData(d)});
+    hostConn.on('open',()=>{my.ok=true;clearTimeout(to);});
+    hostConn.on('close',()=>{
+      if(net!==my)return;
+      const wasPlay=state==='play'||state==='pause'||state==='levelup'||state==='over'||state==='notice'||state==='story'||state==='chapter';
+      cleanupNet();
+      state='party';partyView='home';
+      partyMsg=wasPlay?'호스트와 연결이 끊어졌어요.':'연결이 끊어졌어요.';
+      hideJoinInput();
+    });
+  });
+  peer.on('error',err=>{
+    if(net!==my||my.ok)return;
+    clearTimeout(to);cleanupNet();partyView='join';showJoinInput();
+    partyMsg=err.type==='peer-unavailable'?'방을 찾을 수 없어요':'오류: '+(err.type||'연결 실패');
+  });
+  peer.on('disconnected',()=>{if(net===my&&peer&&!peer.destroyed)try{peer.reconnect()}catch(e){}});
+}
+
+function onClientData(d){
+  if(!d||!d.t)return;
+  if(d.t==='full'){partyMsg='방이 가득 찼거나 이미 시작했어요.';partyView='join';showJoinInput();return;}
+  if(d.t==='hello'){myId=d.id;net.code=d.code||net.code;partyView='room';hideJoinInput();partyMsg='호스트가 시작하기를 기다리는 중…';return;}
+  if(d.t==='lobby'){lobby.players=d.players||[];if(d.code)net.code=d.code;return;}
+  if(d.t==='begin'){hideJoinInput();state='notice';storyI=0;chapterT=0;return;}
+  if(d.t==='story'){hideJoinInput();state='story';storyI=d.i|0;return;}
+  if(d.t==='chapter'){enterChapter();return;}
+  if(d.t==='play'){startGame(true);return;}
+  if(d.t==='lv'){if(d.id===myId){cards=d.cards||[];state='levelup';}else{levelupWho=d.id;}return;}
+  if(d.t==='lvdone'){levelupWho=null;if(state==='levelup'){state='play';last=performance.now();cards=[];}return;}
+  if(d.t==='over'){state='over';if(d.kills!=null)kills=d.kills;if(d.time!=null)time=d.time;return;}
+  if(d.t==='s'&&state==='play'){applySnap(d);}
+}
+function onHostData(c,d){
+  if(!d||!d.t)return;
+  if(d.t==='in'){
+    const p=allies.find(p=>p.id===c.pid);if(!p)return;
+    p.mx=clamp(+d.mx||0,-1,1);p.my=clamp(+d.my||0,-1,1);
+    return;
+  }
+  if(d.t==='dash'){const p=allies.find(p=>p.id===c.pid);if(p) tryDash(p,true);return;}
+  if(d.t==='sk'){const p=allies.find(p=>p.id===c.pid);if(p) trySkill(d.id,p,true);return;}
+  if(d.t==='pick'){const p=allies.find(p=>p.id===c.pid);if(p&&state==='levelup'&&levelupWho===p.id) applyUpgradeFor(p,cards[d.i|0]);return;}
+}
+
+function hostStartParty(){
+  if(!isNetHost())return;
+  if(!lobby.players.length)return;
+  beginOpening();
+}
+
+function applySnap(d){
+  if(!d)return;
+  if(d.time!=null)time=d.time;
+  if(d.kills!=null)kills=d.kills;
+  if(Array.isArray(d.pl)){
+    if(!allies.length){
+      allies=d.pl.map((s,i)=>mkAlly({id:s.id,name:s.name,col:s.col},i,d.pl.length));
+      player=allies.find(p=>p.id===myId)||allies[0];
+    }
+    for(const s of d.pl){
+      let p=allies.find(q=>q.id===s.id);
+      if(!p){p=mkAlly(s,allies.length,allies.length+1);allies.push(p);}
+      if(p.id===myId && player){
+        // light reconcile
+        p.hp=s.hp;p.maxHp=s.maxHp;p.level=s.level;p.xp=s.xp;p.next=s.next;
+        p.dashCharges=s.dashCharges;p.dashT=s.dashT;p.iframe=s.iframe;p.facing=s.facing;
+        if(Math.hypot((p.x-s.x),(p.y-s.y))>48){p.x=s.x;p.y=s.y;}
+        else{p.tx=s.x;p.ty=s.y;}
+        player=p;
+      }else{
+        p.tx=s.x;p.ty=s.y;p.hp=s.hp;p.maxHp=s.maxHp;p.facing=s.facing;p.dashT=s.dashT;p.iframe=s.iframe;p.level=s.level;
+        p.name=s.name;p.col=s.col||p.col;
+      }
+    }
+  }
+  if(Array.isArray(d.en)){
+    enemies=d.en.map(s=>({x:s.x,y:s.y,hp:s.hp,max:s.max,r:s.r,kind:s.kind,col:s.col,hit:s.hit||0,elite:!!s.elite,xp:s.xp||1,spd:s.spd||40,orbCd:0}));
+  }
+  if(Array.isArray(d.gem)) gems=d.gem.map(s=>({x:s.x,y:s.y,v:s.v,vy:s.vy||0,life:s.life||0}));
+}
+
+function sendSnap(){
+  if(!isNetHost()||!conns.length)return;
+  const pl=(allies.length?allies:[player]).filter(Boolean).map(p=>({id:p.id,name:p.name,col:p.col,x:p.x,y:p.y,hp:p.hp,maxHp:p.maxHp,facing:p.facing,dashT:p.dashT,iframe:p.iframe,level:p.level,xp:p.xp,next:p.next,dashCharges:p.dashCharges}));
+  const en=enemies.map(e=>({x:e.x,y:e.y,hp:e.hp,max:e.max,r:e.r,kind:e.kind,col:e.col,hit:e.hit,elite:!!e.elite,xp:e.xp,spd:e.spd}));
+  const gem=gems.map(g=>({x:g.x,y:g.y,v:g.v,vy:g.vy,life:g.life}));
+  bcast({t:'s',time,kills,pl,en,gem});
+}
+function clientSendInput(){
+  if(!isNetClient())return;
+  let mx=0,my=0;
+  if(keys.KeyW||keys.ArrowUp) my-=1;
+  if(keys.KeyS||keys.ArrowDown) my+=1;
+  if(keys.KeyA||keys.ArrowLeft) mx-=1;
+  if(keys.KeyD||keys.ArrowRight) mx+=1;
+  if(joy.active){mx+=joy.dx;my+=joy.dy;}
+  netSend({t:'in',mx,my});
+}
+
+function tickStory(dt){
+  if(state==='chapter'){
+    chapterT-=dt;
+    if(chapterT<=0) beginPlayFromChapter();
+  }
+}
+
+function clientPlay(dt){
+  if(!player)return;
+  let mx=0,my=0;
+  if(keys.KeyW||keys.ArrowUp) my-=1;
+  if(keys.KeyS||keys.ArrowDown) my+=1;
+  if(keys.KeyA||keys.ArrowLeft) mx-=1;
+  if(keys.KeyD||keys.ArrowRight) mx+=1;
+  if(joy.active){mx+=joy.dx;my+=joy.dy;}
+  if(player.dashT>0){
+    player.dashT=Math.max(0,player.dashT-dt);
+    player.x+=player.dashVx*dt;player.y+=player.dashVy*dt;
+  }else{
+    const raw=Math.hypot(mx,my);
+    if(raw>0.001){
+      const n=norm(mx,my),mag=clamp(raw,0,1);
+      player.x+=n.x*player.spd*mag*dt;player.y+=n.y*player.spd*mag*dt;
+      player.facing=Math.atan2(n.y,n.x);
+    }
+    if(player.tx!=null){player.x+=(player.tx-player.x)*Math.min(1,dt*8);player.y+=(player.ty-player.y)*Math.min(1,dt*8);}
+  }
+  player.iframe=Math.max(0,(player.iframe||0)-dt);
+  if(player.skillCd){for(const k of Object.keys(player.skillCd)) player.skillCd[k]=Math.max(0,player.skillCd[k]-dt);}
+  player.shieldT=Math.max(0,(player.shieldT||0)-dt);
+  player.magnetT=Math.max(0,(player.magnetT||0)-dt);
+  for(const p of allies){
+    if(p===player) continue;
+    if(p.tx!=null){p.x+=(p.tx-p.x)*Math.min(1,dt*12);p.y+=(p.ty-p.y)*Math.min(1,dt*12);}
+    p.dashT=Math.max(0,(p.dashT||0)-dt);
+  }
+  cam.x+=(player.x-cam.x)*Math.min(1,dt*8);
+  cam.y+=(player.y-cam.y)*Math.min(1,dt*8);
+  netSendT+=dt;
+  if(netSendT>=0.05){netSendT=0;clientSendInput();}
+}
+
+function hostMoveAllies(dt){
+  if(!isNetHost()||!allies.length) return;
+  const local=player;
+  for(const p of allies){
+    if(p.hp<=0||p.left) continue;
+    if(p.id===myId){
+      // movement already applied to player in the main loop
+      p.x=player.x;p.y=player.y;p.facing=player.facing;p.dashT=player.dashT;
+      p.hp=player.hp;p.iframe=player.iframe;p.shieldT=player.shieldT;
+      continue;
+    }
+    if(p.dashT>0){
+      p.dashT-=dt;p.x+=p.dashVx*dt;p.y+=p.dashVy*dt;
+      if(p.dashed){
+        for(let i=enemies.length-1;i>=0;i--){
+          const e=enemies[i];if(p.dashed.has(e)) continue;
+          const ddr=e.r+p.r+8,ddx=e.x-p.x,ddy=e.y-p.y;
+          if(ddx*ddx+ddy*ddy<ddr*ddr){
+            p.dashed.add(e);e.hp-=p.dashDmg;e.hit=0.12;
+            floatText(e.x,e.y-e.r,String(Math.round(p.dashDmg)),"#ffffff",14);
+            if(e.hp<=0) killEnemy(e,i);
+          }
+        }
+      }
+    }else{
+      const raw=Math.hypot(p.mx,p.my);
+      if(raw>0.001){const n=norm(p.mx,p.my),mag=clamp(raw,0,1);p.x+=n.x*p.spd*mag*dt;p.y+=n.y*p.spd*mag*dt;p.facing=Math.atan2(n.y,n.x);}
+    }
+    p.iframe=Math.max(0,p.iframe-dt);
+    if(p.skillCd){for(const k of Object.keys(p.skillCd)) p.skillCd[k]=Math.max(0,p.skillCd[k]-dt);}
+    p.shieldT=Math.max(0,(p.shieldT||0)-dt);
+    p.magnetT=Math.max(0,(p.magnetT||0)-dt);
+    if(p.dashCharges<p.dashMax){p.dashCd+=dt;if(p.dashCd>=p.dashMaxCd){p.dashCd=0;p.dashCharges++;}}else p.dashCd=0;
+  }
+  // fire weapons for remote allies
+  for(const p of allies){
+    if(p.hp<=0||p.left||p.id===myId) continue;
+    const prev=player;player=p;try{updateWeapons(dt);}catch(e){}player=prev;
+  }
+  player=local;
+  netSendT+=dt;
+  if(netSendT>=0.08){netSendT=0;sendSnap();}
+}
+
+function applyUpgradeFor(who,u){
+  if(!u||!who) return;
+  const prev=player;player=who;
+  try{applyUpgrade(u);}catch(e){}
+  // applyUpgrade sets state play and uses player
+  player=who;
+  if(prev&&prev.id===who.id) player=who; else player=prev||who;
+  levelupWho=null;
+  if(isNetHost()) bcast({t:'lvdone',id:who.id});
+}
+
+function hitBtn(x,y){
+  for(const b of partyBtns){
+    if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h) return b;
+  }
+  return null;
+}
+function onPartyPointer(x,y){
+  const b=hitBtn(x,y);
+  if(!b) return;
+  beep(520,0.06,'triangle',0.05);
+  if(b.id==='solo') startSolo();
+  else if(b.id==='create') createRoom();
+  else if(b.id==='join'){partyView='join';partyMsg='4자리 코드를 입력하세요';showJoinInput();const el=document.getElementById('joinCode');if(el){el.value='';setTimeout(()=>el.focus(),50);}}
+  else if(b.id==='joinGo'){const el=document.getElementById('joinCode');joinRoom(el?el.value:'');}
+  else if(b.id==='backHome'){hideJoinInput();if(partyView==='room'){cleanupNet();partyView='home';partyMsg='';}else if(partyView==='join'){hideJoinInput();partyView='home';partyMsg='';}else backToTitle();}
+  else if(b.id==='startRoom') hostStartParty();
+  else if(b.id==='leaveRoom'){cleanupNet();partyView='home';partyMsg='';}
+}
+
+function onStoryPointer(x,y){
+  if(state==='story'&&uiSkip.w&&hitRect(x,y,uiSkip)){storySkip();return;}
+  storyAdvance();
+}
+
+function addBtn(id,x,y,w,h,label,kind){partyBtns.push({id,x,y,w,h,label,kind:kind||'pri'});}
+
+function drawPillBtn(b,pri){
+  const hover=mouse.x>=b.x&&mouse.x<=b.x+b.w&&mouse.y>=b.y&&mouse.y<=b.y+b.h;
+  if(pri){
+    ctx.shadowColor='rgba(255,60,157,0.45)';ctx.shadowBlur=hover?20:12;
+    fillPill(b.x,b.y,b.w,b.h,b.h/2,'#7b3cff','#ff3c9d');
+  }else{
+    ctx.shadowColor='rgba(80,90,255,0.3)';ctx.shadowBlur=hover?14:8;
+    fillPill(b.x,b.y,b.w,b.h,b.h/2,'#28305a','#3b2f7a');
+  }
+  ctx.shadowBlur=0;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='#fff';ctx.font='900 '+Math.max(15,Math.min(22,b.h*0.42))+'px '+FONT;
+  ctx.fillText(b.label,b.x+b.w/2,b.y+b.h/2+1);
+  ctx.textBaseline='alphabetic';
+}
+
+function drawParty(){
+  const ins=getInsets();
+  const u=clamp(Math.min(W,H)/390,0.8,1.35);
+  const short=H<520;
+  ctx.fillStyle='#07060f';ctx.fillRect(0,0,W,H);
+  partyBtns=[];
+  ctx.textAlign='center';
+  ctx.font='900 '+Math.max(26,short?28:36*u)+'px '+FONT;
+  ctx.fillStyle='#ff4d9d';ctx.shadowColor='#ff4d9d';ctx.shadowBlur=16;
+  ctx.fillText('온라인 인원 설정',W/2,ins.t+Math.max(40,short?36:56*u));
+  ctx.shadowBlur=0;
+  ctx.font='700 '+Math.max(13,14*u)+'px '+FONT;
+  ctx.fillStyle='#cfd3ff';
+  ctx.fillText('최대 4명 · 호스트가 시작하면 챕터 1이 함께 시작됩니다',W/2,ins.t+Math.max(64,short?56:84*u));
+
+  if(partyView==='home'){
+    const bw=Math.min(420,W-ins.l-ins.r-32),bh=Math.max(46,short?42:54*u);
+    const gap=10;
+    let y=H*(short?0.32:0.36);
+    const x=W/2-bw/2;
+    addBtn('solo',x,y,bw,bh,'혼자 하기 (1인 바로 시작)','pri');y+=bh+gap;
+    addBtn('create',x,y,bw,bh,'방 만들기 (호스트)','sec');y+=bh+gap;
+    addBtn('join',x,y,bw,bh,'방 참가 (코드 입력)','sec');y+=bh+gap+6;
+    addBtn('backHome',x,y,bw,Math.max(40,bh-6),'타이틀로','sec');
+  }else if(partyView==='join'){
+    const bw=Math.min(420,W-ins.l-ins.r-32),bh=Math.max(46,short?42:54*u);
+    const x=W/2-bw/2;
+    ctx.fillStyle='#8fa0ff';ctx.font='700 '+Math.max(14,16*u)+'px '+FONT;
+    ctx.fillText('방 코드를 입력하세요',W/2,H*0.40);
+    showJoinInput();
+    let y=H*0.46+Math.max(48,Math.min(H,W)*0.1)+16;
+    addBtn('joinGo',x,y,bw,bh,'참가','pri');y+=bh+10;
+    addBtn('backHome',x,y,bw,Math.max(40,bh-6),'뒤로','sec');
+  }else if(partyView==='room'){
+    hideJoinInput();
+    const code=net.code||'----';
+    ctx.font='700 '+Math.max(13,14*u)+'px '+FONT;ctx.fillStyle='#8fa0ff';
+    ctx.fillText('방 코드',W/2,ins.t+Math.max(90,short?78:110*u));
+    ctx.font='900 '+Math.max(36,short?34:48*u)+'px '+FONT;
+    ctx.fillStyle='#4df3ff';ctx.shadowColor='#4df3ff';ctx.shadowBlur=14;
+    ctx.fillText(code,W/2,ins.t+Math.max(132,short?114:160*u));
+    ctx.shadowBlur=0;
+    const list=lobby.players||[];
+    const rowH=28,sx=W/2,sy=ins.t+Math.max(160,short?140:190*u);
+    ctx.font='800 15px '+FONT;
+    list.forEach((p,i)=>{
+      ctx.fillStyle=p.col||NS2_COLS[i%4];
+      ctx.fillText('●  '+(p.name||('P'+(i+1)))+(p.id===myId?'  (나)':'')+(p.id==='p0'?'  호스트':''),sx,sy+i*rowH);
+    });
+    ctx.fillStyle='#cfd3ff';ctx.font='700 13px '+FONT;
+    ctx.fillText(list.length+'/4',sx,sy+list.length*rowH+6);
+    const bw=Math.min(420,W-ins.l-ins.r-32),bh=Math.max(46,short?42:54*u);
+    const x=W/2-bw/2;
+    let y=Math.min(H-ins.b-bh*2-28, sy+list.length*rowH+24);
+    if(isNetHost()){addBtn('startRoom',x,y,bw,bh,'시작하기 (챕터 1)','pri');y+=bh+10;}
+    addBtn('leaveRoom',x,y,bw,Math.max(40,bh-6),'나가기','sec');
+  }
+  if(partyMsg){
+    ctx.fillStyle='#ff8c8c';ctx.font='700 '+Math.max(12,13*u)+'px '+FONT;
+    ctx.fillText(partyMsg,W/2,H-ins.b-12);
+  }
+  for(const b of partyBtns) drawPillBtn(b,b.kind==='pri');
+}
+
+function wrapNotice(text,maxW,font){
+  ctx.font=font;
+  const lines=[]; let line='';
+  for(let i=0;i<text.length;i++){
+    const ch=text[i],t=line+ch;
+    if(ctx.measureText(t).width>maxW&&line){
+      let k=line.length-1;
+      while(k>3&&!/[\s.,!?]/.test(line[k])) k--;
+      if(k>3&&k>line.length*0.45){lines.push(line.slice(0,k+1).trimEnd());line=line.slice(k+1)+ch;}
+      else{lines.push(line);line=ch;}
+    }else line=t;
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+
+function drawNotice(){
+  hideJoinInput();
+  const ins=getInsets();
+  const u=clamp(Math.min(W,H)/390,0.8,1.35);
+  ctx.fillStyle='#07060f';ctx.fillRect(0,0,W,H);
+  const bw=Math.min(560,W-ins.l-ins.r-28);
+  const font='700 '+Math.max(15,16*u)+'px '+FONT;
+  const lines=wrapNotice(CH1_NOTICE,bw-36,font);
+  const lh=Math.max(22,24*u);
+  const boxH=lines.length*lh+36;
+  const bx=W/2-bw/2,by=H/2-boxH/2-10;
+  ctx.fillStyle='rgba(20,18,45,0.92)';rounded(bx,by,bw,boxH,16);ctx.fill();
+  ctx.strokeStyle='#3b2f7a';ctx.lineWidth=2;rounded(bx,by,bw,boxH,16);ctx.stroke();
+  ctx.fillStyle='#cfd3ff';ctx.textAlign='center';ctx.font=font;
+  let y=by+28;
+  for(const ln of lines){ctx.fillText(ln,W/2,y);y+=lh;}
+  ctx.fillStyle='#8fa0ff';ctx.font='700 '+Math.max(12,13*u)+'px '+FONT;
+  ctx.fillText(isStoryHost()?'탭 / 클릭하여 계속':'호스트가 넘기는 중',W/2,by+boxH+28);
+}
+
+function drawPortraitAt(x,y,s){
+  ctx.save();ctx.translate(x,y);
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,s*0.55,s*0.46,s*0.18,0,0,TAU);ctx.fill();
+  ctx.shadowColor='#4df3ff';ctx.shadowBlur=10;
+  ctx.fillStyle='#0d2a44';ctx.strokeStyle='#4df3ff';ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(0,0,s*0.42,0,TAU);ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-s*0.12,-s*0.06,s*0.08,0,TAU);ctx.arc(s*0.12,-s*0.06,s*0.08,0,TAU);ctx.fill();
+  ctx.fillStyle='#b46bff';ctx.beginPath();ctx.moveTo(-s*0.32,-s*0.28);ctx.lineTo(s*0.32,-s*0.28);ctx.lineTo(s*0.06,-s*0.72);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#ffd84d';ctx.beginPath();ctx.arc(s*0.06,-s*0.72,s*0.09,0,TAU);ctx.fill();
+  ctx.restore();
+}
+
+function drawStory(){
+  hideJoinInput();
+  const ins=getInsets();
+  const u=clamp(Math.min(W,H)/390,0.8,1.35);
+  ctx.fillStyle='#07060f';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fillRect(0,0,W,H);
+  const boxW=Math.min(560,W-ins.l-ins.r-20);
+  const line=CH1_STORY[storyI]||'';
+  ctx.font='700 '+Math.max(16,17*u)+'px '+FONT;
+  const textLines=wrapNotice(line,boxW-120,ctx.font);
+  const lh=Math.max(24,26*u);
+  const boxH=Math.max(96, 58+textLines.length*lh);
+  const bx=W/2-boxW/2, by=H-ins.b-boxH-Math.max(28,36*u);
+  const pr=Math.max(44,50*u);
+  ctx.fillStyle='rgba(12,10,32,0.92)';rounded(bx,by,boxW,boxH,16);ctx.fill();
+  ctx.strokeStyle='#c77dff';ctx.lineWidth=2;
+  ctx.shadowColor='rgba(199,125,255,0.35)';ctx.shadowBlur=16;
+  rounded(bx,by,boxW,boxH,16);ctx.stroke();ctx.shadowBlur=0;
+  drawPortraitAt(bx+36,by+boxH*0.58,pr);
+  ctx.textAlign='left';
+  ctx.fillStyle='#ffd84d';ctx.font='900 '+Math.max(14,15*u)+'px '+FONT;
+  ctx.fillText('네온 생존자',bx+72,by+26);
+  ctx.fillStyle='#fff';ctx.font='700 '+Math.max(16,17*u)+'px '+FONT;
+  let ty=by+52;
+  for(const ln of textLines){ctx.fillText(ln,bx+72,ty);ty+=lh;}
+  ctx.fillStyle='#8a8fc0';ctx.font='700 12px '+FONT;ctx.textAlign='right';
+  ctx.fillText(isStoryHost()?'탭 / 클릭하여 계속':'호스트가 넘기는 중',bx+boxW-16,by+boxH-12);
+
+  const sw=Math.max(86,92*u),sh=32;
+  uiSkip={x:W-ins.r-sw-12,y:ins.t+12,w:sw,h:sh};
+  ctx.globalAlpha=0.85;
+  ctx.fillStyle='rgba(30,25,70,0.7)';rounded(uiSkip.x,uiSkip.y,uiSkip.w,uiSkip.h,10);ctx.fill();
+  ctx.strokeStyle='#4a3aa0';ctx.lineWidth=1.5;rounded(uiSkip.x,uiSkip.y,uiSkip.w,uiSkip.h,10);ctx.stroke();
+  ctx.globalAlpha=1;
+  ctx.textAlign='center';ctx.fillStyle='#cfd3ff';ctx.font='700 13px '+FONT;
+  ctx.fillText('건너뛰기',uiSkip.x+uiSkip.w/2,uiSkip.y+uiSkip.h*0.68);
+}
+
+function drawChapter(){
+  hideJoinInput();
+  const u=clamp(Math.min(W,H)/390,0.8,1.35);
+  ctx.fillStyle='#07060f';ctx.fillRect(0,0,W,H);
+  const a=chapterT<0.3?Math.max(0.55,chapterT/0.3):1;
+  ctx.globalAlpha=Math.max(0,Math.min(1,a));
+  const pulse=0.6+0.4*Math.sin(titleT*6);
+  ctx.textAlign='center';
+  ctx.font='900 '+Math.max(36,Math.min(64,W*0.12))+'px '+FONT;
+  ctx.fillStyle='#f3feff';
+  ctx.shadowColor='#4df3ff';ctx.shadowBlur=22+pulse*18;
+  ctx.fillText('챕터 1: speed',W/2,H*0.5);
+  ctx.shadowBlur=0;ctx.globalAlpha=1;
+  ctx.fillStyle='#8fa0ff';ctx.font='700 14px '+FONT;
+  ctx.fillText(isStoryHost()?'탭하여 시작':'곧 시작됩니다',W/2,H*0.5+48);
+}
+
+window.addEventListener('beforeunload',()=>{try{cleanupNet()}catch(e){}});
+const _joinEl=document.getElementById('joinCode');
+if(_joinEl){
+  _joinEl.addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'');});
+  _joinEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();joinRoom(e.target.value);}e.stopPropagation();});
 }
 
 let last=performance.now();
