@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<title>네온 생존자 2 v15</title>
+<title>네온 생존자 2 v16</title>
 <style>
   :root{
     --sat:env(safe-area-inset-top,0px);
@@ -351,7 +351,7 @@ function reset(){
     dashCd:0,dashMaxCd:1.55,dashCharges:1,dashMax:1,
     dashT:0,iframe:0,dashDmg:24,vamp:0,fireCd:0,
     dashVx:0,dashVy:0,dashed:null,
-    wep:{bolt:1}, pas:{}, wepCd:{}, auraT:0,
+    wep:{bolt:1}, pas:{regen:1}, wepCd:{}, auraT:0,
     skillCd:{shock:0,shield:0,magnet:0}, shieldT:0, magnetT:0
   };
   enemies=[];bullets=[];gems=[];particles=[];floats=[];afterimages=[];rings=[];zaps=[];beams=[];wprojs=[];mines=[];meteors=[];fburn=[];
@@ -791,8 +791,13 @@ function updateWeapons(dt){
   const as=wstat('aura');if(as){player.auraT=(player.auraT||0)-dt;if(player.auraT<=0){player.auraT=0.45;const R=as.rad*am;
     const around=gridQuery(player.x,player.y,R+32,_q);
     for(let j=around.length-1;j>=0;j--){const e=around[j];const dx=e.x-player.x,dy=e.y-player.y,rr=R+e.r;if(dx*dx+dy*dy<rr*rr){const ex=e.x,ey=e.y;hurtEnemy(e,e._i,as.dmg,'#ff7a3c',25);if(Math.random()<0.5)burst(ex,ey,'#ff7a3c',2,60,0.4);}}}}
-  // 재생의 반지
-  const rg=pasLv("regen");if(rg&&player.hp>0)player.hp=Math.min(player.maxHp,player.hp+0.8*rg*dt);
+  // 재생의 반지 (보유한 모든 파티원, 초당 +0.8×Lv)
+  const units=(allies&&allies.length)?allies:(player?[player]:[]);
+  for(const u of units){
+    if(!u||u.hp<=0||u.left) continue;
+    const rg=(u.pas&&u.pas.regen)||0;
+    if(rg) u.hp=Math.min(u.maxHp,u.hp+0.8*rg*dt);
+  }
   for(let i=zaps.length-1;i>=0;i--){zaps[i].t-=dt;if(zaps[i].t<=0)zaps.splice(i,1);}
   for(let i=beams.length-1;i>=0;i--){beams[i].t+=dt;if(beams[i].t>=beams[i].dur)beams.splice(i,1);}
 }
@@ -1677,7 +1682,7 @@ function drawTitle(){
   const ty=ins.t+(short?H*0.14:H*(portrait?0.18:0.20));
   ctx.font="900 "+Math.max(11,12*u)+"px "+FONT;
   ctx.fillStyle="rgba(143,160,255,0.8)";
-  ctx.fillText("PROTOTYPE  ·  미완성  ·  v15",W/2,ty);
+  ctx.fillText("PROTOTYPE  ·  미완성  ·  v16",W/2,ty);
   ctx.font="900 "+titleSize+"px "+FONT;
   const label="네온 생존자 2";
   const tw=ctx.measureText(label).width;
@@ -1689,7 +1694,7 @@ function drawTitle(){
   ctx.shadowBlur=0;
   ctx.font="700 "+Math.max(11,short?11:16*u)+"px "+FONT;
   ctx.fillStyle="#8fa0ff";
-  spacedText("NEON SURVIVOR  v15",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
+  spacedText("NEON SURVIVOR  v16",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
 
   const bw=Math.min(520,W-ins.l-ins.r-24);
   const boxX=W/2-bw/2;
@@ -2008,7 +2013,7 @@ function mkAlly(lp,i,n){
     dashCd:0,dashMaxCd:1.55,dashCharges:1,dashMax:1,
     dashT:0,iframe:0,dashDmg:24,vamp:0,fireCd:0,
     dashVx:0,dashVy:0,dashed:null,
-    wep:{bolt:1}, pas:{}, wepCd:{}, auraT:0,
+    wep:{bolt:1}, pas:{regen:1}, wepCd:{}, auraT:0,
     skillCd:{shock:0,shield:0,magnet:0}, shieldT:0, magnetT:0,
     mx:0,my:0,left:false
   };
@@ -2049,7 +2054,7 @@ function createRoom(tries){
       let n=0;while(lobby.players.some(p=>p.id==='p'+n))n++;
       const id='p'+n;c.pid=id;conns.push(c);
       lobby.players.push({id,name:'P'+(n+1),col:NS2_COLS[n%4]});
-      try{c.send({t:'hello',id,code:net.code,ver:'v15'})}catch(e){}
+      try{c.send({t:'hello',id,code:net.code,ver:'v16'})}catch(e){}
       syncLobby();
     });
     c.on('data',d=>onHostData(c,d));
