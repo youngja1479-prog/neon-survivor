@@ -91,7 +91,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 .inp::placeholder{color:#7078a8;letter-spacing:0}
 .inp:focus{outline:none;border-color:var(--hair2);box-shadow:0 0 0 3px rgba(77,243,255,.12)}
 .msg{font-size:12px;min-height:15px;color:#ff8c8c;font-weight:700}
-.cd{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:2px;transform:rotate(45deg);
+.cryd{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:2px;transform:rotate(45deg);
  background:linear-gradient(135deg,#e6feff,#4df3ff);box-shadow:0 0 8px rgba(77,243,255,.85);vertical-align:1px}
 #cryTitle{color:#a6f7ff;font-weight:900;font-size:13px;letter-spacing:.02em}
 
@@ -1484,7 +1484,7 @@ function upgradeOptions(){
   return pick;
 }
 function describe(o){
-  if(o.kind==='g')return {name:'<i class="cd"></i>크리스탈 +'+LV_GOLD,lv:'보유 크리스탈이 늘어납니다',ds:'상점에서 스킨과 스킬을 해금하세요.',tag:'n',tagT:'크리스탈'};
+  if(o.kind==='g')return {name:'<i class="cryd"></i>크리스탈 +'+LV_GOLD,lv:'보유 크리스탈이 늘어납니다',ds:'상점에서 스킨과 스킬을 해금하세요.',tag:'n',tagT:'크리스탈'};
   if(o.kind==='p'){const l=pl(o.id);return {name:PASSIVES[o.id].name,lv:l?`Lv.${l} → ${l+1}${l+1===pMaxLv()?' (최대)':''}`:'새 능력!',ds:PASSIVES[o.id].desc,tag:l?'p':'n',tagT:'패시브'}}
   const Wd=WEAPONS[o.id],l=P.weapons[o.id]||0;
   if(!l)return SUB_W.has(o.id)?{name:Wd.name,lv:'새 보조무기',ds:Wd.desc+' (획득하면 자동 설치)',tag:'n',tagT:'보조무기'}:{name:Wd.name,lv:'새 무기',ds:Wd.desc,tag:'n',tagT:'무기'};
@@ -3338,7 +3338,7 @@ window.__skill={SKILLS,skCD,skAct,skQ,fireSkill,hostSkill,skPress,skRelease,get 
   <div id="shopList"></div><div id="shopMsg"></div>
   <div class="row"><button class="btn sec" id="shopBackBtn">타이틀로</button></div>
 </div>
-<div id="cryHud"><i class="cd"></i>0</div><div id="mdSiren"></div>
+<div id="cryHud"><i class="cryd"></i>0</div><div id="mdSiren"></div>
 <script>
 'use strict';
 (function(){
@@ -3359,7 +3359,7 @@ function skFix(){const L=Object.keys(SKILLS).filter(w=>skOK(w)&&ownsSk(w));let c
   const ok=w=>!!w&&ownsSk(w);if(!ok(SET.skA)){SET.skA=ok(SET.skB)?SET.skB:(L[0]||null);ch=true}
   if(!ok(SET.skB)||SET.skB===SET.skA){SET.skB=L.find(w=>w!==SET.skA)||null;ch=true}
   if(ch)saveSettings()}
-function refresh(){const g='<i class="cd"></i>';const t=g+'크리스탈 '+PF.cry;$('cryTitle').innerHTML=t+(PF.dev?' · 제작자 모드':'');
+function refresh(){const g='<i class="cryd"></i>';const t=g+'크리스탈 '+PF.cry;$('cryTitle').innerHTML=t+(PF.dev?' · 제작자 모드':'');
   $('cryHud').innerHTML=g+PF.cry;$('shopBal').innerHTML=g+'보유 크리스탈 '+PF.cry}
 // ---- 코드 ----
 const CODES={KS0825:50,KC1031:100,VIP777:80};
@@ -3578,7 +3578,7 @@ function prev(it){if(it.k==='k')return skIcon(it.sw,32);const c=makeCanvas(128,1
   else{g.fillStyle='#0d2a44';g.strokeStyle=col;g.lineWidth=3;g.shadowColor=col;g.shadowBlur=12;g.beginPath();g.arc(0,0,14,0,TAU);g.fill();g.stroke()}return c}
 function renderShop(){refresh();for(const b of document.querySelectorAll('#shop .tab'))b.classList.toggle('sel',b.dataset.k===tab);const L=$('shopList');L.innerHTML='';
   for(const it of ITEMS[tab]){const d=document.createElement('div');d.className='sitem';const eq=it.k!=='m'&&it.k!=='k'&&PF.eq[it.k]===it.id;if(eq)d.classList.add('eq');d.appendChild(prev(it));
-    const nm=document.createElement('div');nm.textContent=it.n;d.appendChild(nm);const pr=document.createElement('div');pr.style.color='#9ff';pr.innerHTML=owns(it.id)?'보유 중':('<i class="cd"></i>'+it.p);d.appendChild(pr);
+    const nm=document.createElement('div');nm.textContent=it.n;d.appendChild(nm);const pr=document.createElement('div');pr.style.color='#9ff';pr.innerHTML=owns(it.id)?'보유 중':('<i class="cryd"></i>'+it.p);d.appendChild(pr);
     const b=document.createElement('button');
     if(!owns(it.id)){b.textContent='구매';b.disabled=PF.cry<it.p;b.onclick=()=>{if(PF.cry<it.p||owns(it.id))return;PF.cry-=it.p;PF.own.push(it.id);if(it.k!=='m'&&it.k!=='k')PF.eq[it.k]=it.id;save();$('shopMsg').textContent=it.n+' 구매 완료!';renderShop()}}
     else if(it.k==='m'){b.textContent='영구 해금됨';b.disabled=true}
