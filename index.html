@@ -923,10 +923,10 @@ function killEnemy(e,q){
   if(e.type==='splitter'&&enemies.length<640){for(let i=0;i<3;i++){const a=rand(0,TAU),sh=spawnEnemy('shard',e.x+Math.cos(a)*12,e.y+Math.sin(a)*12);sh.kbx=Math.cos(a)*240;sh.kby=Math.sin(a)*240}burst(e.x,e.y,'#3cffd0',10,200,0.4,3)}
   {const _r=window.__raid&&window.__raid.R;if(!(state==='raid'&&_r&&_r.diff!=='vs'&&Math.random()>=(_r.diff==='tower'?0.75:0.65)))dropGem(e.x,e.y,e.xp*gemMul())} // v69 레이드 경험치 75%
   if(Math.random()<0.05)pickups.push({type:'crystal',x:e.x+rand(-8,8),y:e.y+rand(-8,8),t:0}); // 크리스탈 5%
-  // 회복 물약 드롭: 일반 2.5%/6초, 하드 1.5%/9초, 크레이지 1.0%/12초. 엘리트는 위에서 확정 드롭
+  // 회복 물약 드롭: 일반 1.2%/10초, 하드 0.8%/14초, 크레이지 0.5%/18초. 엘리트는 위에서 확정 드롭
   const cz=isCrazy();
-  if(!rCz()&&G.healCd<=0&&Math.random()<(cz?0.010:isHard()?0.015:0.025)){
-    G.healCd=cz?12:isHard()?9:6;pickups.push({type:'heart',x:e.x+rand(-10,10),y:e.y+rand(-10,10),t:0});
+  if(!rCz()&&G.healCd<=0&&Math.random()<(cz?0.005:isHard()?0.008:0.012)){
+    G.healCd=cz?18:isHard()?14:10;pickups.push({type:'heart',x:e.x+rand(-10,10),y:e.y+rand(-10,10),t:0});
   } else if(G.dropCd<=0&&Math.random()<(cz?0.003:isHard()?0.005:0.008)){
     // 자석/폭탄: 0.8%/20초, 하드 0.5%/28초, 크레이지 0.3%/35초
     G.dropCd=cz?35:isHard()?28:20;pickups.push({type:Math.random()<0.6?'magnet':'bomb',x:e.x,y:e.y,t:0});
