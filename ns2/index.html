@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<title>네온 생존자 2 v20</title>
+<title>네온 생존자 2 v21</title>
 <style>
   :root{
     --sat:env(safe-area-inset-top,0px);
@@ -1720,7 +1720,7 @@ function drawTitle(){
   const ty=ins.t+(short?H*0.14:H*(portrait?0.18:0.20));
   ctx.font="900 "+Math.max(11,12*u)+"px "+FONT;
   ctx.fillStyle="rgba(143,160,255,0.8)";
-  ctx.fillText("PROTOTYPE  ·  미완성  ·  v20",W/2,ty);
+  ctx.fillText("PROTOTYPE  ·  미완성  ·  v21",W/2,ty);
   ctx.font="900 "+titleSize+"px "+FONT;
   const label="네온 생존자 2";
   const tw=ctx.measureText(label).width;
@@ -1732,7 +1732,7 @@ function drawTitle(){
   ctx.shadowBlur=0;
   ctx.font="700 "+Math.max(11,short?11:16*u)+"px "+FONT;
   ctx.fillStyle="#8fa0ff";
-  spacedText("NEON SURVIVOR  v20",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
+  spacedText("NEON SURVIVOR  v21",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
 
   const bw=Math.min(520,W-ins.l-ins.r-24);
   const boxX=W/2-bw/2;
@@ -2092,7 +2092,7 @@ function createRoom(tries){
       let n=0;while(lobby.players.some(p=>p.id==='p'+n))n++;
       const id='p'+n;c.pid=id;conns.push(c);
       lobby.players.push({id,name:'P'+(n+1),col:NS2_COLS[n%4]});
-      try{c.send({t:'hello',id,code:net.code,ver:'v20'})}catch(e){}
+      try{c.send({t:'hello',id,code:net.code,ver:'v21'})}catch(e){}
       syncLobby();
     });
     c.on('data',d=>onHostData(c,d));
@@ -2569,21 +2569,57 @@ function drawStory(){
   ctx.fillText('건너뛰기',uiSkip.x+uiSkip.w/2,uiSkip.y+uiSkip.h*0.68);
 }
 
+function layoutChapterTitle(title){
+  title=(title||'챕터 1: speed')+'';
+  const ins=typeof getInsets==='function'?getInsets():{l:0,r:0,t:0,b:0};
+  const maxW=Math.max(80,(W-ins.l-ins.r)*0.9);
+  const preferred=Math.max(36,Math.min(64,W*0.12));
+  const minOne=28; // one-line shrink below this → wrap after colon
+  const width=(t,sz)=>{ctx.font='900 '+sz+'px '+FONT;return ctx.measureText(t).width;};
+  function fitSize(t,start){
+    let sz=start, tw=width(t,sz);
+    if(tw>maxW) sz=sz*(maxW/tw);
+    return Math.max(8,sz);
+  }
+  const one=fitSize(title,preferred);
+  if(one>=minOne || title.indexOf(':')<0){
+    return {text:title,lines:[title],fontSize:one,wrapped:false,maxW,width:width(title,one)};
+  }
+  const i=title.indexOf(':');
+  const l1=title.slice(0,i).trim();
+  const l2=title.slice(i+1).trim();
+  const two=Math.min(fitSize(l1,preferred),fitSize(l2,preferred));
+  return {text:title,lines:[l1,l2],fontSize:two,wrapped:true,maxW,width:Math.max(width(l1,two),width(l2,two))};
+}
 function drawChapter(){
   hideJoinInput();
-  const u=clamp(Math.min(W,H)/390,0.8,1.35);
+  const ins=getInsets();
   ctx.fillStyle='#07060f';ctx.fillRect(0,0,W,H);
   const a=chapterT<0.3?Math.max(0.55,chapterT/0.3):1;
   ctx.globalAlpha=Math.max(0,Math.min(1,a));
   const pulse=0.6+0.4*Math.sin(titleT*6);
-  ctx.textAlign='center';
-  ctx.font='900 '+Math.max(36,Math.min(64,W*0.12))+'px '+FONT;
+  const title=(typeof chapterTitle==="string"&&chapterTitle)||'챕터 1: speed';
+  const lay=layoutChapterTitle(title);
+  const lh=lay.fontSize*1.25;
+  const blockH=lay.lines.length*lh;
+  const midY=H*0.5;
+  const top=midY-blockH/2+lay.fontSize*0.85;
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
   ctx.fillStyle='#f3feff';
-  ctx.shadowColor='#4df3ff';ctx.shadowBlur=22+pulse*18;
-  ctx.fillText((typeof chapterTitle==="string"&&chapterTitle)||'챕터 1: speed',W/2,H*0.5);
+  ctx.shadowColor='#4df3ff';ctx.shadowBlur=Math.min(18,10+pulse*12);
+  ctx.font='900 '+lay.fontSize+'px '+FONT;
+  const boxes=[];
+  lay.lines.forEach((ln,i)=>{
+    const y=top+i*lh;
+    ctx.fillText(ln,W/2,y);
+    const tw=ctx.measureText(ln).width;
+    boxes.push({text:ln,x:W/2-tw/2,y:y-lay.fontSize,w:tw,h:lay.fontSize*1.15,fontSize:lay.fontSize});
+  });
   ctx.shadowBlur=0;ctx.globalAlpha=1;
+  const hintY=Math.min(H-ins.b-18, top+(lay.lines.length-1)*lh+Math.max(32,lay.fontSize*0.9));
   ctx.fillStyle='#8fa0ff';ctx.font='700 14px '+FONT;
-  ctx.fillText(isStoryHost()?'탭하여 시작':'곧 시작됩니다',W/2,H*0.5+48);
+  ctx.fillText(isStoryHost()?'탭하여 시작':'곧 시작됩니다',W/2,hintY);
+  chapterLayout={lay,boxes,hintY,W,H};
 }
 
 window.addEventListener('beforeunload',()=>{try{cleanupNet()}catch(e){}});
@@ -2618,7 +2654,7 @@ let camAim={x:null,y:null,k:8};
 let boomCueT=0, boomGranted=false, bossDefeated=false, victoryBtns=[];
 let pickups=[], chapterN=1, chapterTitle='챕터 1: speed', speedJoined=false, cutKind='arrive', cutScene='world';
 let speedBase=null, normalBossDown=false, hardBossDown=false, midBossSpawned=false, magDropT=0, btnFlash=0, interiorFade=0, speedArrived=false, changeFlash=0, victoryKind='seb';
-let sdash=null, buddyList=[], chainHold=false, ch2Continue=false, chapterPickFrom='home';
+let sdash=null, buddyList=[], chainHold=false, ch2Continue=false, chapterPickFrom='home', chapterLayout=null;
 let stepAnim=null;
 let cutDebug={beat:null,who:null,text:null,cam:null,boss:false,boom:false};
 
@@ -3353,39 +3389,129 @@ function rayBoxExit(ox,oy,dx,dy,rect){
   return {x:ox+dx*t,y:oy+dy*t};
 }
 
+function destNavColor(dest){
+  if(dest&&dest.short&&dest.short.indexOf('스피드')>=0) return '#39ff88';
+  if(typeof chapterN==='number'&&chapterN>=2) return '#39ff88';
+  return '#4df3ff';
+}
+function navWorldAngle(base,from){
+  from=from||player;
+  if(!base||!from) return 0;
+  return Math.atan2(base.y-from.y, base.x-from.x);
+}
+function drawWayArrowAt(x,y,ang,size,col,pulse){
+  ctx.save();
+  ctx.translate(x,y);ctx.rotate(ang);
+  ctx.shadowColor=col;ctx.shadowBlur=16+pulse*14;
+  ctx.fillStyle=col;
+  ctx.beginPath();
+  ctx.moveTo(size,0);
+  ctx.lineTo(-size*0.72,-size*0.7);
+  ctx.lineTo(-size*0.18,0);
+  ctx.lineTo(-size*0.72,size*0.7);
+  ctx.closePath();ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(255,255,255,0.9)';ctx.lineWidth=Math.max(1.4,size*0.08);
+  ctx.stroke();
+  ctx.restore();
+}
 function drawBaseNav(){
-  navDebug={badge:null,arrow:null,label:null,safe:null,bossBar:navDebug.bossBar};
+  navDebug={badge:null,arrow:null,label:null,safe:null,bossBar:navDebug.bossBar,playerArrow:null,marker:null};
   const dest=(typeof navDest==="function")?navDest():null;
   const destBase=dest?dest.base:neonBase;
   if(!destBase||(state!=='play'&&state!=='pause')) return;
   if(dest&&dest.hide) return;
   if(!dest&&arriveShown) return;
   const m=dest?dest.meters:(typeof baseMeters==="function"?baseMeters():0);
-  const badge=(dest?dest.label:'네온 기지로 이동')+'  ·  '+m+'m';
+  const col=destNavColor(dest);
   const ins=getInsets();
   const u=clamp(Math.min(W,H)/390,0.8,1.35);
   const xpY=ins.t,xpH=14,hy=xpY+xpH+10,hh=18;
+
+  // clear top distance badge
   ctx.save();
-  ctx.font='800 '+Math.max(11,Math.round(13*u))+'px '+FONT;
+  const badgeFont=Math.max(13,Math.round(16*u));
+  ctx.font='800 '+badgeFont+'px '+FONT;
   ctx.textAlign='center';ctx.textBaseline='middle';
+  const badge=(dest?dest.label:'네온 기지로 이동')+'  ·  '+m+'m';
   const tw=ctx.measureText(badge).width;
-  const bw=Math.min(W-ins.l-ins.r-24, tw+22), bh=Math.max(20,22*u);
+  const bw=Math.min(W-ins.l-ins.r-20, Math.max(tw+28, 160)), bh=Math.max(24,26*u);
   const bx=W/2-bw/2;
   const by=hy+hh+6;
-  ctx.fillStyle='rgba(10,12,36,0.78)';
+  ctx.fillStyle='rgba(8,10,28,0.86)';
   rounded(bx,by,bw,bh,bh/2);ctx.fill();
-  ctx.strokeStyle='rgba(77,243,255,0.7)';ctx.lineWidth=1.4;
-  rounded(bx,by,bw,bh,bh/2);ctx.stroke();
-  ctx.fillStyle='#e8fbff';
-  ctx.shadowColor='#4df3ff';ctx.shadowBlur=8;
+  ctx.strokeStyle=col;ctx.globalAlpha=0.85;ctx.lineWidth=1.8;
+  rounded(bx,by,bw,bh,bh/2);ctx.stroke();ctx.globalAlpha=1;
+  ctx.fillStyle='#f3feff';
+  ctx.shadowColor=col;ctx.shadowBlur=10;
   ctx.fillText(badge,W/2,by+bh/2+0.5);
   ctx.shadowBlur=0;
   ctx.restore();
-  navDebug.badge={x:bx,y:by,w:bw,h:bh};
+  navDebug.badge={x:bx,y:by,w:bw,h:bh,meters:m};
+
+  // big pulsing arrow around the player, always toward the target (above entities)
+  if(player){
+    const s=wrld(player.x,player.y);
+    const ang=navWorldAngle(destBase,player);
+    const pulse=0.72+0.28*Math.sin(titleT*7);
+    const orbit=Math.max(56,68*u);
+    const ax=s.x+Math.cos(ang)*orbit;
+    const ay=s.y+Math.sin(ang)*orbit;
+    const sz=Math.max(22,30*u)*pulse;
+    drawWayArrowAt(ax,ay,ang,sz,col,pulse);
+    // clear distance next to the player arrow
+    const df=Math.max(14,Math.round(17*u));
+    ctx.save();
+    ctx.font='900 '+df+'px '+FONT;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    const dlab=m+'m';
+    const dw=ctx.measureText(dlab).width+14, dh=Math.max(20,22*u);
+    const back=norm(-Math.cos(ang),-Math.sin(ang));
+    let lx=ax+back.x*(sz+dh*0.15), ly=ay+back.y*(sz+dh*0.7);
+    // keep on screen
+    lx=clamp(lx,ins.l+dw/2+6,W-ins.r-dw/2-6);
+    ly=clamp(ly,ins.t+dh/2+6,H-ins.b-dh/2-6);
+    ctx.fillStyle='rgba(8,10,28,0.88)';
+    rounded(lx-dw/2,ly-dh/2,dw,dh,dh/2);ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=1.5;
+    rounded(lx-dw/2,ly-dh/2,dw,dh,dh/2);ctx.stroke();
+    ctx.fillStyle='#fff';
+    ctx.shadowColor=col;ctx.shadowBlur=8;
+    ctx.fillText(dlab,lx,ly+0.5);
+    ctx.shadowBlur=0;
+    ctx.restore();
+    navDebug.playerArrow={x:ax,y:ay,ang,orbit,sz,meters:m,col,px:s.x,py:s.y};
+  }
 
   const sc=wrld(destBase.x,destBase.y);
   const margin=28;
   const onScreen=sc.x>=margin&&sc.x<=W-margin&&sc.y>=margin&&sc.y<=H-margin;
+
+  // bouncing marker over the base when it is on screen
+  if(onScreen){
+    const bob=Math.sin(titleT*6.2)*10*u;
+    const mx=sc.x, my=sc.y-Math.max(36,48*u)+bob;
+    const ms=Math.max(14,18*u);
+    ctx.save();
+    ctx.translate(mx,my);
+    ctx.shadowColor=col;ctx.shadowBlur=16;
+    ctx.fillStyle=col;
+    ctx.beginPath();
+    ctx.moveTo(0,ms*1.15);
+    ctx.lineTo(ms*0.72,-ms*0.2);
+    ctx.lineTo(0,ms*0.2);
+    ctx.lineTo(-ms*0.72,-ms*0.2);
+    ctx.closePath();ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(255,255,255,0.9)';ctx.lineWidth=1.4;ctx.stroke();
+    // stem glow
+    ctx.strokeStyle=col;ctx.globalAlpha=0.7;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(0,ms*1.15);ctx.lineTo(0,ms*1.15+10*u);ctx.stroke();
+    ctx.globalAlpha=1;
+    ctx.restore();
+    navDebug.marker={x:mx,y:my,onScreen:true};
+  }
+
   const forbid=navForbidden();
   const safe=navSafeRect({t:by+bh+14});
   navDebug.safe=safe;
@@ -3394,28 +3520,15 @@ function drawBaseNav(){
   const exit=rayBoxExit(W/2,H/2,sc.x-W/2,sc.y-H/2,safe);
   const pos=pushOutOfUI(exit.x,exit.y,safe,forbid);
   const ang=Math.atan2(sc.y-pos.y,sc.x-pos.x);
-  const sz=Math.max(14,16*u);
-  ctx.save();
-  ctx.translate(pos.x,pos.y);ctx.rotate(ang);
-  ctx.shadowColor='#4df3ff';ctx.shadowBlur=14;
-  ctx.fillStyle='#4df3ff';
-  ctx.beginPath();
-  ctx.moveTo(sz,0);
-  ctx.lineTo(-sz*0.72,-sz*0.72);
-  ctx.lineTo(-sz*0.22,0);
-  ctx.lineTo(-sz*0.72,sz*0.72);
-  ctx.closePath();ctx.fill();
-  ctx.shadowBlur=0;
-  ctx.strokeStyle='rgba(243,254,255,0.85)';ctx.lineWidth=1.2;
-  ctx.stroke();
-  ctx.restore();
+  const sz=Math.max(16,18*u);
+  drawWayArrowAt(pos.x,pos.y,ang,sz,col,0.85);
   navDebug.arrow={x:pos.x,y:pos.y,r:sz+6,ang};
 
-  const lab=(dest?dest.short:'네온 기지')+' '+m+'m';
+  const lab=(dest?dest.short:'네온 기지')+'  '+m+'m';
   ctx.save();
-  ctx.font='800 '+Math.max(11,Math.round(13*u))+'px '+FONT;
+  ctx.font='800 '+Math.max(12,Math.round(14*u))+'px '+FONT;
   ctx.textAlign='center';ctx.textBaseline='middle';
-  const lw=ctx.measureText(lab).width+16, lh=Math.max(18,20*u);
+  const lw=ctx.measureText(lab).width+18, lh=Math.max(20,22*u);
   const inward=norm(W/2-pos.x,H/2-pos.y);
   let lx=pos.x+inward.x*(sz+lh*0.2+lw*0.15);
   let ly=pos.y+inward.y*(sz+lh+4);
@@ -3426,17 +3539,18 @@ function drawBaseNav(){
   const mid=pushOutOfUI(labRect.x+labRect.w/2,labRect.y+labRect.h/2,safe,forbid);
   labRect.x=clamp(mid.x-labRect.w/2,safe.l,safe.r-labRect.w);
   labRect.y=clamp(mid.y-labRect.h/2,safe.t,safe.b-labRect.h);
-  ctx.fillStyle='rgba(10,12,36,0.82)';
+  ctx.fillStyle='rgba(10,12,36,0.86)';
   rounded(labRect.x,labRect.y,labRect.w,labRect.h,labRect.h/2);ctx.fill();
-  ctx.strokeStyle='rgba(180,107,255,0.7)';ctx.lineWidth=1.2;
-  rounded(labRect.x,labRect.y,labRect.w,labRect.h,labRect.h/2);ctx.stroke();
+  ctx.strokeStyle=col;ctx.globalAlpha=0.75;ctx.lineWidth=1.4;
+  rounded(labRect.x,labRect.y,labRect.w,labRect.h,labRect.h/2);ctx.stroke();ctx.globalAlpha=1;
   ctx.fillStyle='#f3feff';
-  ctx.shadowColor='#4df3ff';ctx.shadowBlur=8;
+  ctx.shadowColor=col;ctx.shadowBlur=8;
   ctx.fillText(lab,labRect.x+labRect.w/2,labRect.y+labRect.h/2+0.5);
   ctx.shadowBlur=0;
   ctx.restore();
   navDebug.label=labRect;
 }
+
 
 
 /* ===== v17: ch1 ending, ch2 start, magnet drops, 체인지, 연쇄 번개 skill ===== */
@@ -3478,7 +3592,7 @@ const POST_CUT=[
   {t:'talk',who:'스피드 네온',text:'참 네온들은 나 없으면 아무것도 못한다니까.'},
   {t:'talk',who:'네온 생존자',text:'(참 싸가지가 없네)'}
 ];
-const SPEED_DIST=13000, SPEED_ANG=2.42;
+const SPEED_DIST=21500, SPEED_ANG=2.42; // v21: 215 u/s * 100s ≈ 1분 40초 (1.5–2분)
 const NS1BOSS_HP=3600, NS1BOSS_HARD_HP=Math.round(3600*1.85);
 const CHAIN_SK_CD=18, CHAIN_RANGE=330;
 
@@ -4456,6 +4570,9 @@ window.__ns2v20={
   NS2_SAVE_KEY,packSave,saveChapterProgress,loadChapterSave,hasChapterSave,clearChapterSave,
   applySnapshot,fairLoadout,startContinueChapter2
 };
+
+
+window.__ns2v21={layoutChapterTitle,navWorldAngle,destNavColor,SPEED_DIST,get chapterLayout(){return chapterLayout;},get navDebug(){return navDebug;}};
 
 </script>
 </body>
