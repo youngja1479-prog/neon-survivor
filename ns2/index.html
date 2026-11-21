@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<title>네온 생존자 2 v21</title>
+<title>네온 생존자 2 v22</title>
 <style>
   :root{
     --sat:env(safe-area-inset-top,0px);
@@ -270,7 +270,7 @@ function onKey(code){
   }else if(state==="party"&&code==="Escape"){if(partyView==="home") backToTitle();else {hideJoinInput();cleanupNet();partyView="home";partyMsg="";}}
   else if((state==="notice"||state==="story"||state==="chapter")&&(code==="Enter"||code==="Space")) storyAdvance();
   else if(state==="story"&&(code==="KeyS"||code==="Escape")) storySkip();
-  else if(state==="over"&&(code==="Enter"||code==="Space")) startGame(false);
+  else if(state==="over"&&(code==="Enter"||code==="Space")) retryFromOver();
   else if(state==="cutscene"&&(code==="Enter"||code==="Space")) cutAdvance(false);
   else if(state==="cutscene"&&(code==="KeyS"||code==="Escape")) skipCutscene(false);
   else if(state==="victory"&&(code==="Enter"||code==="Space")) dismissVictory();
@@ -292,7 +292,7 @@ function onPointer(x,y,isTouch,id){
   if(state==="title"){openParty();return;}
   if(state==="party"){onPartyPointer(x,y);return;}
   if(state==="notice"||state==="story"||state==="chapter"){onStoryPointer(x,y);return;}
-  if(state==="over"){startGame(false);return;}
+  if(state==="over"){retryFromOver();return;}
   if(state==="cutscene"){onCutscenePointer(x,y);return;}
   if(state==="victory"){onVictoryPointer(x,y);return;}
   if(state==="levelup"){pickCardAt(x,y);return;}
@@ -1720,7 +1720,7 @@ function drawTitle(){
   const ty=ins.t+(short?H*0.14:H*(portrait?0.18:0.20));
   ctx.font="900 "+Math.max(11,12*u)+"px "+FONT;
   ctx.fillStyle="rgba(143,160,255,0.8)";
-  ctx.fillText("PROTOTYPE  ·  미완성  ·  v21",W/2,ty);
+  ctx.fillText("PROTOTYPE  ·  미완성  ·  v22",W/2,ty);
   ctx.font="900 "+titleSize+"px "+FONT;
   const label="네온 생존자 2";
   const tw=ctx.measureText(label).width;
@@ -1732,7 +1732,7 @@ function drawTitle(){
   ctx.shadowBlur=0;
   ctx.font="700 "+Math.max(11,short?11:16*u)+"px "+FONT;
   ctx.fillStyle="#8fa0ff";
-  spacedText("NEON SURVIVOR  v21",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
+  spacedText("NEON SURVIVOR  v22",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
 
   const bw=Math.min(520,W-ins.l-ins.r-24);
   const boxX=W/2-bw/2;
@@ -2092,7 +2092,7 @@ function createRoom(tries){
       let n=0;while(lobby.players.some(p=>p.id==='p'+n))n++;
       const id='p'+n;c.pid=id;conns.push(c);
       lobby.players.push({id,name:'P'+(n+1),col:NS2_COLS[n%4]});
-      try{c.send({t:'hello',id,code:net.code,ver:'v21'})}catch(e){}
+      try{c.send({t:'hello',id,code:net.code,ver:'v22'})}catch(e){}
       syncLobby();
     });
     c.on('data',d=>onHostData(c,d));
@@ -4537,6 +4537,18 @@ function fairLoadout(level){
   return snap;
 }
 
+function shouldRetryChapter2(){
+  return typeof chapterN==="number"&&chapterN>=2;
+}
+function retryFromOver(){
+  if(typeof isNetClient==="function"&&isNetClient()) return;
+  if(shouldRetryChapter2()&&typeof startContinueChapter2==="function"){
+    startContinueChapter2(false);
+    return;
+  }
+  if(typeof beginPlayFromChapter==="function") beginPlayFromChapter();
+  else startGame(false);
+}
 function startContinueChapter2(fromNet,hostSnap){
   hideJoinInput();
   startGame(true);
@@ -4573,6 +4585,7 @@ window.__ns2v20={
 
 
 window.__ns2v21={layoutChapterTitle,navWorldAngle,destNavColor,SPEED_DIST,get chapterLayout(){return chapterLayout;},get navDebug(){return navDebug;}};
+window.__ns2v22={shouldRetryChapter2,retryFromOver,get chapterN(){return chapterN;},get ch2Continue(){return ch2Continue;}};
 
 </script>
 </body>
