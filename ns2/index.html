@@ -555,10 +555,10 @@ function writeSave(){try{localStorage.setItem(SKEY,JSON.stringify(SAVE))}catch(e
 
 /* ---------------- 월드 상수 ---------------- */
 const CH={
-  1:{dist:26000,goalName:'네온 기지',startName:'네온 생존자의 집',bossName:'네온 가디언 GX-9',bossHp:6200,theme:'city',mul:1.0,
-     sub:'도시의 오염된 부하들을 뚫고 네온 기지로',objective:'네온 기지에 도착해 스피드 네온을 만나라'},
-  2:{dist:32000,goalName:'매직 시티',startName:'네온 기지',bossName:'아크골렘 · 루미나',bossHp:8400,theme:'magic',mul:1.22,
-     sub:'매직 시티를 뚫고 네온 법사에게 도달하라',objective:'매직 시티 게이트를 지키는 수호자를 쓰러뜨려라'}
+  1:{dist:15000,goalName:'네온 기지',startName:'네온 생존자의 집',bossName:'',bossHp:0,theme:'city',mul:1.0,
+     sub:'도시의 오염된 부하들을 뚫고 네온 기지로',objective:'네온 기지 게이트에 도착해 스피드 네온을 만나라'},
+  2:{dist:15000,goalName:'매직 시티',startName:'네온 기지',bossName:'침공군 사령관 · 볼가르',bossHp:7800,theme:'magic',mul:1.22,
+     sub:'매직 시티로 가는 길을 막은 침공군을 뚫고 네온 법사에게 도달하라',objective:'길을 막은 침공군 사령관을 쓰러뜨려라'}
 };
 
 /* ---------------- 캐릭터 ---------------- */
@@ -3120,9 +3120,18 @@ function updateLights(dt){
 /* ---------------- 진행 / 목표 ---------------- */
 function updateProgress(dt){
   if(G.cleared)return;
-  if(G.phase==='run'){
-    const d=Math.hypot(G.player.x,G.player.y-G.goalY);
-    if(d<470){spawnBoss()}
+  if(G.phase!=='run')return;
+  const d=Math.hypot(G.player.x,G.player.y-G.goalY);
+  if(G.chapter===1){
+    /* 1챕터: 기지는 아군 거점 — 보스 없이 도착하면 바로 컷신/클리어 */
+    if(d<430){
+      G.phase='clear';G.cleared=true;G.ending=1.4;
+      showBanner('네온 기지 도착','#7dffd2','NEON BASE');
+      S.level();
+      shockRing(G.player.x,G.player.y,220,'#4df3ff',0.6);
+    }
+  }else{
+    if(d<470)spawnBoss();
   }
 }
 function goalDist(){
@@ -3187,7 +3196,7 @@ function updateHUD(){
   setTxt(HUDEL.hudKills,fmtNum(G.kills));
   const d=goalDist();
   setTxt(HUDEL.objName,G.phase==='boss'?'BOSS · '+ch.bossName:ch.goalName);
-  setTxt(HUDEL.objDist,G.phase==='boss'?'교전 중':fmtNum(d/10)+' m');
+  setTxt(HUDEL.objDist,G.phase==='boss'?'교전 중':fmtNum(d)+' m');
   HUDEL.objFill.style.width=(G.phase==='boss'?100:clamp(progress()*100,0,100)).toFixed(1)+'%';
   setTxt(HUDEL.objHint,G.phase==='boss'?'수호자를 쓰러뜨려라':(G.cleared?'게이트 개방':ch.objective));
   /* 쿨타임 */
