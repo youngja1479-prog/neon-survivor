@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<title>네온 생존자 2 v19</title>
+<title>네온 생존자 2 v20</title>
 <style>
   :root{
     --sat:env(safe-area-inset-top,0px);
@@ -363,7 +363,7 @@ function reset(){
   camAim={x:null,y:null,k:8};
   chapterN=1;chapterTitle='챕터 1: speed';speedJoined=false;cutKind='arrive';cutScene='world';
   speedBase=null;normalBossDown=false;hardBossDown=false;midBossSpawned=false;magDropT=0;btnFlash=0;interiorFade=0;
-  speedArrived=false;victoryKind='seb';changeFlash=0;pickups=[];
+  speedArrived=false;victoryKind='seb';changeFlash=0;pickups=[];ch2Continue=false;
 }
 function startGame(fromOpening){
   ensureAudio();
@@ -608,14 +608,17 @@ function spawnEnemy(kind){
   const x=player.x+Math.cos(a)*dist;
   const y=player.y+Math.sin(a)*dist;
   let e;
-  if(kind==="runner") e={x,y,r:11,hp:9,spd:175,dmg:7,xp:1,col:"#ffd84d",kind,hit:0};
-  else if(kind==="tank") e={x,y,r:22,hp:62,spd:68,dmg:16,xp:3,col:"#b46bff",kind,hit:0};
-  else if(kind==="elite") e={x,y,r:28,hp:180,spd:92,dmg:22,xp:10,col:"#ffcf40",kind,hit:0,elite:true};
-  else e={x,y,r:14,hp:14,spd:108,dmg:10,xp:1,col:"#ff4d6d",kind:"grunt",hit:0};
-  const ts=1+time/85*Math.min(1,0.6+0.4*time/150); // v8: 초반 1~2분 체력 증가 완만 (150초부터 기존 곡선)
-  e.hp=Math.round(e.hp*ts);
+  if(kind==="runner") e={x,y,r:11,hp:12,spd:175,dmg:9,xp:1,col:"#ffd84d",kind,hit:0};
+  else if(kind==="tank") e={x,y,r:22,hp:80,spd:68,dmg:20,xp:3,col:"#b46bff",kind,hit:0};
+  else if(kind==="elite") e={x,y,r:28,hp:230,spd:92,dmg:28,xp:10,col:"#ffcf40",kind,hit:0,elite:true};
+  else e={x,y,r:14,hp:18,spd:108,dmg:13,xp:1,col:"#ff4d6d",kind:"grunt",hit:0};
+  // v20: Ch1 regulars tougher + faster ramp. Ch2 regulars stay harder. Bosses/minions unchanged.
+  const ts=1+time/70*Math.min(1,0.7+0.4*time/130);
+  const ch2=typeof chapterN==="number"&&chapterN>=2;
+  const chMul=ch2?1.25:1;
+  e.hp=Math.round(e.hp*ts*chMul);
   e.max=e.hp;
-  e.dmg=Math.round(e.dmg*(1+time/150));
+  e.dmg=Math.round(e.dmg*(1+time/120)* (ch2?1.2:1));
   enemies.push(e);
 }
 
@@ -1115,21 +1118,21 @@ function update(dt){
 
   const fightingSeb=enemies.some(e=>e.kind==="seb");
   const ch2=typeof chapterN==="number"&&chapterN>=2;
-  const cap=ch2?110:75;
+  const cap=ch2?130:95;
   const rateMul=ch2?1.7:1;
   if(!fightingSeb){
-    const rate=(1.1+Math.min(3.2,time/28))*rateMul;
+    const rate=(1.35+Math.min(4.0,time/22))*rateMul;
     spawnAcc+=dt*rate;
     while(spawnAcc>=1 && enemies.length<cap){
       spawnAcc-=1;
       let kind="grunt";
       const r=Math.random();
-      if(time>25&&r<0.22) kind="runner";
-      else if(time>40&&r<0.38) kind="tank";
+      if(time>20&&r<0.24) kind="runner";
+      else if(time>32&&r<0.40) kind="tank";
       spawnEnemy(kind);
     }
     eliteAcc+=dt;
-    const eliteGap=ch2?16+Math.max(0,14-time/10):22+Math.max(0,20-time/10);
+    const eliteGap=ch2?14+Math.max(0,12-time/10):18+Math.max(0,16-time/10);
     if(eliteAcc>eliteGap && enemies.length<cap){
       eliteAcc=0;
       spawnEnemy("elite");
@@ -1717,7 +1720,7 @@ function drawTitle(){
   const ty=ins.t+(short?H*0.14:H*(portrait?0.18:0.20));
   ctx.font="900 "+Math.max(11,12*u)+"px "+FONT;
   ctx.fillStyle="rgba(143,160,255,0.8)";
-  ctx.fillText("PROTOTYPE  ·  미완성  ·  v19",W/2,ty);
+  ctx.fillText("PROTOTYPE  ·  미완성  ·  v20",W/2,ty);
   ctx.font="900 "+titleSize+"px "+FONT;
   const label="네온 생존자 2";
   const tw=ctx.measureText(label).width;
@@ -1729,7 +1732,7 @@ function drawTitle(){
   ctx.shadowBlur=0;
   ctx.font="700 "+Math.max(11,short?11:16*u)+"px "+FONT;
   ctx.fillStyle="#8fa0ff";
-  spacedText("NEON SURVIVOR  v19",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
+  spacedText("NEON SURVIVOR  v20",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
 
   const bw=Math.min(520,W-ins.l-ins.r-24);
   const boxX=W/2-bw/2;
@@ -2061,7 +2064,7 @@ function setupAllies(){
   player=me;
 }
 
-function startSolo(){cleanupNet();beginOpening();}
+function startSolo(){cleanupNet();if(typeof hasChapterSave==='function'&&hasChapterSave()){chapterPickFrom='home';partyView='chapter';partyMsg='';return;}beginOpening();}
 
 function enterRoomView(code){
   partyView='room';hideJoinInput();
@@ -2089,7 +2092,7 @@ function createRoom(tries){
       let n=0;while(lobby.players.some(p=>p.id==='p'+n))n++;
       const id='p'+n;c.pid=id;conns.push(c);
       lobby.players.push({id,name:'P'+(n+1),col:NS2_COLS[n%4]});
-      try{c.send({t:'hello',id,code:net.code,ver:'v19'})}catch(e){}
+      try{c.send({t:'hello',id,code:net.code,ver:'v20'})}catch(e){}
       syncLobby();
     });
     c.on('data',d=>onHostData(c,d));
@@ -2146,7 +2149,8 @@ function onClientData(d){
   if(d.t==='full'){partyMsg='방이 가득 찼거나 이미 시작했어요.';partyView='join';showJoinInput();return;}
   if(d.t==='hello'){myId=d.id;net.code=d.code||net.code;partyView='room';hideJoinInput();partyMsg='호스트가 시작하기를 기다리는 중…';return;}
   if(d.t==='lobby'){lobby.players=d.players||[];if(d.code)net.code=d.code;return;}
-  if(d.t==='begin'){hideJoinInput();state='notice';storyI=0;chapterT=0;return;}
+  if(d.t==='begin'){hideJoinInput();state='notice';storyI=0;chapterT=0;ch2Continue=false;return;}
+  if(d.t==='cont2'){if(typeof startContinueChapter2==='function') startContinueChapter2(true,d.hostSnap);return;}
   if(d.t==='story'){hideJoinInput();state='story';storyI=d.i|0;return;}
   if(d.t==='chapter'){enterChapter();return;}
   if(d.t==='play'){startGame(true);if(d.base)placeNeonBase(d.base);return;}
@@ -2173,12 +2177,14 @@ function onHostData(c,d){
   if(d.t==='dash'){const p=allies.find(p=>p.id===c.pid);if(p) tryDash(p,true);return;}
   if(d.t==='sk'){const p=allies.find(p=>p.id===c.pid);if(p) trySkill(d.id,p,true);return;}
   if(d.t==='swap'){const p=allies.find(p=>p.id===c.pid);if(p&&typeof tryChange==="function") tryChange(p,true);return;}
+  if(d.t==='loadout'){const p=allies.find(p=>p.id===c.pid);if(p&&typeof applySnapshot==='function'&&d.snap){applySnapshot(p,d.snap);p.hp=p.maxHp;}return;}
   if(d.t==='pick'){const p=allies.find(p=>p.id===c.pid);if(p&&state==='levelup'&&levelupWho===p.id) applyUpgradeFor(p,cards[d.i|0]);return;}
 }
 
 function hostStartParty(){
   if(!isNetHost())return;
   if(!lobby.players.length)return;
+  if(typeof hasChapterSave==='function'&&hasChapterSave()){chapterPickFrom='room';partyView='chapter';partyMsg='';return;}
   beginOpening();
 }
 
@@ -2197,8 +2203,8 @@ function applySnap(d){
       if(p.id===myId && player){
         // light reconcile
         p.hp=s.hp;p.maxHp=s.maxHp;p.level=s.level;p.xp=s.xp;p.next=s.next;
-        p.dashCharges=s.dashCharges;p.dashT=s.dashT;
-        if(s.dashMax) p.dashMax=s.dashMax; if(s.dashDur) p.dashDur=s.dashDur; // v18p.iframe=s.iframe;p.facing=s.facing;
+        p.dashCharges=s.dashCharges;p.dashT=s.dashT;p.iframe=s.iframe;p.facing=s.facing;
+        if(s.dashMax) p.dashMax=s.dashMax; if(s.dashDur) p.dashDur=s.dashDur;
         if(s.skin) p.skin=s.skin;
         if(s.chainCd!=null){p.skillCd=p.skillCd||{};p.skillCd.chain=s.chainCd;}
         if(s.buddy&&typeof applyBuddySnap==="function") applyBuddySnap(p,s.buddy);
@@ -2367,9 +2373,11 @@ function onPartyPointer(x,y){
   else if(b.id==='create') createRoom();
   else if(b.id==='join'){partyView='join';partyMsg='4자리 코드를 입력하세요';showJoinInput();const el=document.getElementById('joinCode');if(el){el.value='';setTimeout(()=>el.focus(),50);}}
   else if(b.id==='joinGo'){const el=document.getElementById('joinCode');joinRoom(el?el.value:'');}
-  else if(b.id==='backHome'){hideJoinInput();if(partyView==='room'){cleanupNet();partyView='home';partyMsg='';}else if(partyView==='join'){hideJoinInput();partyView='home';partyMsg='';}else backToTitle();}
+  else if(b.id==='backHome'){hideJoinInput();if(partyView==='chapter'){partyView=chapterPickFrom||'home';partyMsg='';}else if(partyView==='room'){cleanupNet();partyView='home';partyMsg='';}else if(partyView==='join'){hideJoinInput();partyView='home';partyMsg='';}else backToTitle();}
   else if(b.id==='startRoom') hostStartParty();
   else if(b.id==='leaveRoom'){cleanupNet();partyView='home';partyMsg='';}
+  else if(b.id==='ch1start'){ch2Continue=false;beginOpening();}
+  else if(b.id==='ch2cont'){if(typeof startContinueChapter2==='function') startContinueChapter2(false);}
 }
 
 function onStoryPointer(x,y){
@@ -2402,13 +2410,15 @@ function drawParty(){
   ctx.fillStyle='#07060f';ctx.fillRect(0,0,W,H);
   partyBtns=[];
   ctx.textAlign='center';
-  ctx.font='900 '+Math.max(26,short?28:36*u)+'px '+FONT;
-  ctx.fillStyle='#ff4d9d';ctx.shadowColor='#ff4d9d';ctx.shadowBlur=16;
-  ctx.fillText('온라인 인원 설정',W/2,ins.t+Math.max(40,short?36:56*u));
-  ctx.shadowBlur=0;
-  ctx.font='700 '+Math.max(13,14*u)+'px '+FONT;
-  ctx.fillStyle='#cfd3ff';
-  ctx.fillText('최대 4명 · 호스트가 시작하면 챕터 1이 함께 시작됩니다',W/2,ins.t+Math.max(64,short?56:84*u));
+  if(partyView!=='chapter'){
+    ctx.font='900 '+Math.max(26,short?28:36*u)+'px '+FONT;
+    ctx.fillStyle='#ff4d9d';ctx.shadowColor='#ff4d9d';ctx.shadowBlur=16;
+    ctx.fillText('온라인 인원 설정',W/2,ins.t+Math.max(40,short?36:56*u));
+    ctx.shadowBlur=0;
+    ctx.font='700 '+Math.max(13,14*u)+'px '+FONT;
+    ctx.fillStyle='#cfd3ff';
+    ctx.fillText('최대 4명 · 호스트가 시작하면 챕터 1이 함께 시작됩니다',W/2,ins.t+Math.max(64,short?56:84*u));
+  }
 
   if(partyView==='home'){
     const bw=Math.min(420,W-ins.l-ins.r-32),bh=Math.max(46,short?42:54*u);
@@ -2419,6 +2429,20 @@ function drawParty(){
     addBtn('create',x,y,bw,bh,'방 만들기 (호스트)','sec');y+=bh+gap;
     addBtn('join',x,y,bw,bh,'방 참가 (코드 입력)','sec');y+=bh+gap+6;
     addBtn('backHome',x,y,bw,Math.max(40,bh-6),'타이틀로','sec');
+  }else if(partyView==='chapter'){
+    ctx.font='900 '+Math.max(26,short?28:36*u)+'px '+FONT;
+    ctx.fillStyle='#ff4d9d';ctx.shadowColor='#ff4d9d';ctx.shadowBlur=16;
+    ctx.fillText('챕터 선택',W/2,ins.t+Math.max(40,short?36:56*u));
+    ctx.shadowBlur=0;
+    ctx.font='700 '+Math.max(13,14*u)+'px '+FONT;
+    ctx.fillStyle='#cfd3ff';
+    ctx.fillText('저장된 진행으로 이어서 할 수 있습니다',W/2,ins.t+Math.max(64,short?56:84*u));
+    const bw=Math.min(420,W-ins.l-ins.r-32),bh=Math.max(46,short?42:54*u);
+    const x=W/2-bw/2;
+    let y=H*(short?0.36:0.40);
+    addBtn('ch1start',x,y,bw,bh,'챕터 1부터','sec');y+=bh+12;
+    addBtn('ch2cont',x,y,bw,bh,'챕터 2 이어하기','pri');y+=bh+16;
+    addBtn('backHome',x,y,bw,Math.max(40,bh-6),'뒤로','sec');
   }else if(partyView==='join'){
     const bw=Math.min(420,W-ins.l-ins.r-32),bh=Math.max(46,short?42:54*u);
     const x=W/2-bw/2;
@@ -2594,7 +2618,7 @@ let camAim={x:null,y:null,k:8};
 let boomCueT=0, boomGranted=false, bossDefeated=false, victoryBtns=[];
 let pickups=[], chapterN=1, chapterTitle='챕터 1: speed', speedJoined=false, cutKind='arrive', cutScene='world';
 let speedBase=null, normalBossDown=false, hardBossDown=false, midBossSpawned=false, magDropT=0, btnFlash=0, interiorFade=0, speedArrived=false, changeFlash=0, victoryKind='seb';
-let sdash=null, buddyList=[], chainHold=false;
+let sdash=null, buddyList=[], chainHold=false, ch2Continue=false, chapterPickFrom='home';
 let stepAnim=null;
 let cutDebug={beat:null,who:null,text:null,cam:null,boss:false,boom:false};
 
@@ -3560,6 +3584,7 @@ function enterChapter2Card(){
 }
 
 function beginChapter2Play(fromNet){
+  if(!ch2Continue&&player&&typeof saveChapterProgress==='function') saveChapterProgress(player);
   chapterN=2;
   chapterTitle='챕터 2: 스피드 네온 기지 구하기';
   speedJoined=true;
@@ -4277,6 +4302,159 @@ window.__ns2v17={
   isSpeedForm,tryChainSkill,tryChange,fireChainSkill,ensureBuddy,swapWithBuddy,
   placeSpeedBase,spawnMidBoss,spawnHardBossAtGate,spawnNS1Boss,enterChapter2Card,
   beginChapter2Play,onArriveSpeedBase,onDefeatSuperEliteBoss,dropMagnet,skHasteMul,skBaseFor
+};
+
+
+/* ===== v20: chapter progress save + continue ===== */
+const NS2_SAVE_KEY='ns2-ch-progress';
+
+function packSave(P){
+  P=P||player;
+  if(!P) return null;
+  return {
+    v:20,
+    chapter:2,
+    level:P.level||1,
+    xp:P.xp||0,
+    next:P.next||8,
+    wep:Object.assign({},P.wep||{bolt:1}),
+    pas:Object.assign({},P.pas||{regen:1}),
+    dash:{
+      dashMaxCd:P.dashMaxCd||1.55,
+      dashMax:P.dashMax||1,
+      dashDur:P.dashDur||0.16,
+      dashVamp:P.dashVamp||0,
+      dashDmg:P.dashDmg||24
+    },
+    skills:{A:P.skA||'shock',B:P.skB||'shield'},
+    maxHp:P.maxHp||100,
+    spd:P.spd||215,
+    pickup:P.pickup||95
+  };
+}
+
+function saveChapterProgress(P){
+  const snap=packSave(P||player);
+  if(!snap) return null;
+  try{localStorage.setItem(NS2_SAVE_KEY,JSON.stringify(snap));}catch(e){}
+  return snap;
+}
+
+function loadChapterSave(){
+  try{
+    const raw=localStorage.getItem(NS2_SAVE_KEY);
+    if(!raw) return null;
+    const s=JSON.parse(raw);
+    if(!s||s.chapter<2) return null;
+    return s;
+  }catch(e){return null;}
+}
+function hasChapterSave(){return !!loadChapterSave();}
+function clearChapterSave(){try{localStorage.removeItem(NS2_SAVE_KEY);}catch(e){}}
+
+function applySnapshot(P,snap){
+  if(!P||!snap) return P;
+  P.level=Math.max(1,snap.level|0);
+  P.xp=Math.max(0,+snap.xp||0);
+  P.next=Math.max(1,snap.next||Math.floor(8*Math.pow(1.34,P.level-1)));
+  P.wep=Object.assign({bolt:1},snap.wep||{});
+  P.pas=Object.assign({regen:1},snap.pas||{});
+  if(!P.pas.regen) P.pas.regen=1;
+  const d=snap.dash||{};
+  P.dashMaxCd=d.dashMaxCd||1.55;
+  P.dashMax=d.dashMax||1;
+  P.dashCharges=P.dashMax;
+  P.dashDur=d.dashDur||0.16;
+  P.dashVamp=d.dashVamp||0;
+  P.dashDmg=d.dashDmg||24;
+  P.dashCd=0;P.dashT=0;
+  P.skA=(snap.skills&&snap.skills.A)||'shock';
+  P.skB=(snap.skills&&snap.skills.B)||'shield';
+  const heart=P.pas.heart||0, speed=P.pas.speed||0, mag=P.pas.magnet||0;
+  P.maxHp=snap.maxHp||(100+20*heart);
+  P.hp=P.maxHp;
+  P.spd=215*(1+0.08*speed);
+  P.pickup=95*(1+0.3*mag);
+  if(P.wepCd){for(const k of Object.keys(P.wep)) if(P.wepCd[k]==null) P.wepCd[k]=0;}
+  return P;
+}
+
+function fairLoadout(level){
+  level=Math.max(1,level|0);
+  const snap={
+    v:20,chapter:2,level,xp:0,next:Math.floor(8*Math.pow(1.34,level-1)),
+    wep:{bolt:1},pas:{regen:1},
+    dash:{dashMaxCd:1.55,dashMax:1,dashDur:0.16,dashVamp:0,dashDmg:24},
+    skills:{A:'shock',B:'shield'},
+    maxHp:100,spd:215,pickup:95
+  };
+  const steps=[
+    ['wnew','pulse'],['pas','power'],['pas','haste'],['wup','bolt'],['pas','armor'],
+    ['wnew','chain'],['pas','speed'],['wup','pulse'],['pas','power'],['dash','charge'],
+    ['pas','haste'],['wup','bolt'],['pas','regen'],['wnew','boom'],['dash','dashlen'],
+    ['pas','heart'],['wup','chain'],['pas','area'],['wup','pulse'],['dash','dashcd'],
+    ['pas','power'],['wnew','orbit'],['pas','haste'],['wup','boom'],['pas','armor'],
+    ['wup','bolt'],['dash','dashvamp'],['pas','speed'],['wup','chain'],['pas','regen'],
+    ['wnew','seek'],['pas','heart'],['wup','orbit'],['dash','dashcd'],['pas','power'],
+    ['wup','boom'],['pas','haste'],['wup','pulse'],['dash','dashlen'],['pas','armor']
+  ];
+  const wepCount=()=>Object.keys(snap.wep).filter(id=>WEAPONS[id]&&!WEAPONS[id].sub).length;
+  for(let i=0;i<level-1&&i<steps.length;i++){
+    const [k,id]=steps[i];
+    if(k==='wnew'){
+      if(snap.wep[id]) {if((snap.wep[id]||0)<MAXLV) snap.wep[id]++; }
+      else if(WEAPONS[id]&&(WEAPONS[id].sub||wepCount()<MAX_WEAPONS)) snap.wep[id]=1;
+    }else if(k==='wup'){
+      if(snap.wep[id]&&snap.wep[id]<MAXLV) snap.wep[id]++;
+    }else if(k==='pas'){
+      const lv=(snap.pas[id]||0);
+      if(lv<MAXLV) snap.pas[id]=lv+1;
+    }else if(k==='dash'){
+      if(id==='charge'&&snap.dash.dashMax<3) snap.dash.dashMax++;
+      else if(id==='dashlen') snap.dash.dashDur=Math.min(0.24,(snap.dash.dashDur||0.16)+0.04);
+      else if(id==='dashvamp') snap.dash.dashVamp=Math.min(3,(snap.dash.dashVamp||0)+1);
+      else if(id==='dashcd') snap.dash.dashMaxCd=Math.max(0.5,snap.dash.dashMaxCd*0.75);
+      else if(id==='dashdmg') snap.dash.dashDmg*=1.7;
+    }
+  }
+  snap.maxHp=100+20*(snap.pas.heart||0);
+  snap.spd=215*(1+0.08*(snap.pas.speed||0));
+  snap.pickup=95*(1+0.3*(snap.pas.magnet||0));
+  return snap;
+}
+
+function startContinueChapter2(fromNet,hostSnap){
+  hideJoinInput();
+  startGame(true);
+  ch2Continue=true;
+  const mine=loadChapterSave();
+  const snap=mine||(hostSnap?fairLoadout(hostSnap.level||1):null);
+  if(snap&&player) applySnapshot(player,snap);
+  if(player){
+    player.hp=player.maxHp;
+    player.skin='hero';
+    if(neonBase){player.x=neonBase.x;player.y=neonBase.y+80;cam.x=player.x;cam.y=player.y;}
+  }
+  if(typeof isNetHost==='function'&&isNetHost()){
+    const hostLv=(player&&player.level)||1;
+    for(const a of (allies||[])){
+      if(!a||a===player) continue;
+      applySnapshot(a,fairLoadout(hostLv));
+      a.hp=a.maxHp;
+      if(neonBase){a.x=neonBase.x+rand(-40,40);a.y=neonBase.y+80+rand(-20,20);}
+    }
+    if(!fromNet) bcast({t:'cont2',hostSnap:packSave(player)});
+  }else if(!fromNet&&typeof isNetClient==='function'&&isNetClient()){
+    netSend({t:'loadout',snap:packSave(player)});
+  }else if(fromNet&&typeof isNetClient==='function'&&isNetClient()){
+    netSend({t:'loadout',snap:packSave(player)});
+  }
+  enterChapter2Card();
+}
+
+window.__ns2v20={
+  NS2_SAVE_KEY,packSave,saveChapterProgress,loadChapterSave,hasChapterSave,clearChapterSave,
+  applySnapshot,fairLoadout,startContinueChapter2
 };
 
 </script>
