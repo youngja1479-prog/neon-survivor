@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<title>네온 생존자 2 v18</title>
+<title>네온 생존자 2 v19</title>
 <style>
   :root{
     --sat:env(safe-area-inset-top,0px);
@@ -1717,7 +1717,7 @@ function drawTitle(){
   const ty=ins.t+(short?H*0.14:H*(portrait?0.18:0.20));
   ctx.font="900 "+Math.max(11,12*u)+"px "+FONT;
   ctx.fillStyle="rgba(143,160,255,0.8)";
-  ctx.fillText("PROTOTYPE  ·  미완성  ·  v18",W/2,ty);
+  ctx.fillText("PROTOTYPE  ·  미완성  ·  v19",W/2,ty);
   ctx.font="900 "+titleSize+"px "+FONT;
   const label="네온 생존자 2";
   const tw=ctx.measureText(label).width;
@@ -1729,7 +1729,7 @@ function drawTitle(){
   ctx.shadowBlur=0;
   ctx.font="700 "+Math.max(11,short?11:16*u)+"px "+FONT;
   ctx.fillStyle="#8fa0ff";
-  spacedText("NEON SURVIVOR  v18",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
+  spacedText("NEON SURVIVOR  v19",W/2,ty+titleSize*0.95+Math.max(18,22*u), short?4:8);
 
   const bw=Math.min(520,W-ins.l-ins.r-24);
   const boxX=W/2-bw/2;
@@ -2089,7 +2089,7 @@ function createRoom(tries){
       let n=0;while(lobby.players.some(p=>p.id==='p'+n))n++;
       const id='p'+n;c.pid=id;conns.push(c);
       lobby.players.push({id,name:'P'+(n+1),col:NS2_COLS[n%4]});
-      try{c.send({t:'hello',id,code:net.code,ver:'v18'})}catch(e){}
+      try{c.send({t:'hello',id,code:net.code,ver:'v19'})}catch(e){}
       syncLobby();
     });
     c.on('data',d=>onHostData(c,d));
@@ -3424,18 +3424,34 @@ const POST_CUT=[
   {t:'talk',who:'???',text:'ㅎㅇ'},
   {t:'talk',who:'네온 생존자',text:'이 친구는 항상 싸가지가 없군.'},
   {t:'talk',who:'스피드 네온',text:'뭐 어쩌라고.\n왜 부른거야?',appear:true},
-  {t:'talk',who:'네온 생존자',text:'먼저 너의 싸가지 없는 인사 버릇부터 고치고 설명해주지.'},
-  {t:'talk',who:'스피드 네온',text:'이젠 그런거 신경쓰지도 않아.\n그냥 용건만 말해.'},
-  {t:'talk',who:'네온 생존자',text:'알겠어(참 설명 거지같게 하네)'},
-  {t:'talk',who:'네온 생존자',text:'이번에 우주선 전력을 보강해서 더 많은 네온 생명체들을\n구할 수 있는 우주선을 제작했어'},
-  {t:'talk',who:'스피드 네온',text:'그래서?'},
-  {t:'talk',who:'네온 생존자',text:'시운전을 위해 잠깐 지구를 벗어났는데 우주선이 적들의 기습을 받아서\n네가 없는 사이에 네 기지를 점령하고 우주선을 가져갔어.'},
-  {t:'talk',who:'스피드 네온',text:'그 우주선도 없이 어떻게 여기까지 온거야?'},
-  {t:'talk',who:'네온 생존자',text:'예전에 네가 사용하던 우주선을 수리해서 왔지.'},
-  {t:'talk',who:'스피드 네온',text:'그거 완전 구형이잖아.\n그 우주선 내가 예전에 쓰다가 너무 오래되기도 하고 여러모로 별로라서 폐기했는데'},
+  {t:'talk',who:'네온 생존자',text:'너의 엄청난 속도로 차원 이동을 할 수 있는지 물어보려고 왔다.'},
+  {t:'talk',who:'스피드 네온',text:'나는 빠르긴하지만 그건 불가능해.'},
+  {t:'talk',who:'네온 생존자',text:'뭐?'},
+  {t:'talk',who:'스피드 네온',text:'근데 내가 아는 친구 중에\n그게 가능한 친구가 있긴한데.....'},
+  {t:'talk',who:'네온 생존자',text:'누군데?'},
+  {t:'talk',who:'스피드 네온',text:'무슨 시현이었던 걸로 아는데?\n시현 무슨이든가?'},
+  {t:'talk',who:'네온 생존자',text:'그 친구는 어디서 볼 수 있지?'},
+  {t:'talk',who:'스피드 네온',text:'우주선을 타고 북쪽으로 쭉~ 가야해.'},
+  {t:'talk',who:'네온 생존자',text:'몇 시간 정도?'},
+  {t:'talk',who:'스피드 네온',text:'아마..... 12670억년 정도?'},
+  {t:'talk',who:'네온 생존자',text:'미친놈이야?'},
+  {t:'talk',who:'스피드 네온',text:'ㄴㄴ 장난이지.'},
+  {t:'talk',who:'스피드 네온',text:'내가 제작한 우주선이면\n1시간이면 도착하지.'},
+  {t:'talk',who:'네온 생존자',text:'너가 그렇게 똑똑했나?'},
   {t:'talk',who:'스피드 네온',text:'(네온 박사랑 같이 제작했지)'},
-  {t:'talk',who:'네온 생존자',text:'그래도 네가 쓴 우주선이라 성능은 좋더라.\n특히 파괴되어도 다시 복원되는 기능은 참 좋던데'},
-  {t:'talk',who:'스피드 네온',text:'그냥 평범한 기능이거든?'},
+  {t:'talk',who:'네온 생존자',text:'그건 어디있어?'},
+  {t:'talk',who:'스피드 네온',text:'어.... 뺏겼는데?'},
+  {t:'talk',who:'네온 생존자',text:'(진짜로 미친놈이네)'},
+  {t:'talk',who:'스피드 네온',text:'이미 강산 본체 수하들에게 이미 점령 당한 곳에 있어.'},
+  {t:'talk',who:'네온 생존자',text:'음..... 그러면 이미 그 우주선 파괴된거 아니야?'},
+  {t:'talk',who:'스피드 네온',text:'아마 그렇겠지?'},
+  {t:'talk',who:'네온 생존자',text:'(내가 생각한 것 이상으로 미친놈이네 이거)'},
+  {t:'talk',who:'네온 생존자',text:'뭐.... 강산 본체를 막는 건\n나의 전문이니까.'},
+  {t:'talk',who:'네온 생존자',text:'거기 어디야?'},
+  {t:'talk',who:'스피드 네온',text:'저기로 쭉~~ 가면 있어.'},
+  {t:'talk',who:'네온 생존자',text:'알겠어(참 설명 거지같게 하네)'},
+  {t:'talk',who:'네온 생존자',text:'야 너 나랑 같이 가.'},
+  {t:'talk',who:'스피드 네온',text:'참 네온들은 나 없으면 아무것도 못한다니까.'},
   {t:'talk',who:'네온 생존자',text:'(참 싸가지가 없네)'}
 ];
 const SPEED_DIST=13000, SPEED_ANG=2.42;
