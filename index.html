@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v131</title>
+<title>네온 생존자 - NEON SURVIVOR v132</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#07060f;color:#fff;
@@ -178,7 +178,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">Neon Survivor · v131</div>
+  <div class="sub">Neon Survivor · v132</div>
   <div class="box">
     <div class="hrow"><span class="ic"></span><span><b>이동</b> — <b class="m">WASD</b> / 방향키 · 모바일은 화면을 드래그</span></div>
     <div class="hrow k"><span class="ic"></span><span>모드와 시작 무기를 고르면 무기는 <b class="y">자동으로 공격</b>합니다. 피하는 데만 집중하세요.</span></div>
@@ -187,6 +187,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
     <div class="hrow"><span class="ic"></span><span><span class="kbd">Space</span><span class="kbd">Esc</span><span class="kbd">P</span> 일시정지 · <span class="kbd">M</span> 소리 · <span class="kbd">R</span> 빠른 재시작</span></div>
     <details class="feat"><summary>업데이트 내역</summary>
     네온 올가미 · 비트 퍼펙트 · 네온 이벤트 · 유성우 · 방어의 갑옷 · 분열체 · 설정(데미지 숫자/그래픽) · 기록 순위
+    <br><b>v132</b> · 지뢰 A/B 스킬 · 여우 스킨 · 레벨업 다시 뽑기(1회) · 타이틀 설정에서 그래픽/데미지 숫자
     </details>
   </div>
   <button class="btn" id="startBtn">게임 시작</button>
@@ -230,6 +231,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
   <div class="big" style="color:#ffe27a;text-shadow:0 0 22px rgba(255,184,0,.6)">레벨 업!</div>
   <div id="pickSub">강화할 능력을 하나 선택하세요</div>
   <div id="cards"></div>
+  <div class="row" style="margin-top:12px"><button class="btn sec" id="rrBtn">다시 뽑기 · 1회</button></div>
 </div>
 
 <div class="ov" id="pause">
@@ -384,7 +386,7 @@ const CRAZY_T0=600; // ~10분 경과 스폰/난이도
 const diffT=()=>{if(!G)return 0;const t=G.t+(isCrazy()?CRAZY_T0:0);const _r=state==='raid'&&window.__raid&&window.__raid.R;return _r&&_r.endless?Math.min(t,ENDLESS.T):t};
 const ENDLESS={T:1200,ramp:600,hp:7.28,dmgCap:5.04,spd:1.15,rate:7.0,cap:1.3,mix:0.35,eliteEvery:25,eliteGap:20}; // v122 레이드 일반 무한 모드: 크레이지 최고 난이도(신의 군대 단계)를 상한으로
 const enK=()=>{const _r=window.__raid&&window.__raid.R;return _r&&_r.endless?Math.max(0,Math.min(1,(_r.t-_r.endlessAt)/ENDLESS.ramp)):0};
-const SUB_W=new Set(['mine']); // 보조무기: 시작 무기·A/B 스킬 불가, 레벨 업 카드로만 획득
+const SUB_W=new Set(['mine']); // 보조무기: 시작 무기 불가(레벨 업 카드로 획득) · v132부터 지뢰는 A/B 스킬로도 선택 가능
 function allowedWeapons(){return Object.keys(WEAPONS).filter(id=>!SUB_W.has(id)&&(gameMode!=='warrior'||!RANGED_W.has(id)))}
 function isAllowedWeapon(id){return !!WEAPONS[id]&&!SUB_W.has(id)&&(gameMode!=='warrior'||!RANGED_W.has(id))}
 const PASSIVES={
@@ -613,7 +615,7 @@ function newGame(){
      beatPh:0,beatFlash:0,combo:0,bestCombo:0,loops:0,perfects:0,loopKills:0,trail:[],loopFx:[],calls:[],
      ev:null,evs:EVSCHED.map(o=>({t:o.t,k:o.k,done:false})),nextEvEndless:760,evToggle:false,strikes:[],
      hole:null,rainZones:[],rainDrops:[],elite:null,evBag:[],evLast:'',
-     tip:null,tipQ:[],tipFlags:{},guide:0};
+     tip:null,tipQ:[],tipFlags:{},guide:0,rrUsed:false};
   let sw=isAllowedWeapon(startWeapon)?startWeapon:(gameMode==='warrior'?'orbit':'bolt');
   const hp0=isHard()?80:100;
   P={x:0,y:0,r:14,hp:hp0,maxHp:hp0,baseSpd:isHard()?198:210,inv:0,fx:1,fy:0,weapons:{[sw]:1},passives:{},wOrder:[sw],pOrder:[],hurtT:0,moving:false,walk:0,down:false,revT:0,dead:false};
@@ -896,6 +898,7 @@ function showBanner(txt,col){banner={txt,col,t:2.4}}
 function addShake(v){shake=Math.min(quakeT>0?42:18,Math.max(shake,v))}
 
 // ================== 피해 처리 ==================
+function mineHit(m,e,dx,dy){hurtEnemy(e,m.dmg,dx,dy,250);if(m.slow&&e&&!e.dead)e.slowT=Math.max(e.slowT||0,m.slow)} // v132 지뢰 폭발: 피해+넉백, 스킬 지뢰는 감속까지
 function hurtEnemy(e,dmg,kx,ky,kb,q){
   if(!e||e.dead)return;
   if(e._vsP){const rr=window.__raid;if(rr&&rr.R&&rr.R.host&&rr.R.diff==='vs'&&rr.hurtP){const crit=Math.random()<0.1;dmg=Math.max(1,Math.round(dmg*dmgMul()*(crit?2:1)*rand(0.9,1.1)));rr.hurtP(e._vsP,dmg);if(crit)dmgText(e.x,e.y-e.r,dmg,'#ffd84d',20)}return}
@@ -1099,7 +1102,7 @@ function gameUpdate(dt){
   projs=compact(projs,p=>!p.dead&&(p.life===undefined||p.life>0));
   // 지뢰
   for(const m of mines){m.t+=dt;m.life-=dt;if(m.t<0.4)continue;let trig=false;query(m.x,m.y,10,()=>{trig=true});
-    if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,250));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});
+    if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>mineHit(m,e,dx,dy));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});
       burst(m.x,m.y,'#ff9a3c',18,260,0.45,3.5);burst(m.x,m.y,'#fff27a',8,150,0.3,3);addShake(3);S.boom()}}
   mines=compact(mines,m=>!m.dead&&m.life>0);
   // 유성우
@@ -1165,8 +1168,10 @@ function render(){
     ctx.fillStyle=gr;ctx.beginPath();ctx.arc(P.x,P.y,R*(1+Math.sin(G.t*6)*0.03),0,TAU);ctx.fill()}
   drawFlame(P);
   // 지뢰
-  for(const m of mines){const blink=m.t<0.4?0.4:(Math.sin(G.t*10+m.x)>0?1:0.55);ctx.fillStyle=`rgba(255,93,93,${blink})`;ctx.beginPath();ctx.arc(m.x,m.y,7,0,TAU);ctx.fill();
-    ctx.strokeStyle='rgba(255,93,93,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,11,0,TAU);ctx.stroke()}
+  for(const m of mines){const blink=m.t<0.4?0.4:(Math.sin(G.t*10+m.x)>0?1:0.55);const sk=!!m.sk,cb=sk?180:93;
+    ctx.fillStyle=`rgba(255,93,${cb},${blink})`;ctx.beginPath();ctx.arc(m.x,m.y,sk?9:7,0,TAU);ctx.fill();
+    ctx.strokeStyle=`rgba(255,93,${cb},${sk?.75:.5})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,sk?15:11,0,TAU);ctx.stroke();
+    if(sk){ctx.strokeStyle='rgba(255,190,235,.4)';ctx.lineWidth=1.6;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(m.x,m.y,17+4*Math.sin(G.t*6+m.y*0.1),0,TAU);ctx.stroke();ctx.setLineDash([])}} // v132 스킬 지뢰: 더 크고 밝은 분홍 네온 링
   for(const m of meteors){if(m.t<0)continue;const k=Math.min(1,Math.max(0,m.t)/m.warn);const nuke=!!(m.all||m.warn>=3);
     if(!nuke){ctx.fillStyle=`rgba(255,154,93,${0.06+0.16*k})`;ctx.beginPath();ctx.arc(m.x,m.y,m.rad,0,TAU);ctx.fill();
       ctx.strokeStyle='rgba(255,154,93,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,m.rad,0,TAU);ctx.stroke();ctx.fillStyle='rgba(255,200,120,.3)';ctx.beginPath();ctx.arc(m.x,m.y,m.rad*k,0,TAU);ctx.fill();
@@ -1497,14 +1502,21 @@ let curOpts=[],lvOpenT=0;const isTouch=('ontouchstart' in window)||navigator.max
 function openLevelUp(){
   curOpts=upgradeOptions();
   if(!curOpts.length){state='play';if(isCrazy()&&!G.allMaxMsg){G.allMaxMsg=true;showBanner('모든 무기·패시브 Lv10 달성!','#ffd84d')}return}
-  state='levelup';S.level();lvOpenT=performance.now();const box=$('cards');box.innerHTML='';
+  state='levelup';S.level();lvOpenT=performance.now();$('levelup').classList.add('show');renderLvCards();
+}
+function renderLvCards(){const box=$('cards');box.innerHTML='';
   curOpts.forEach((o,i)=>{const d=describe(o);const c=document.createElement('div');c.className='card';c.style.animationDelay=(i*0.07)+'s';
     const ic=makeCanvas(144,144);const g=ic.getContext('2d');g.translate(72,72);drawIcon(g,o.id,120);
     c.innerHTML=`<span class="tag ${d.tag}">${d.tagT}</span>`;c.appendChild(ic);
     c.insertAdjacentHTML('beforeend',`<div class="nm">${d.name}</div><div class="lv">${d.lv}</div><div class="ds">${d.ds}</div><div class="key">${isTouch?'탭하여 선택':`[${i+1}] 키로 선택`}</div>`);
     c.addEventListener('click',()=>chooseUpgrade(i));box.appendChild(c)});
-  $('levelup').classList.add('show');
+  const rb=$('rrBtn');if(rb){const used=!!(G&&G.rrUsed);rb.textContent=used?'다시 뽑기 사용 완료 · 이번 판 1회':'다시 뽑기 · 1회';rb.disabled=used} // v132 레벨업 다시 뽑기
 }
+function rerollCards(){ // v132: 한 판에 1번, 현재 카드 3장을 버리고 새로 뽑기
+  if(state!=='levelup'||!G||G.rrUsed)return;G.rrUsed=true;const nx=upgradeOptions();
+  if(!nx.length){$('levelup').classList.remove('show');state='play';return}
+  curOpts=nx;lvOpenT=performance.now();renderLvCards();S.pick()}
+$('rrBtn').onclick=rerollCards;
 function chooseUpgrade(i){
   if(state!=='levelup'||performance.now()-lvOpenT<350)return;const o=curOpts[i];if(!o)return;
   if(o.kind==='w'){if(!P.weapons[o.id]){P.weapons[o.id]=1;P.wOrder.push(o.id)}else P.weapons[o.id]++}
@@ -1579,7 +1591,8 @@ function pauseGame(){if(state!=='play')return;state='paused';joy=null;
   const inv=$('inv');inv.innerHTML='';for(const id of P.wOrder)inv.insertAdjacentHTML('beforeend',`<div>${WEAPONS[id].name} Lv.${P.weapons[id]}</div>`);
   for(const id of P.pOrder)inv.insertAdjacentHTML('beforeend',`<div style="border-color:#2a7bff">${PASSIVES[id].name} Lv.${P.passives[id]}</div>`);
   $('soundBtn').textContent='소리: '+(muted?'꺼짐':'켜짐');$('musicBtn').textContent='음악: '+(musicOn?'켜짐':'꺼짐');updSetBtns();$('errMsg').style.display='none';$('pause').classList.add('show')}
-function updSetBtns(){$('dmgBtn').textContent='데미지 숫자: '+(SET.dmgNum?'켜짐':'꺼짐');$('gfxBtn').textContent='그래픽: '+(SET.gfx==='low'?'낮음':'높음')}
+function updSetBtns(){$('dmgBtn').textContent='데미지 숫자: '+(SET.dmgNum?'켜짐':'꺼짐');$('gfxBtn').textContent='그래픽: '+(SET.gfx==='low'?'낮음':'높음');
+  const a=$('setGfxBtn'),b=$('setDmgBtn');if(a)a.textContent='그래픽: '+(SET.gfx==='low'?'낮음':'높음');if(b)b.textContent='데미지 숫자: '+(SET.dmgNum?'켜짐':'꺼짐')} // v132 타이틀 설정에도 같이 반영
 function resumeGame(){if(state!=='paused')return;$('pause').classList.remove('show');state='play'}
 let runNewRec=false;
 let nextGod=false,runGod=false; // next-run invincibility (code); not saved
@@ -2120,7 +2133,7 @@ function vsArenaUpdate(dt){if(!R)return;
     vsClearProxies()});
   projs=projs.filter(p=>!p.dead&&(p.life===undefined||p.life>0));
   for(const m of mines)withOwner(m,()=>{m.t+=dt;m.life-=dt;if(m.t<0.4)return;vsAttachProxies(P);buildGrid();let trig=false;query(m.x,m.y,10,()=>{trig=true});
-    if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,250));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});S.boom()}vsClearProxies()});
+    if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>mineHit(m,e,dx,dy));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});S.boom()}vsClearProxies()});
   mines=mines.filter(m=>!m.dead&&m.life>0);
   for(const m of meteors)withOwner(m,()=>{m.t+=dt;if(!m.hit&&m.t>=m.warn){m.hit=true;vsAttachProxies(P);buildGrid();query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,200));vsClearProxies();rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});S.boom()}});
   meteors=meteors.filter(m=>m.t<m.warn+((m.all||m.warn>=3)?1.4:0.05));
@@ -2584,7 +2597,7 @@ function hostUpdate(dt){
       query(p.x,p.y,p.r,(e)=>{if(p.life<=0||p.hit.has(e))return;p.hit.add(e);hurtEnemy(e,p.dmg,p.vx,p.vy,90);burst(p.x,p.y,'#7dffb3',5,110,0.25,2.4);p.life=0})}});
   projs=projs.filter(p=>!p.dead&&(p.life===undefined||p.life>0));
   for(const m of mines)withOwner(m,()=>{m.t+=dt;m.life-=dt;if(m.t<0.4)return;let trig=false;query(m.x,m.y,10,()=>{trig=true});
-    if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,m.dmg,dx,dy,250));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});
+    if(trig){m.dead=true;query(m.x,m.y,m.rad,(e,dx,dy)=>mineHit(m,e,dx,dy));rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.3,c:'#ff5d5d'});
       burst(m.x,m.y,'#ff9a3c',18,260,0.45,3.5);burst(m.x,m.y,'#fff27a',8,150,0.3,3);addShake(3);S.boom()}});
   mines=mines.filter(m=>!m.dead&&m.life>0);
   for(const m of meteors)withOwner(m,()=>{m.t+=dt;if((m.all||m.warn>=3)&&m.t>0&&!m.hit)addShake(2+(m.t/m.warn)*9);if(!m.hit&&m.t>=m.warn){m.hit=true;query(m.x,m.y,m.rad,(e,dx,dy)=>hurtEnemy(e,(m.big&&!e._vsP&&e.type!=='boss'&&e.type!=='raidboss')?Math.max(m.dmg,e.hp*5+1):m.dmg,dx,dy,200));if(m.all){for(const e of enemies)if(!e._vsP&&e.type!=='boss'&&e.type!=='raidboss'&&!e.dead)killEnemy(e);nukeBoom(m)}else{rings.push({x:m.x,y:m.y,r:0,max:m.rad,t:0,dur:0.35,c:'#ff9a5d'});if(m.big)skImpact(m);burst(m.x,m.y,'#ff9a5d',16,240,0.45,3.5);burst(m.x,m.y,'#fff27a',6,150,0.3,3);addShake(2);S.boom()}}});
@@ -2662,7 +2675,7 @@ function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||
   TL:R.tele.map(t=>[t.k,r1(t.x),r1(t.y),r1(t.r||0),r1(t.x2||0),r1(t.y2||0),r1(t.w||0),r2(t.t),r2(t.warn),t.col]),W:R.waves.map(w=>[r1(w.x),r1(w.y),r1(w.r)]),
   BS:R.boss?[R.boss.kind,0,r1(R.boss.x),r1(R.boss.y),R.boss.r,r1(R.boss.hp),r1(R.boss.maxHp),R.boss.mode,R.boss.face,R.boss.flash>0?1:0,R.boss.enr?1:0,r1(R.boss.z)]:null};
   if(slow){const GM=[];for(const g of gems){if(GM.length>=1500)break;if(inV(g.x,g.y,220)||(me&&g.to===me.id)||(g.mag&&inV(g.x,g.y,480)))GM.push(r1(g.x),r1(g.y),g.v|0)}o.GM=GM;
-    o.AM=RP.map(p=>p.aim&&!p.dead?[r1(p.aim[0]),r1(p.aim[1])]:0);o.PU=pickups.filter(i=>inV(i.x,i.y,150)).map(i=>[i.type,r1(i.x),r1(i.y),r2(i.t)]);o.MN=mines.filter(m=>inV(m.x,m.y,150)).map(m=>[r1(m.x),r1(m.y),r2(m.t)])}
+    o.AM=RP.map(p=>p.aim&&!p.dead?[r1(p.aim[0]),r1(p.aim[1])]:0);o.PU=pickups.filter(i=>inV(i.x,i.y,150)).map(i=>[i.type,r1(i.x),r1(i.y),r2(i.t)]);o.MN=mines.filter(m=>inV(m.x,m.y,150)).map(m=>[r1(m.x),r1(m.y),r2(m.t),m.sk?1:0])}
   for(const k of STK){if(!(k in o))continue;const js=JSON.stringify(o[k]);if(!full&&last[k]===js)delete o[k];else last[k]=js}
   return o}
 function sendSnaps(){for(const c of conns)if(c.open&&!(c.metadata&&c.metadata.probe))try{c.send(snapFor(c))}catch(e){}}
@@ -2689,7 +2702,7 @@ function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;if(d.TW){if(!G.
   G.elite=enemies.find(e=>e.type==='elite')||null;
   {const A=d.PJ,o=[];for(let i=0;i<A.length;i+=10){const x=d2(A,i+3)+OX,y=d2(A,i+5)+OY;o.push({_n:d1(A,i)<<6|d1(A,i+1),k:PK[d1(A,i+2)],x,y,x0:x,y0:y,rot:d2(A,i+7)/600,r:d1(A,i+9)})}projs=o}
   {const A=d.EB,o=[];for(let i=0;i<A.length;i+=8){const x=d2(A,i)+OX,y=d2(A,i+2)+OY,an=d2(A,i+5)/650,sp=d1(A,i+7)*10;o.push({x,y,x0:x,y0:y,k:EBK[d1(A,i+4)],vx:Math.cos(an)*sp,vy:Math.sin(an)*sp})}ebullets=o}applyEv(d.EV);
-  if(d.GM){const A=d.GM,o=[];for(let i=0;i<A.length;i+=3)o.push({x:A[i],y:A[i+1],v:A[i+2],mag:false,sp:0});gems=o}if(d.PU)pickups=d.PU.map(a=>({type:a[0],x:a[1],y:a[2],t:a[3]}));if(d.MN)mines=d.MN.map(a=>({x:a[0],y:a[1],t:a[2]}));
+  if(d.GM){const A=d.GM,o=[];for(let i=0;i<A.length;i+=3)o.push({x:A[i],y:A[i+1],v:A[i+2],mag:false,sp:0});gems=o}if(d.PU)pickups=d.PU.map(a=>({type:a[0],x:a[1],y:a[2],t:a[3]}));if(d.MN)mines=d.MN.map(a=>({x:a[0],y:a[1],t:a[2],sk:a[3]}));
   meteors=d.MT.map(a=>({x:a[0],y:a[1],t:a[2],warn:a[3],rad:a[4]}));rings=d.RG.map(a=>({x:a[0],y:a[1],max:a[2],t:a[3],dur:a[4],c:a[5]}));
   zaps=d.ZP.map(a=>({pts:a[0].map(q=>({x:q[0],y:q[1]})),t:a[1]}));beams=d.BM.map(a=>({x1:a[0],y1:a[1],x2:a[2],y2:a[3],t:a[4],dur:a[5],w:a[6]}));
   R.tele=d.TL.map(a=>({k:a[0],x:a[1],y:a[2],r:a[3],x2:a[4],y2:a[5],w:a[6],t:a[7],warn:a[8],col:a[9]}));R.waves=d.W.map(a=>({x:a[0],y:a[1],r:a[2]}));
@@ -2950,6 +2963,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 </script>
 <!-- ================== A/B 스킬 (설정 · 버튼 · 효과 · 레이드 동기화) ================== -->
 <style>
+#settings{justify-content:flex-start} /* v132: 스킬이 11개로 늘어 내용이 화면보다 길어짐 → 위쪽이 잘리지 않게 스크롤 시작점을 위로 */
 #settings .lede{color:#cfd5ff;font-size:clamp(12px,1.9vw,13.5px);font-weight:700;max-width:660px;line-height:1.6;margin-top:6px}
 #settings .sublede{color:#7e88b8;font-size:11.5px;max-width:660px;line-height:1.55;margin-top:4px}
 #settings .skrow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;justify-content:center;margin:10px auto 16px;width:min(520px,94vw)}
@@ -2993,6 +3007,10 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
   <div class="skt" style="color:#ff8ce0">B 스킬<small>K</small></div><div class="skrow" id="skRowB"></div>
   <div class="skt" style="color:#ff8b9e">메이데이<small>C</small></div><div class="skrow" id="mdRow"></div>
   <div id="skSetMsg"></div>
+  <div class="setgrid" style="margin-top:10px">
+    <button class="btn sec" id="setGfxBtn">그래픽: 높음</button>
+    <button class="btn sec" id="setDmgBtn">데미지 숫자: 켜짐</button>
+  </div>
   <div class="row"><button class="btn sec" id="setBackBtn">타이틀로</button></div>
 </div>
 <div id="skCancel">✖<small>취소</small></div><div id="skFlash"></div>
@@ -3001,9 +3019,11 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
 const SKILLS={bolt:{cd:15,d:'거대한 화살 4방향 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파 3연속·강한 넉백'},chain:{cd:18,d:'번개 두르고 적진 돌진 · 충돌 시 번개와 충격파'},
-  boom:{cd:10,d:'부메랑 5개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:80,d:'거대 메테오: 보스 제외 맵 전체 적 전멸 (시작 후 80초 뒤 사용 가능)'},beam:{cd:15,dur:10,d:'10초 지속 레이저 · 빠르게 돌려도 적중'},flame:{cd:15,d:'불바다: 플레이어 주위로 불길이 쫘라락 퍼지고 5초간 바닥이 불탐 · 화상'}};
+  boom:{cd:10,d:'부메랑 5개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:80,d:'거대 메테오: 보스 제외 맵 전체 적 전멸 (시작 후 80초 뒤 사용 가능)'},beam:{cd:15,dur:10,d:'10초 지속 레이저 · 빠르게 돌려도 적중'},flame:{cd:15,d:'불바다: 플레이어 주위로 불길이 쫘라락 퍼지고 5초간 바닥이 불탐 · 화상'},
+  mine:{cd:15,d:'고폭 네온 지뢰 7개 설치 · 넓은 폭발 범위 + 잠시 감속'}}; // v132 지뢰 A/B 스킬
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
-const skOK=id=>!!SKILLS[id]&&!SUB_W.has(id);
+const SK_EXTRA=new Set(['mine']); // 보조무기지만 A/B 스킬로도 쓸 수 있는 무기 (v132)
+const skOK=id=>!!SKILLS[id]&&(!SUB_W.has(id)||SK_EXTRA.has(id));
 if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
 const skCD={},skAct={},skQ=[];let skHold=null;
 function skIcon(id,sz){const c=makeCanvas(sz*2,sz*2);const g=c.getContext('2d');g.translate(sz,sz);drawIcon(g,id,sz*1.7);return c}
@@ -3013,7 +3033,7 @@ function inSkillGame(){return state==='play'||(state==='raid'&&!!rR()&&!['inter'
 function skBase(id){const L=WEAPONS[id].lv;const l=Math.max(1,Math.min(L.length,(P.weapons&&P.weapons[id])||1));return L[l-1]}
 function skShake(v){if(state!=='raid'||(P&&P.id===rMe()))addShake(v)}
 // ---------- 설정 화면 ----------
-function openSettings(){if(state!=='title')return;hideAll();renderSkSet();$('settings').classList.add('show')}
+function openSettings(){if(state!=='title')return;hideAll();renderSkSet();const el=$('settings');el.classList.add('show');el.scrollTop=0}
 function renderSkSet(){for(const slot of ['A','B']){const row=$('skRow'+slot);row.innerHTML='';const other=slot==='A'?SET.skB:SET.skA,cur=skId(slot);
   for(const id of Object.keys(SKILLS)){const c=document.createElement('div');const lk=!!(window.__cry&&!__cry.ownsSk(id));c.className='chip'+(id===cur?' sel':'')+(id===other||lk?' off':'');c.dataset.w=id;c.dataset.slot=slot;
     c.appendChild(skIcon(id,19));const nmEl=document.createElement('span');nmEl.className='nm';nmEl.textContent=WEAPONS[id].name;c.appendChild(nmEl);const sm=document.createElement('small');sm.textContent=SKILLS[id].cd+'초'+(SKILLS[id].dur?' (+10초 지속)':'');c.appendChild(sm);c.title=SKILLS[id].d;
@@ -3036,6 +3056,12 @@ function fireSkill(id,ax,ay,tx,ty){if(P&&P.down)return;const l=Math.hypot(ax,ay)
   else if(id==='flame'){const Rr=fireSkR(st,am);projs.push({k:'Sfire',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:5.5,tick:0.25,dmg:D,burn:st.burn||3,hit:new Set(),rot:-Math.PI});
     rings.push({x,y,r:0,max:Rr*0.45,t:0,dur:0.3,c:'#ffd27a'});burst(x,y,'#ff8a2a',30,520,0.5,4);burst(x,y,'#ffd27a',14,320,0.35,3);skShake(8);S.boom()}
   else if(id==='beam'){projs.push({k:'Slaser',x,y,r:Math.min(63,Math.round(760*am/20)),t:0,life:10,tick:0,dmg:D*1.5,ax,ay,rot:a,len:760*am});rings.push({x,y,r:0,max:240,t:0,dur:0.42,c:'#ff6ad5'});rings.push({x,y,r:0,max:130,t:0,dur:0.28,c:'#ffffff'});burst(x,y,'#ff6ad5',36,520,0.5,4);burst(x,y,'#ffffff',16,340,0.35,3);skShake(6);S.zap()}
+  else if(id==='mine'){ // v132 지뢰 A/B 스킬: 플레이어 주변 7개 고폭 지뢰 설치 · 광범위 폭발 + 감속
+    const n=7,ring=Math.min(210,110*am),mrad=Math.max(120,st.rad*1.75*am),mdmg=D*6;
+    for(let k=0;k<n;k++){const aa=a+k*TAU/n;mines.push({x:x+Math.cos(aa)*ring,y:y+Math.sin(aa)*ring,t:0.16,dmg:mdmg,rad:mrad,life:14,slow:1.1,sk:1})}
+    while(mines.length>60)mines.shift();
+    rings.push({x,y,r:0,max:ring+mrad,t:0,dur:0.5,c:'#ff5d5d'});rings.push({x,y,r:0,max:ring*0.7,t:0,dur:0.32,c:'#ffd0d0'});
+    burst(x,y,'#ff5d5d',28,340,0.5,3.6);burst(x,y,'#ffb0c8',12,190,0.35,2.6);skShake(7);S.boom()}
 }
 const fireSkR=(st,am)=>Math.min(500,(340+(st.len||150)*0.3)*am); // 불바다 반경: 기본 ~385, 화염 방사기 레벨(사거리)에 따라 소폭 증가
 // 충격파 밀어내기: kbRes 무시, 감속(ease-out) 속도, 밀리는 동안(1.2초) 자체 이동 없음
@@ -3202,6 +3228,7 @@ function drawSkillWorld(){lzFrame();ctx.save();ctx.globalCompositeOperation='lig
   if(id==='bolt')line(1100,28);else if(id==='orbit'){circ(x,y,120);line(900,60)}else if(id==='beam')line(760*am,22);else if(id==='boom'){line(950,34);const s0=fx,s1=fy;for(const o of [-0.7,-0.35,0.35,0.7]){const c=Math.cos(o),sn=Math.sin(o);fx=s0*c-s1*sn;fy=s0*sn+s1*c;line(950,34)}fx=s0;fy=s1}
   else if(id==='pulse')circ(x,y,380*am);else if(id==='aura'){const sv=P;P=me;const r=Math.min(650,skBase('aura').rad*3.3*am);P=sv;circ(x,y,r)}else if(id==='flame'){const sv=P;P=me;const r=fireSkR(skBase('flame'),am);P=sv;circ(x,y,r)}
   else if(id==='meteor'&&skAimP){const sv=P;P=me;const r=Math.max(260,skBase('meteor').rad*2.6*am);P=sv;ctx.setLineDash([]);ctx.lineWidth=4;circ(skAimP.x,skAimP.y,r);ctx.beginPath();ctx.moveTo(skAimP.x-r-14,skAimP.y);ctx.lineTo(skAimP.x+r+14,skAimP.y);ctx.moveTo(skAimP.x,skAimP.y-r-14);ctx.lineTo(skAimP.x,skAimP.y+r+14);ctx.stroke()}else if(id==='chain')circ(x,y,330);else if(id==='seek'){circ(x,y,1200);line(200,10)}
+  else if(id==='mine'){const sv=P;P=me;const ring=Math.min(210,110*am),rr=Math.max(120,skBase('mine').rad*1.75*am);P=sv;circ(x,y,ring);circ(x,y,ring+rr*0.55)} // v132 지뢰: 설치 반지름 + 폭발 범위 미리보기
   ctx.setLineDash([]);ctx.restore()}
 // ---------- 입력 ----------
 // 조준(유성우) · 취소 구역 · 착탄 연출
@@ -3294,7 +3321,7 @@ function skLoop(now){const dt=Math.min(0.1,(now-skLast)/1000);skLast=now;skAimTi
     const t=_lk?'🔒'+Math.ceil(_lk):(act?'⚡'+Math.ceil(skAct[id]):cd?Math.ceil(skCD[id])+'':'');const c=b.querySelector('.cd');if(c.textContent!==t)c.textContent=t}
   requestAnimationFrame(skLoop)}
 requestAnimationFrame(skLoop);
-window.__skill={SKILLS,skCD,skAct,skQ,fireSkill,hostSkill,skPress,skRelease,get hold(){return skHold}};
+window.__skill={SKILLS,skCD,skAct,skQ,fireSkill,hostSkill,skPress,skRelease,get hold(){return skHold},get mines(){return mines}};
 </script>
 
 <!-- ================== 크리스탈 · 상점 · 메이데이 ================== -->
@@ -3346,7 +3373,7 @@ const KEY='neonSurvivorProfile';
 const ITEMS={
  c:[['pink','분홍','#ff6ad5'],['green','초록','#5dff8a'],['gold','금색','#ffd84d'],['orange','주황','#ff8c3a'],['violet','보라','#b46bff'],['white','순백','#ffffff'],['red','진홍','#ff4d6d']].map(a=>({id:'c_'+a[0],k:'c',n:a[1],col:a[2],p:30})),
  t:[['spark','불꽃 입자'],['bubble','물방울 링'],['star','별가루'],['pixel','네온 픽셀'],['rainbow','무지개 띠']].map(a=>({id:'t_'+a[0],k:'t',n:a[1],tk:a[0],p:60})),
- s:[['star','별'],['skull','해골'],['robot','로봇'],['cat','고양이'],['ghost','유령'],['gem','다이아'],['poodle','푸들'],['guinea','기니피그'],['crab','게'],['gozskull','고자라 두개골']].map(a=>({id:'s_'+a[0],k:'s',n:a[1],sk:a[0],p:100})), // v112 푸들·기니피그·게·고자라 두개골
+ s:[['star','별'],['skull','해골'],['robot','로봇'],['cat','고양이'],['ghost','유령'],['gem','다이아'],['poodle','푸들'],['guinea','기니피그'],['crab','게'],['gozskull','고자라 두개골'],['fox','여우']].map(a=>({id:'s_'+a[0],k:'s',n:a[1],sk:a[0],p:100})), // v112 푸들·기니피그·게·고자라 두개골 · v132 여우
  tw:[['sapphire','사파이어','#4da6ff',80],['ruby','루비','#ff4d6d',80],['gold','황금','#ffd84d',120],['obsidian','흑요석','#b46bff',120],['ice','얼음','#9ef6ff',100],['sun','태양','#ff8c3a',100]].map(a=>({id:'tw_'+a[0],k:'tw',n:a[1],col:a[2],p:a[3]})),
  k:Object.keys(SKILLS).filter(skOK).map(w=>({id:'sk_'+w,k:'k',n:WEAPONS[w].name,sw:w,p:100})),
  m:[{id:'mayday',k:'m',n:'메이데이',p:1000}]};
@@ -3440,8 +3467,22 @@ const SKIN2={
    g.fillStyle=F('#ff8c1a');g.shadowColor='#ff8c1a';g.shadowBlur=LG?0:8;g.beginPath();g.arc(3,-5.8,1.8,0,TAU);g.fill();g.shadowBlur=0; // 희미한 주황 눈빛
    g.fillStyle='#0b1f1b';g.beginPath();g.ellipse(17.6,-5.6,1.5,1.1,-0.3,0,TAU);g.fill(); // 콧구멍
    g.strokeStyle='#3b5f55';g.lineWidth=1;g.beginPath();g.moveTo(-4,-15.5);g.lineTo(-5.5,-12.5);g.lineTo(-4,-10.5);g.moveTo(-15.5,-3);g.lineTo(-13,-1.5);g.lineTo(-13.6,1);g.moveTo(3,11.2);g.lineTo(5,9.6);g.stroke(); // 금
-   g.restore()}};
-const SKIN2_FLIP=new Set(['poodle','guinea','crab','gozskull']); // v116 고자라 두개골도 옆모습 → 이동 방향으로 좌우 반전(회전 없음)
+   g.restore()},
+ fox(g,col,bl){const F=c=>bl?'#fff':c; // v132 네온 여우: 뾰족 귀 + 두 갈래 꼬리
+   g.lineWidth=3;
+   g.strokeStyle=F('#ff8a4c');g.fillStyle=F('#c2410c');
+   g.beginPath();g.moveTo(-6,-2);g.quadraticCurveTo(-20,-6,-19,-17);g.quadraticCurveTo(-11,-9,-3,-5);g.closePath();g.fill();g.stroke();
+   g.beginPath();g.moveTo(-6,3);g.quadraticCurveTo(-21,8,-19,19);g.quadraticCurveTo(-10,12,-2,6);g.closePath();g.fill();g.stroke();
+   g.strokeStyle=bl?'#fff':col;g.fillStyle=F('#e4570f');
+   g.beginPath();g.moveTo(-12,-4);g.lineTo(-11,-20);g.lineTo(-3,-12);g.lineTo(5,-12);g.lineTo(13,-20);g.lineTo(14,-4);
+   g.quadraticCurveTo(15,9,1,15);g.quadraticCurveTo(-13,9,-12,-4);g.closePath();g.fill();g.stroke();
+   g.fillStyle=F('#ffcfa6');g.beginPath();g.moveTo(-9.5,-7.5);g.lineTo(-9,-16.5);g.lineTo(-5,-10.5);g.closePath();g.fill();
+   g.beginPath();g.moveTo(11.5,-7.5);g.lineTo(11,-16.5);g.lineTo(7,-10.5);g.closePath();g.fill();
+   g.fillStyle=F('#fff4e8');g.beginPath();g.moveTo(-4.5,4);g.quadraticCurveTo(1,1.5,6.5,4);g.quadraticCurveTo(6.5,11,1,13);g.quadraticCurveTo(-4.5,11,-4.5,4);g.closePath();g.fill();
+   g.fillStyle=bl?'#0d2a44':col;g.beginPath();g.ellipse(-4.6,-2.4,2.4,3.1,0,0,TAU);g.ellipse(5.6,-2.4,2.4,3.1,0,0,TAU);g.fill();
+   g.fillStyle='#231008';g.beginPath();g.moveTo(-0.8,6);g.lineTo(2.6,6);g.lineTo(0.9,9);g.closePath();g.fill()}
+};
+const SKIN2_FLIP=new Set(['poodle','guinea','crab','gozskull','fox']); // v116 고자라 두개골도 옆모습 → 이동 방향으로 좌우 반전(회전 없음)
 const _dp=drawPlayer;
 drawPlayer=function(){const p=P;if(!p)return _dp();const cs=cosOf(p);drawTrailFx(p);const ci=ALL[cs.c],sv=p.col;if(ci)p.col=ci.col;try{_dp()}finally{p.col=sv}
   const si=ALL[cs.s];if(si){const blink=p.inv>0&&G&&Math.floor(G.t*30)%2===0;const bob=p.moving?Math.sin(p.walk||0)*2:0;ctx.save();ctx.translate(p.x,p.y+bob);if(SKIN2_FLIP.has(si.sk)){const fx=p.fx||0;if(fx<-0.15)p._skF=-1;else if(fx>0.15)p._skF=1;if(p._skF<0)ctx.scale(-1,1)}ctx.fillStyle='#0d2a44';ctx.beginPath();ctx.arc(0,0,(p.r||14)+2,0,TAU);ctx.fill();ctx.beginPath();ctx.moveTo(-12,-9);ctx.lineTo(12,-9);ctx.lineTo(2,-29);ctx.closePath();ctx.fill();
@@ -3596,7 +3637,11 @@ let last=performance.now();
 (function loop(now){const dt=Math.min(0.1,(now-last)/1000);last=now;const ing=state==='play'||state==='raid';$('cryHud').classList.toggle('show',ing||state==='paused'||state==='levelup');$('cryHud').classList.toggle('raid',state==='raid');
   sb.classList.toggle('on',owns('mayday'));const _Rlk=rR(),_lkM=_Rlk&&_Rlk.skLockT>0;const rd=mdReady();sb.classList.toggle('lock',!rd||_lkM);sb.classList.toggle('ready',rd&&!_lkM);  {const cd=sb.querySelector('.cd')||(()=>{const e=document.createElement('span');e.className='cd';sb.appendChild(e);return e})();const t=_lkM?'🔒'+Math.ceil(_Rlk.skLockT):'';if(cd.textContent!==t)cd.textContent=t}
   if(ing){spawnTrails(dt);mdTick(dt)}mdSir=Math.max(0,mdSir-dt);$('mdSiren').style.opacity=mdSir>0?(0.5+0.5*Math.sin(now/90)).toFixed(2):'0';requestAnimationFrame(loop)})(last);
-skFix();{const _os=openSettings;openSettings=function(){skFix();_os();renderMdRow()}}
+skFix();{const _os=openSettings;openSettings=function(){skFix();_os();renderMdRow();updSetBtns()}} // v132 설정 열 때 그래픽/숫자 버튼 상태 동기화
+// v132 타이틀 설정에서도 효과 간소(저사양) · 데미지 숫자 토글 (설정 화면 HTML이 이 스크립트 앞에 있어 여기서 연결)
+$('setGfxBtn').onclick=()=>{SET.gfx=SET.gfx==='low'?'high':'low';if(lowGfx()&&parts.length>500)parts.splice(0,parts.length-500);saveSettings();updSetBtns()};
+$('setDmgBtn').onclick=()=>{SET.dmgNum=!SET.dmgNum;if(!SET.dmgNum)texts=[];saveSettings();updSetBtns()};
+updSetBtns();
 // 크리스탈 부활: 일반·하드·전사 모드만, 판마다 1회 (저장 안 함)
 let rvUsed=false;const RV_COST=100,RV_MODES=['normal','hard','warrior'];
 {const o=document.createElement('div');o.className='ov';o.id='rvOv';o.innerHTML='<div class="big" style="color:#ff4d6d;text-shadow:0 0 24px #ff2e63">쓰러졌다!</div><div class="stats" id="rvBal"></div><div class="row"><button class="btn" id="rvBtn">💠 크리스탈 100개로 부활</button><button class="btn sec" id="rvGive">포기</button></div>';document.body.appendChild(o);
