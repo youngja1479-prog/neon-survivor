@@ -797,19 +797,12 @@ function inputVec(){
   return {dx,dy,m:Math.min(1,m)};
 }
 function bindJoy(){
-  const wrap=$('joyWrap'),knob=$('joyKnob');
-  /* 동그란 베이스는 터치한 자리에 그려지고, 손을 떼면 사라진다 */
-  function place(x,y){
-    wrap.style.left=x+'px';wrap.style.top=y+'px';
-    wrap.classList.add('on');
-  }
+  /* 조이스틱 그림은 drawJoy()가 캔버스에 직접 그린다 (1편과 동일) */
   function start(e){
     if(state!=='play')return;
     if(joy.on)return;
     joy.on=true;joy.id=e.pointerId;
     joy.ox=joy.x=e.clientX;joy.oy=joy.y=e.clientY;joy.dx=0;joy.dy=0;
-    place(joy.ox,joy.oy);
-    knob.style.transform='translate(0,0)';
     try{cv.setPointerCapture(e.pointerId)}catch(err){}
     e.preventDefault();
   }
@@ -819,15 +812,11 @@ function bindJoy(){
     const dx=joy.x-joy.ox,dy=joy.y-joy.oy,l=Math.hypot(dx,dy);
     if(l>joy.dead){const k=Math.min(1,l/joy.r);joy.dx=dx/l*k;joy.dy=dy/l*k}
     else{joy.dx=0;joy.dy=0}
-    const vis=l>joy.r?joy.r/l:1;
-    knob.style.transform='translate('+(dx*vis)+'px,'+(dy*vis)+'px)';
     e.preventDefault();
   }
   function end(e){
     if(e.pointerId!==joy.id)return;
     joy.on=false;joy.id=null;joy.dx=0;joy.dy=0;
-    wrap.classList.remove('on');
-    knob.style.transform='translate(0,0)';
     try{cv.releasePointerCapture(e.pointerId)}catch(err){}
   }
   cv.addEventListener('pointerdown',start,{passive:false});
@@ -894,6 +883,18 @@ function drawScene(dt){
   drawVignette();
   drawGoalArrow();
   drawHitFlash();
+  drawJoy();
+}
+/* ---------------- 플로팅 조이스틱 (1편과 동일한 캔버스 렌더) ---------------- */
+function drawJoy(){
+  if(!joy.on)return;
+  ctx.globalAlpha=0.5;
+  ctx.strokeStyle='#8fa0ff';ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(joy.ox,joy.oy,joy.r,0,TAU);ctx.stroke();
+  const dx=joy.x-joy.ox,dy=joy.y-joy.oy,l=Math.hypot(dx,dy),k=l>joy.r?joy.r/l:1;
+  ctx.fillStyle='#4df3ff';
+  ctx.beginPath();ctx.arc(joy.ox+dx*k,joy.oy+dy*k,24,0,TAU);ctx.fill();
+  ctx.globalAlpha=1;
 }
 
 /* ---------------- 바닥 (NS1 네온 그리드) ---------------- */
