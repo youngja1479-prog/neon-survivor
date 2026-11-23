@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v136</title>
+<title>네온 생존자 - NEON SURVIVOR v137</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#07060f;color:#fff;
@@ -179,7 +179,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">Neon Survivor · v136</div>
+  <div class="sub">Neon Survivor · v137</div>
   <div class="box">
     <div class="hrow"><span class="ic"></span><span><b>이동</b> — <b class="m">WASD</b> / 방향키 · 모바일은 화면을 드래그</span></div>
     <div class="hrow k"><span class="ic"></span><span>모드와 시작 무기를 고르면 무기는 <b class="y">자동으로 공격</b>합니다. 피하는 데만 집중하세요.</span></div>
@@ -193,6 +193,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
     <br><b>v134</b> · 일시정지 화면에서 최고 레벨 무기·패시브에 (MAX) 표시
     <br><b>v135</b> · 벽 근처에서 적이 플레이어 위에 겹쳐 나오던 스폰 버그 수정
     <br><b>v136</b> · 레이드 전 모드에서 적이 한 마리도 나오지 않던 긴급 버그 수정
+    <br><b>v137</b> · 재생의 반지 소폭 너프(초당 +0.7) · 잡몹 스폰 증가(화살표형·원거리형은 그대로) · 자폭형 신규 몬스터 「뇌관충」 추가
     </details>
   </div>
   <button class="btn" id="startBtn">게임 시작</button>
@@ -400,12 +401,14 @@ const PASSIVES={
   magnet:{name:'자석',desc:'보석 획득 범위 +30%'},
   haste:{name:'시간 가속',desc:'모든 무기 쿨타임 -7%'},
   power:{name:'파괴의 힘',desc:'모든 피해량 +10%'},
-  regen:{name:'재생의 반지',desc:'초당 체력 +0.8 회복'},
+  regen:{name:'재생의 반지',desc:'초당 체력 +0.7 회복'},
   area:{name:'확장의 룬',desc:'무기 공격 범위 +10%'},
   trail:{name:'네온 잉크',desc:'궤적 길이 +15%, 올가미 피해 +20%'},
   armor:{name:'방어의 갑옷',desc:'받는 피해 -7%'},
 };
-const MAXLV=5, MAX_WEAPONS=99, CRAZY_ITEM_MAX=10, ITEM_TBL_MAX=15;window.LV_GOLD=10;const LV_GOLD=window.LV_GOLD;
+// v137: 재생의 반지 초당 회복량(레벨당) — 설명 문구와 반드시 같은 값을 쓸 것
+const REGEN_PS=0.7,
+  MAXLV=5, MAX_WEAPONS=99, CRAZY_ITEM_MAX=10, ITEM_TBL_MAX=15;window.LV_GOLD=10;const LV_GOLD=window.LV_GOLD;
 const maxLv=()=>isCrazy()?CRAZY_ITEM_MAX:MAXLV; // 크레이지만 무기·패시브 Lv10까지
 const pMaxLv=()=>{const r=typeof window!=='undefined'&&window.__raid&&window.__raid.R;if(r&&r.diff==='normal'&&r.lvCap)return Math.min(ITEM_TBL_MAX,r.lvCap);if(r&&r.diff==='story'){if(r.crazy)return ITEM_TBL_MAX;if(r.cap10)return 10;if(r.pMax7)return 7;if(r.pMax6)return 6}return maxLv()}; // v110 레이드 크레이지 Lv15, 스토리 강산 처치 후 Lv10
 const wMaxLv=()=>{const r=typeof window!=='undefined'&&window.__raid&&window.__raid.R;if(r&&r.diff==='normal'&&r.lvCap)return Math.min(ITEM_TBL_MAX,r.lvCap);if(r&&r.diff==='story'){if(r.crazy)return ITEM_TBL_MAX;if(r.cap10)return 10}return (r&&r.diff==='story'&&r.wMax6)?6:maxLv()};
@@ -427,7 +430,10 @@ const ETYPES={
   elite:{r:40,hp:240,spd:72,dmg:16,xp:0,color:'#ffcf40',kb:0.12},
   splitter:{r:16,hp:34,spd:60,dmg:9,xp:3,color:'#3cffd0',kb:0.8},
   shard:{r:8,hp:5,spd:125,dmg:5,xp:1,color:'#3cffd0'},
+  // v137 신규: 자폭형 「뇌관충」 — 접근 후 1.5초 점멸 경고 → 폭발(주변 적까지 휘말림)
+  bomber:{r:15,hp:24,spd:58,dmg:8,xp:3,color:'#ff5a1f',kb:0.9},
 };
+const BOMB_TRIG=130, BOMB_FUSE=1.5, BOMB_R=150, BOMB_CHAIN=0.3; // v137 뇌관충: 폭발 트리거 거리 · 도화선 시간 · 폭발 반경 · 연쇄 도화선
 
 // ================== 스프라이트 캐시 ==================
 function makeCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
@@ -460,6 +466,7 @@ function buildSprites(){
       else if(k==='charger'){g.moveTo(r*1.2,0);g.lineTo(-r*0.8,r*0.9);g.lineTo(-r*0.4,0);g.lineTo(-r*0.8,-r*0.9);g.closePath()}
       else if(k==='splitter'){g.moveTo(0,-r*1.15);g.lineTo(r*1.05,0);g.lineTo(0,r*1.15);g.lineTo(-r*1.05,0);g.closePath()}
       else if(k==='shard'){g.moveTo(0,-r*1.2);g.lineTo(r*1.0,r*0.8);g.lineTo(-r*1.0,r*0.8);g.closePath()}
+      else if(k==='bomber'){for(let i=0;i<8;i++){const a=i/8*TAU+TAU/16;g.lineTo(Math.cos(a)*r,Math.sin(a)*r)}g.closePath()} // v137 팔각형 몸통(보라 육각형·주황 화살·초록 원과 구분)
       else if(k==='elite'){for(let i=0;i<8;i++){const a=i/8*TAU+TAU/16;g.lineTo(Math.cos(a)*r,Math.sin(a)*r)}g.closePath()}
       else if(k==='boss'){for(let i=0;i<24;i++){const a=i/24*TAU,rr=i%2?r*0.78:r*1.05;g.lineTo(Math.cos(a)*rr,Math.sin(a)*rr)}g.closePath()}
       g.fill();g.stroke();g.shadowBlur=0;
@@ -471,6 +478,10 @@ function buildSprites(){
         if(k==='spitter'){g.strokeStyle=t.color;g.lineWidth=2;g.beginPath();g.arc(0,0,r*0.55,0,TAU);g.stroke();g.beginPath();g.arc(0,0,3.5,0,TAU);g.fill()}
         if(k==='splitter'){g.beginPath();g.arc(-4,-3,2.4,0,TAU);g.arc(4,-3,2.4,0,TAU);g.fill();g.strokeStyle='#fff';g.lineWidth=1.8;g.beginPath();g.moveTo(0,-r*1.0);g.lineTo(-3,2);g.lineTo(3,6);g.lineTo(0,r*1.0);g.stroke()}
         if(k==='shard'){g.beginPath();g.arc(0,1,1.8,0,TAU);g.fill()}
+        if(k==='bomber'){g.fillStyle='#2a0a06';g.beginPath();g.arc(0,0,r*0.62,0,TAU);g.fill(); // 어두운 폭심 + 밝은 뇌관 코어 + 심지
+          g.fillStyle='#ffd166';g.beginPath();g.arc(0,0,r*0.32,0,TAU);g.fill();g.fillStyle='#fff6d8';g.beginPath();g.arc(-r*0.10,-r*0.10,r*0.13,0,TAU);g.fill();
+          g.strokeStyle='#ffd166';g.lineWidth=2.6;g.beginPath();g.moveTo(r*0.18,-r*0.86);g.quadraticCurveTo(r*0.62,-r*1.28,r*0.86,-r*1.02);g.stroke();
+          g.fillStyle='#ff7a2f';g.beginPath();g.arc(r*0.9,-r*1.0,2.6,0,TAU);g.fill()}
         if(k==='elite'){g.fillStyle='#fff';g.beginPath();g.arc(-12,-2,6,0,TAU);g.arc(12,-2,6,0,TAU);g.fill();g.fillStyle='#7a4a00';g.beginPath();g.arc(-12,-2,2.6,0,TAU);g.arc(12,-2,2.6,0,TAU);g.fill();
           g.fillStyle='#ffcf40';g.beginPath();g.moveTo(-17,-20);g.lineTo(-17,-33);g.lineTo(-9,-26);g.lineTo(0,-36);g.lineTo(9,-26);g.lineTo(17,-33);g.lineTo(17,-20);g.closePath();g.fill();
           g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.moveTo(-14,16);for(let i=0;i<6;i++)g.lineTo(-14+i*5.6,i%2?22:14);g.stroke()}
@@ -560,7 +571,7 @@ function tdUpLv(k){return (G.tower&&G.tower.up&&G.tower.up[k])||0}
 function tdUpCost(k){return Math.round(TD_UP[k].base*Math.pow(1.45,tdUpLv(k)))}
 function tdCanBuy(k){return !!(isTower()&&G.tower&&G.tower.hp>0&&tdUpLv(k)<TD_UP[k].max&&(G.cores|0)>=tdUpCost(k))}
 function tdGrantCores(e){if(!isTower()||!e)return;if(state==='raid'&&window.__raid&&__raid.R&&!__raid.R.host)return;
-  const n=e.type==='elite'?10:e.type==='brute'?3:e.type==='charger'||e.type==='spitter'||e.type==='splitter'?2:(Math.random()<0.48?1:0);
+  const n=e.type==='elite'?10:e.type==='brute'?3:e.type==='charger'||e.type==='spitter'||e.type==='splitter'||e.type==='bomber'?2:(Math.random()<0.48?1:0);
   if(n<=0)return;G.cores=(G.cores|0)+n;dmgText(e.x,e.y-(e.r||16)-14,'+'+n+' 코어','#ffb44a',16)}
 function tdApplyBuy(k){if(!TD_UP[k]||!tdCanBuy(k))return false;G.cores-=tdUpCost(k);G.tower.up[k]=(G.tower.up[k]|0)+1;
   if(k==='hp'){G.tower.maxHp+=700;G.tower.hp=Math.min(G.tower.maxHp,G.tower.hp+700)}
@@ -662,7 +673,7 @@ function spawnEnemy(type,x,y){
   const T=ETYPES[type];const m=type==='boss'?1:hpMul();const dtv=diffT();
   const spdM=type==='boss'?(isCrazy()?1.9:isHard()?1.12:1):rand(0.9,1.1)*(isHard()?1.14:1);
   const e={type,x,y,r:T.r,hp:T.hp*m,maxHp:T.hp*m,spd:T.spd*spdM,dmg:T.dmg*(1+dtv/(isHard()?300:420))*(isHard()?1.4:1)*UPD(),xp:Math.round(T.xp*(1+dtv/600)*(isHard()?0.82:1)),flash:0,kbx:0,kby:0,kbRes:T.kb||1,
-    orbT:-9,auraT:-9,slowT:0,shootT:rand(1,2.5)*(isHard()?0.8:1),st:0,stT:rand(2,4),dx:0,dy:0,rot:0,dead:false};
+    orbT:-9,auraT:-9,slowT:0,shootT:rand(1,2.5)*(isHard()?0.8:1),st:0,stT:rand(2,4),dx:0,dy:0,rot:0,fz:0,dead:false}; // v137 fz: 뇌관충 도화선 남은 시간
   if(type==='boss'){G.bossN++;const cz=isCrazy();e.r=T.r*(cz?1.9:1);e.hp=e.maxHp=T.hp*Math.pow(2.3,G.bossN-1)*(1+diffT()/900)*(isHard()?1.85:1)*(cz?18:bossLvMul())*UPD();e.dmg=T.dmg*(1+G.bossN*0.25)*(isHard()?1.45:1)*(cz?4.5:1);e.shootT=cz?0.8:isHard()?1.7:2.5;e.dashT=cz?1.6:isHard()?3.4:5;G.boss=e}
   {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff==='story'&&type!=='boss'){const m=_r.storyHard?3.5:1.25,md=_r.storyHard?2.5:1.25;e.hp=e.maxHp=e.hp*m;if(_r.storyHard)e.dmg=T.dmg*2.5;else e.dmg*=md}}
   {const _r=window.__raid&&window.__raid.R;if(state==='raid'&&_r&&_r.diff!=='vs'){e.hp*=1.3;e.maxHp*=1.3}if(state==='raid'&&_r&&_r.diff==='tower'&&type!=='boss'){e.hp*=1.35;e.maxHp*=1.35;e.dmg*=1.35}if(state==='raid'&&_r&&_r.diff!=='vs'&&_r.diff!=='tower'){e.hp*=1.3;e.maxHp*=1.3;e.dmg*=1.2}if(state==='raid'&&_r&&_r.crazy&&type!=='boss'){e.hp*=1.6;e.maxHp*=1.6;e.dmg*=1.4}if(state==='raid'&&_r&&_r.godArmy&&_r.diff==='story'&&type!=='boss'){const A=window.__ARMY;e.hp*=A.hp;e.maxHp*=A.hp;e.dmg*=A.dmg;e.spd*=A.spd}} // v109 신의 군대(강산 처치 후) // v71 + v87 타워 레이드 + v103 레이드 기본 강화(인원 무관 동일)
@@ -711,12 +722,37 @@ function offscreenPos(around){
   }
   return best||{x:0,y:-m}
 }
-function pickType(){const t=diffT();const w=[['grunt',10]];
+function spawnWeights(){const t=diffT();const w=[['grunt',10]];
   const batT=isHard()?8:20,bruteT=isHard()?32:60,spitT=isHard()?50:95,chgT=isHard()?110:210,splT=isHard()?70:120;
   if(t>batT)w.push(['bat',t<60? (isHard()?5:3):(isHard()?8:6)]);if(t>bruteT)w.push(['brute',Math.min(isHard()?3.556:2.889,1+(t-bruteT)/(isHard()?40:60))]); // v93 후반 약 10%
   if(t>spitT)w.push(['spitter',Math.min(isHard()?5:3.5,1+(t-spitT)/(isHard()?55:80))]);if(t>chgT)w.push(['charger',Math.min(isHard()?5:3.5,1+(t-chgT)/(isHard()?55:80))]);
   if(t>splT)w.push(['splitter',Math.min(isHard()?4:3,1+(t-splT)/70)]);
-  let s=0;for(const x of w)s+=x[1];let r=Math.random()*s;for(const x of w){r-=x[1];if(r<=0)return x[0]}return 'grunt'}
+  return w}
+// v137 자폭형 뇌관충 전용 스폰 비중(기본 스폰표는 v136과 동일하게 두어 화살표·원거리 적 절대 빈도를 보존)
+function bombW(){const t=diffT();const bombT=isHard()?40:55;return t>bombT?Math.min(1.7,0.7+(t-bombT)/120):0}
+function pickType(){const w=spawnWeights();let s=0;for(const x of w)s+=x[1];let r=Math.random()*s;for(const x of w){r-=x[1];if(r<=0)return x[0]}return 'grunt'}
+// v137 스폰 밸런스: 보라/주황 화살표형(brute·charger)은 절대 그대로, 원거리(spitter)는 소폭(+12%), 근접 잡몹(grunt·bat·splitter)은 체감(+27%)
+// 기존 스폰 테이블·확률은 건드리지 않고 '잡몹 전용 추가 스폰 흐름'만 더한다 → 화살표형·원거리 적의 절대 빈도가 변하지 않는다.
+const BASIC_T=new Set(['grunt','bat','splitter']), BOOST_BASIC=0.27, BOOST_RANGED=0.12;
+function extraSpawn(dt,rate,cap,around){
+  if(!(rate>0))return;
+  const st=diffT(),tdRush=isTower()&&st>=300,raid=state==='raid';
+  const dbl=(!raid&&isCrazy())?2:1; // 솔로 크레이지: 스폰 1회 = 2마리
+  const p=Math.min(isHard()?0.4:(tdRush?0.45:0.25),st/(isHard()?380:600));
+  const cn=(isHard()?7:5)*dbl*(tdRush?2:1);            // grunt 무리 스폰 마릿수
+  const mGrunt=p*cn+(1-p)*dbl;                          // grunt 1회 선택 시 실제로 나오는 마릿수
+  const w=spawnWeights();let S=0,bw=0,rw=0;
+  for(const x of w){S+=x[1];if(BASIC_T.has(x[0]))bw+=x[1]*(x[0]==='grunt'?mGrunt:dbl);else if(x[0]==='spitter')rw+=x[1]*dbl}
+  if(!(S>0))return;if(!G.xa)G.xa={b:0,r:0,m:0};
+  G.xa.b+=rate*BOOST_BASIC*(bw/S)*dt;G.xa.r+=rate*BOOST_RANGED*(rw/S)*dt;
+  const wB=bombW();if(wB>0)G.xa.m+=rate*(wB/S)*dbl*dt; // 뇌관충: 기본표와 무관한 별도 스트림
+  while(G.xa.b>=1){G.xa.b-=1;if(enemies.length>=cap)continue;const q=offscreenPos(around);let r=Math.random()*bw,tp='grunt';
+    for(const x of w){if(!BASIC_T.has(x[0]))continue;r-=x[1]*(x[0]==='grunt'?mGrunt:dbl);if(r<=0){tp=x[0];break}}
+    spawnEnemy(tp,q.x,q.y)}
+  while(G.xa.r>=1){G.xa.r-=1;if(enemies.length>=cap)continue;const q=offscreenPos(around);spawnEnemy('spitter',q.x,q.y)}
+  if(!(wB>0))G.xa.m=0;
+  while(G.xa.m>=1){G.xa.m-=1;if(enemies.length>=cap)continue;const q=offscreenPos(around);spawnEnemy('bomber',q.x,q.y)}
+}
 function spawner(dt){
   const t=G.t;const st=diffT();const hm=isHard()?1.55:1;const tdRush=isTower()&&t>=300;const midRush=(gameMode==='normal'||gameMode==='hard')&&t>=180; // v99 일반 3분 후 (혼자 클리어 가능하게)
   const rate=(0.8+st*0.012+Math.pow(st/60,2)*0.3)*hm*UPD()*(isCrazy()?2:1)*(soloEasy()?0.85:1)*(isTower()?1.1:1)*(tdRush?4.2+(t-300)/32:1)*SPWN*(midRush?(isHard()?1.5:1.7):1);
@@ -727,6 +763,7 @@ function spawner(dt){
     // 가끔 무리 지어 등장
     if(type==='grunt'&&Math.random()<Math.min(isHard()?0.4:(tdRush?0.45:0.25),st/(isHard()?380:600))){const n=(isHard()?7:5)*(isCrazy()?2:1)*(tdRush?2:1);for(let i=0;i<n;i++){const q=spJitter(p.x,p.y);spawnEnemy('grunt',q.x,q.y)}}
     else{spawnEnemy(type,p.x,p.y);if(isCrazy()){const q=spJitter(p.x,p.y);spawnEnemy(type,q.x,q.y)}}}
+  extraSpawn(dt,rate,cap); // v137 잡몹 추가 스폰(화살표형·원거리 적 제외)
   // 보스: 일반/하드 5분, 크레이지는 30초. 무한 모드면 이후 5분마다. 타워디펜스는 보스 없음, 5분 이후 급습.
   const bossAt=isCrazy()?30:300;
   if(isTower()){
@@ -993,6 +1030,30 @@ function hurtPlayer(d){
 }
 function die(){if(isTower()&&!(G&&G.tdFail)){tdDown();return}state='dying';G.dyingT=1.6;burst(P.x,P.y,'#4df3ff',80,380,1.2,4);burst(P.x,P.y,'#ffffff',40,250,1,3);addShake(18);S.boom()}
 
+// ================== v137 자폭형 「뇌관충」 폭발 ==================
+function bomberBoom(e){
+  if(!e||e.dead)return;
+  e.dead=true;G.bombBooms=(G.bombBooms||0)+1;
+  const R2=BOMB_R*BOMB_R;
+  rings.push({x:e.x,y:e.y,r:0,max:BOMB_R,t:0,dur:0.45,c:'#ff7a2f'});
+  rings.push({x:e.x,y:e.y,r:0,max:BOMB_R*0.6,t:0,dur:0.3,c:'#ffd166'});
+  burst(e.x,e.y,'#ff7a2f',26,320,0.55,3.6);burst(e.x,e.y,'#ffd166',12,210,0.4,2.6);addShake(7);S.boom();
+  // 주변 적도 휘말린다 — 뇌관충끼리는 짧은 도화선으로 연쇄 자폭
+  const list=enemies;
+  for(let i=0;i<list.length;i++){const o=list[i];if(o===e||o.dead||o.type==='raidboss')continue;
+    if((o.x-e.x)**2+(o.y-e.y)**2>R2)continue;
+    if(o.type==='bomber'){if(!(o.fz>0))o.fz=BOMB_CHAIN;continue}
+    hurtEnemy(o,e.dmg*2.2,o.x-e.x,o.y-e.y,150,1)}
+  // 플레이어 피해: 중심에서 멀수록 완만하게 감소(최대 55%)
+  const dmg=Math.max(1,Math.round(e.dmg*2.2));
+  const fall=d2=>1-0.45*Math.min(1,Math.sqrt(d2)/BOMB_R);
+  const rr=(typeof window!=='undefined')?window.__raid:null;
+  if(state==='raid'&&rr&&rr.R&&rr.RP&&rr.RP.length){
+    for(const p of rr.RP){if(p.dead)continue;const d2=(p.x-e.x)**2+(p.y-e.y)**2;if(d2>(BOMB_R+p.r)**2)continue;hurtP(p,Math.max(1,Math.round(dmg*fall(d2))))}
+  }else if(P&&!(P.down)){const d2=(P.x-e.x)**2+(P.y-e.y)**2;if(d2<(BOMB_R+P.r)**2)hurtPlayer(Math.max(1,Math.round(dmg*fall(d2))))}
+  if(isTower()&&G.tower&&G.tower.hp>0&&(G.tower.x-e.x)**2+(G.tower.y-e.y)**2<(BOMB_R+G.tower.r)**2)hurtTower(Math.max(1,Math.round(dmg*0.7)));
+}
+
 // ================== 무기 ==================
 function nearestN(x,y,n,maxD){const res=[],ds=[];const md=maxD*maxD;
   for(const e of enemies){if(e.dead)continue;const dx=e.x-x,dy=e.y-y,d=dx*dx+dy*dy;if(d>md)continue;
@@ -1067,7 +1128,7 @@ function gameUpdate(dt){
   P.moving=ml>0.05;
   if(P.moving){const l=Math.hypot(mx,my)||1;P.fx=mx/l;P.fy=my/l;P.walk+=dt*10}
   if(state==='play'&&!(P&&P.down)){const sp=P.baseSpd*spdMul();P.x=clamp(P.x+mx*sp*dt,-WH+P.r,WH-P.r);P.y=clamp(P.y+my*sp*dt,-WH+P.r,WH-P.r)}
-  P.inv-=dt;if(pl('regen')&&P.hp>0&&!(P&&P.down))P.hp=Math.min(P.maxHp,P.hp+0.8*pl('regen')*dt);
+  P.inv-=dt;if(pl('regen')&&P.hp>0&&!(P&&P.down))P.hp=Math.min(P.maxHp,P.hp+REGEN_PS*pl('regen')*dt);
   if(state==='play'){spawner(dt);if(!(P&&P.down)){updateWeapons(dt);updateBeat(dt);updateTrail(dt);trailWire()}updateEvents(dt);updateTips(dt);if(isTower()){updateTower(dt);if(P.down){P.revT-=dt;if(P.revT<=0)tdRevive()}}}
   G.beatFlash=Math.max(0,G.beatFlash-dt*4);
   buildGrid();
@@ -1087,6 +1148,11 @@ function gameUpdate(dt){
       else if(e.st===1){vx=vy=0;e.stT-=dt;if(e.stT<=0){e.st=2;e.stT=0.6}}
       else{const cs=e.slowT>0?0.45:1;vx=e.dx*430*cs;vy=e.dy*430*cs;e.stT-=dt;if(e.stT<=0){e.st=0;e.stT=rand(2,3.5)}}
       e.rot=e.st===0?Math.atan2(dy,dx):Math.atan2(e.dy,e.dx)}
+    else if(e.type==='bomber'){
+      // v137 뇌관충: 접근 → 사거리 진입 시 정지하고 1.5초 점멸 카운트다운 → 폭발
+      if(e.fz>0){vx=0;vy=0;e.fz-=dt;if(e.fz<=0)bomberBoom(e)}
+      else if(d<BOMB_TRIG){e.fz=BOMB_FUSE;vx=0;vy=0}
+      else{vx=dx*es*1.12;vy=dy*es*1.12}}
     else if(e.type==='elite'){
       if(e.st===0){e.stT-=dt;if(e.stT<=0&&d<300&&state==='play'){e.st=1;e.stT=1.0}}
       else if(e.st===1){vx=vy=0;e.stT-=dt;if(e.stT<=0){e.slams=(e.slams||0)+1;
@@ -1259,6 +1325,12 @@ function render(){
     else{const wob=e.type==='bat'?Math.sin(G.t*20+e.x)*0.15:0;const sz=s.size*(1+wob);ctx.drawImage(s.c,e.x-sz/2,e.y-s.size/2,sz,s.size)}
     if(e.type==='elite'&&!e.dead){ctx.fillStyle='#000a';ctx.fillRect(e.x-32,e.y-e.r-14,64,6);ctx.fillStyle='#ffcf40';ctx.fillRect(e.x-32,e.y-e.r-14,64*Math.max(0,e.hp/e.maxHp),6)}
     if((e.type==='brute')&&e.hp<e.maxHp){ctx.fillStyle='#000a';ctx.fillRect(e.x-16,e.y-e.r-10,32,4);ctx.fillStyle='#b46bff';ctx.fillRect(e.x-16,e.y-e.r-10,32*Math.max(0,e.hp/e.maxHp),4)}
+    if(e.type==='bomber'&&!e.dead){ // v137 뇌관충: 폭발 범위 예고 + 채워지는 카운트다운 + 점멸 가속
+      if(e.fz>0){const k=1-e.fz/BOMB_FUSE,bl=0.5+0.5*Math.sin(G.t*(10+26*k));
+        ctx.fillStyle='rgba(255,70,40,'+(0.06+0.16*k)+')';ctx.beginPath();ctx.arc(e.x,e.y,BOMB_R,0,TAU);ctx.fill();
+        ctx.strokeStyle='rgba(255,120,60,'+(0.4+0.5*k)+')';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(e.x,e.y,BOMB_R,0,TAU);ctx.stroke();
+        ctx.strokeStyle='#ffd166';ctx.lineWidth=5;ctx.beginPath();ctx.arc(e.x,e.y,BOMB_R,-Math.PI/2,-Math.PI/2+TAU*k);ctx.stroke();
+        ctx.globalAlpha=0.25+0.55*bl;ctx.fillStyle='#fff3cf';ctx.beginPath();ctx.arc(e.x,e.y,e.r*0.42,0,TAU);ctx.fill();ctx.globalAlpha=1}}
     if(isTower()&&e.aim&&(e.aim==='player'||enemies.length<90)){ctx.beginPath();if(e.aim==='tower'){ctx.fillStyle='#ff9a3c';ctx.moveTo(e.x,e.y-e.r-12);ctx.lineTo(e.x-5,e.y-e.r-4);ctx.lineTo(e.x+5,e.y-e.r-4);ctx.closePath();ctx.fill()}else{ctx.fillStyle='#4df3ff';ctx.arc(e.x,e.y-e.r-8,3.4,0,TAU);ctx.fill()}}}
   // 적 탄환
   for(const b of ebullets){const s=SPR[b.k];ctx.drawImage(s.c,b.x-s.size/2,b.y-s.size/2,s.size,s.size)}
@@ -2152,7 +2224,7 @@ function vsArenaUpdate(dt){if(!R)return;
     swapIn(p);let mx=p.mx,my=p.my;const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml}
     p.moving=ml>0.05;if(p.moving){p.fx=mx/(ml||1);p.fy=my/(ml||1);p.walk+=dt*10}
     const sp=p.baseSpd*spdMul();p.x=clamp(p.x+mx*sp*dt,-WH+p.r,WH-p.r);p.y=clamp(p.y+my*sp*dt,-WH+p.r,WH-p.r);
-    p.inv-=dt;if(pl('regen')&&p.hp>0)p.hp=Math.min(p.maxHp,p.hp+0.8*pl('regen')*dt);
+    p.inv-=dt;if(pl('regen')&&p.hp>0)p.hp=Math.min(p.maxHp,p.hp+REGEN_PS*pl('regen')*dt);
     vsAttachProxies(p);const a=projs.length,b=mines.length,c=meteors.length,r0=rings.length;buildGrid();updateWeapons(dt);updateTrail(dt);
     for(let i=r0;i<rings.length;i++)if(rings[i].follow){rings[i].follow=false;rings[i].fo=p}
     for(let i=a;i<projs.length;i++)owners.set(projs[i],p.id);for(let i=b;i<mines.length;i++)owners.set(mines[i],p.id);for(let i=c;i<meteors.length;i++)owners.set(meteors[i],p.id);
@@ -2523,6 +2595,7 @@ function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;const tdRush=
     let type=pickType();if(R.godArmy&&R.diff==='story'){if(type==='grunt'&&Math.random()<ARMY.mix)type=Math.random()<0.5?'brute':'charger'}else if(R.crazy&&type==='grunt'&&Math.random()<0.2)type=Math.random()<0.5?'brute':'charger';else if(R.endless&&type==='grunt'&&Math.random()<ENDLESS.mix*enK())type=Math.random()<0.5?'brute':'charger';const pos=offscreenPos(R.diff==='tower'?G.tower:null);
     if(type==='grunt'&&Math.random()<Math.min(isHard()?0.4:(tdRush?0.45:0.25),st/(isHard()?380:600))){const n=(isHard()?7:5)*(tdRush?2:1);for(let i=0;i<n;i++){const qj=spJitter(pos.x,pos.y);spawnEnemy('grunt',qj.x,qj.y)}}
     else spawnEnemy(type,pos.x,pos.y)}
+  extraSpawn(dt,rate,cap,R.diff==='tower'?G.tower:null); // v137 잡몹 추가 스폰(화살표형·원거리 적 제외)
   if(R.t>=R.nextElite&&canElite()){R.nextElite=R.t+eEvery();const tp=ps[Math.random()*ps.length|0];const a=rand(0,TAU),d=520;
     const x=clamp(tp.x+Math.cos(a)*d,-WH+60,WH-60),y=clamp(tp.y+Math.sin(a)*d,-WH+60,WH-60);G.elite=spawnEnemy('elite',x,y);G.elite.st=0;G.elite.stT=2.5;G.elite.slams=0;eliteSpawned(G.elite);
     showBanner('👑 거대 엘리트 습격! 처치하면 큰 보상','#ffcf40')}}
@@ -2580,7 +2653,7 @@ function hostUpdate(dt){
   for(const p of RP){if(p.dead)continue;if(p.rai)raidAiInput(p,dt);swapIn(p);let mx=p.mx,my=p.my;const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml}
     p.moving=ml>0.05;if(p.moving){p.fx=mx/(ml||1);p.fy=my/(ml||1);p.walk+=dt*10}
     const sp=p.baseSpd*spdMul();p.x=clamp(p.x+mx*sp*dt,-WH+p.r,WH-p.r);p.y=clamp(p.y+my*sp*dt,-WH+p.r,WH-p.r);
-    p.inv-=dt;if(p.chooseT>0)p.chooseT-=dt;if(pl('regen')&&p.hp>0)p.hp=Math.min(p.maxHp,p.hp+0.8*pl('regen')*dt);
+    p.inv-=dt;if(p.chooseT>0)p.chooseT-=dt;if(pl('regen')&&p.hp>0)p.hp=Math.min(p.maxHp,p.hp+REGEN_PS*pl('regen')*dt);
     const a=projs.length,b=mines.length,c=meteors.length,r0=rings.length;buildGrid();updateWeapons(dt);updateTrail(dt);trailWire();for(let i=r0;i<rings.length;i++)if(rings[i].follow){rings[i].follow=false;rings[i].fo=p}
     for(let i=a;i<projs.length;i++)owners.set(projs[i],p.id);for(let i=b;i<mines.length;i++)owners.set(mines[i],p.id);for(let i=c;i<meteors.length;i++)owners.set(meteors[i],p.id);
     swapOut(p)}
@@ -2600,6 +2673,11 @@ function hostUpdate(dt){
       else if(e.st===1){vx=vy=0;e.stT-=dt;if(e.stT<=0){e.st=2;e.stT=0.6}}
       else{const cs=e.slowT>0?0.45:1;vx=e.dx*430*cs;vy=e.dy*430*cs;e.stT-=dt;if(e.stT<=0){e.st=0;e.stT=rand(2,3.5)}}
       e.rot=e.st===0?Math.atan2(dy,dx):Math.atan2(e.dy,e.dx)}
+    else if(e.type==='bomber'){
+      // v137 뇌관충: 접근 → 사거리 진입 시 정지하고 1.5초 점멸 카운트다운 → 폭발
+      if(e.fz>0){vx=0;vy=0;e.fz-=dt;if(e.fz<=0)bomberBoom(e)}
+      else if(d<BOMB_TRIG){e.fz=BOMB_FUSE;vx=0;vy=0}
+      else{vx=dx*es*1.12;vy=dy*es*1.12}}
     else if(e.type==='elite'){
       if(e.st===0){e.stT-=dt;if(e.stT<=0&&d<300){e.st=1;e.stT=1.0}}
       else if(e.st===1){vx=vy=0;e.stT-=dt;if(e.stT<=0){e.slams=(e.slams||0)+1;
@@ -2683,6 +2761,7 @@ function hostUpdate(dt){
 }
 // ---------- 스냅샷 (클라이언트도 원본 render로 똑같이 그리기 위한 상태) ----------
 const r1=v=>Math.round(v),r2=v=>Math.round(v*100)/100;
+const FZT=new Set(['bomber']); // v137 뇌관충 도화선도 스냅샷으로 동기화
 const ET=Object.keys(ETYPES),PK=['bolt','boom','seek','Sarrow','Sblade','Sboom','Sstorm','Saura','Slaser','Spulse','Sdash','Sfire'],EBK=['ebullet','bossbullet'],ROTT=new Set(['charger','elite','boss']);
 let snapN=0;const pKey={};
 function nearAny(x,y,ps,m){for(const p of ps)if(Math.abs(p.x-x)<m&&Math.abs(p.y-y)<m*0.8)return true;return false}
@@ -2701,7 +2780,7 @@ function snapFor(c){const sn=c._sn=(c._sn||0)+1;const full=sn%30===1,slow=full||
   const inV=(x,y,m)=>Math.abs(x-ox)<vw+m&&Math.abs(y-oy)<vh+m;
   // 적: id2 타입1 플래그1 x2 y2 (+hp1) (+rot2 dx1 dy1)
   let E='',ne=0;for(const e of enemies){if(e.dead||e.type==='raidboss')continue;if(!inV(e.x,e.y,e.r||0))continue;if(++ne>320)break;const n=nid(e);
-    E+=B64[n>>6]+B64[n&63]+e1(ET.indexOf(e.type)*6+clamp(e.st|0,0,2)*2+(e.flash>0?1:0))+e2(e.x-ox)+e2(e.y-oy);if(HPT.has(e.type))E+=e1(Math.round(63*Math.max(0,e.hp)/e.maxHp));
+    E+=B64[n>>6]+B64[n&63]+e1(ET.indexOf(e.type)*6+clamp(e.st|0,0,2)*2+(e.flash>0?1:0))+e2(e.x-ox)+e2(e.y-oy);if(HPT.has(e.type))E+=e1(Math.round(63*Math.max(0,e.hp)/e.maxHp));if(FZT.has(e.type))E+=e1(Math.round(63*Math.max(0,e.fz||0)/BOMB_FUSE));
     if(ROTT.has(e.type))E+=e2(wrapA(e.rot||0)*600)+e1(Math.round((e.dx||0)*31)+32)+e1(Math.round((e.dy||0)*31)+32)}
   // 적 탄: x2 y2 종류1 vx2 vy2 (게스트가 속도로 외삽)
   let EB='',nb=0;for(const b of ebullets){if(nb>=700)break;if(!inV(b.x,b.y,40))continue;nb++;EB+=e2(b.x-ox)+e2(b.y-oy)+e1(EBK.indexOf(b.k))+e2(Math.atan2(b.vy||0,b.vx||0)*650)+e1(Math.hypot(b.vx||0,b.vy||0)/10)}
@@ -2738,8 +2817,8 @@ function applySnap(d){R.t=d.T;G.t=d.T;R.phase=d.ph;R.diff=d.diff;if(d.TW){if(!G.
   if(d.LF)G.loopFx=d.LF.map(a=>{const poly=[];for(let j=0;j<a[2].length;j+=2)poly.push({x:a[2][j],y:a[2][j+1]});return {perfect:!!a[0],t:a[1],poly}});
   if(d.CL)G.calls=d.CL.map(a=>({x:a[0],y:a[1],txt:a[2],c:a[3],life:a[4],s:a[5]}));
   const me=RP.find(p=>p.id===myId);if(me){if(lastMyHp!==null&&me.hp<lastMyHp){hurtFlash=0.35;S.hurt()}lastMyHp=me.hp}
-  {const A=d.E,out=[];let i=0;while(i<A.length){const c2=d1(A,i+2),ty=ET[(c2/6)|0],f=c2%6;const e={_n:d1(A,i)<<6|d1(A,i+1),type:ty,x:d2(A,i+3)+OX,y:d2(A,i+5)+OY,r:ETYPES[ty].r,flash:f&1?0.1:0,st:f>>1,hp:1,maxHp:1,dead:false,rot:0,dx:0,dy:0};i+=7;
-    if(HPT.has(ty))e.hp=d1(A,i++)/63;if(ROTT.has(ty)){e.rot=d2(A,i)/600;e.dx=(d1(A,i+2)-32)/31;e.dy=(d1(A,i+3)-32)/31;i+=4}e.x0=e.x;e.y0=e.y;out.push(e)}enemies=out}
+  {const A=d.E,out=[];let i=0;while(i<A.length){const c2=d1(A,i+2),ty=ET[(c2/6)|0],f=c2%6;const e={_n:d1(A,i)<<6|d1(A,i+1),type:ty,x:d2(A,i+3)+OX,y:d2(A,i+5)+OY,r:ETYPES[ty].r,flash:f&1?0.1:0,st:f>>1,hp:1,maxHp:1,dead:false,rot:0,dx:0,dy:0,fz:0};i+=7;
+    if(HPT.has(ty))e.hp=d1(A,i++)/63;if(FZT.has(ty))e.fz=d1(A,i++)/63*BOMB_FUSE;if(ROTT.has(ty)){e.rot=d2(A,i)/600;e.dx=(d1(A,i+2)-32)/31;e.dy=(d1(A,i+3)-32)/31;i+=4}e.x0=e.x;e.y0=e.y;out.push(e)}enemies=out}
   G.elite=enemies.find(e=>e.type==='elite')||null;
   {const A=d.PJ,o=[];for(let i=0;i<A.length;i+=10){const x=d2(A,i+3)+OX,y=d2(A,i+5)+OY;o.push({_n:d1(A,i)<<6|d1(A,i+1),k:PK[d1(A,i+2)],x,y,x0:x,y0:y,rot:d2(A,i+7)/600,r:d1(A,i+9)})}projs=o}
   {const A=d.EB,o=[];for(let i=0;i<A.length;i+=8){const x=d2(A,i)+OX,y=d2(A,i+2)+OY,an=d2(A,i+5)/650,sp=d1(A,i+7)*10;o.push({x,y,x0:x,y0:y,k:EBK[d1(A,i+4)],vx:Math.cos(an)*sp,vy:Math.sin(an)*sp})}ebullets=o}applyEv(d.EV);
@@ -2998,6 +3077,7 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
   giveXp(id,n){const p=RP.find(p=>p.id===(id||myId));if(p)p.xp+=n},
   killAll(){if(R)for(const p of RP){p.hp=0;p.dead=true}},
   skipVsPrep(){if(R&&R.host&&R.diff==='vs'&&R.phase==='vsprep'){R.prepLeft=0;return true}return false},
+  raidSpawner, // v137: 밸런스 계측용(스폰 스트림 직접 측정)
   forceMode(m){if(R&&R.boss){R.boss.mode='chase';R.boss.mt=0;R.boss.cyc=({slam:0,wave:2,breath:3,dash:0,slam3:1,barrage:2})[m]??0}}};
 })();
 
