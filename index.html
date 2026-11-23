@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v135</title>
+<title>네온 생존자 - NEON SURVIVOR v136</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#07060f;color:#fff;
@@ -179,7 +179,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">Neon Survivor · v135</div>
+  <div class="sub">Neon Survivor · v136</div>
   <div class="box">
     <div class="hrow"><span class="ic"></span><span><b>이동</b> — <b class="m">WASD</b> / 방향키 · 모바일은 화면을 드래그</span></div>
     <div class="hrow k"><span class="ic"></span><span>모드와 시작 무기를 고르면 무기는 <b class="y">자동으로 공격</b>합니다. 피하는 데만 집중하세요.</span></div>
@@ -192,6 +192,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
     <br><b>v133</b> · 다시 뽑기 다 쓰면 버튼이 흐려져서 구분 쉬움
     <br><b>v134</b> · 일시정지 화면에서 최고 레벨 무기·패시브에 (MAX) 표시
     <br><b>v135</b> · 벽 근처에서 적이 플레이어 위에 겹쳐 나오던 스폰 버그 수정
+    <br><b>v136</b> · 레이드 전 모드에서 적이 한 마리도 나오지 않던 긴급 버그 수정
     </details>
   </div>
   <button class="btn" id="startBtn">게임 시작</button>
@@ -564,7 +565,7 @@ function tdGrantCores(e){if(!isTower()||!e)return;if(state==='raid'&&window.__ra
 function tdApplyBuy(k){if(!TD_UP[k]||!tdCanBuy(k))return false;G.cores-=tdUpCost(k);G.tower.up[k]=(G.tower.up[k]|0)+1;
   if(k==='hp'){G.tower.maxHp+=700;G.tower.hp=Math.min(G.tower.maxHp,G.tower.hp+700)}
   showBanner(TD_UP[k].n+' 강화!','#ffd84d');if(S.level)S.level();tdRenderUp();return true}
-function tdBuy(k){if(state==='raid'&&window.__raid&&__raid.R&&!__raid.R.host){try{if(hostConn)hostConn.send({t:'tdUp',k})}catch(e){}return}tdApplyBuy(k)}
+function tdBuy(k){if(state==='raid'&&window.__raid&&__raid.R&&!__raid.R.host){try{const hc=(window.__rsk&&window.__rsk.hostConn)||null;if(hc)hc.send({t:'tdUp',k})}catch(e){}return}tdApplyBuy(k)} // v136: 레이드 IIFE 내부 hostConn을 전역에서 직접 참조하던 것 수정(ReferenceError)
 function tdSkin(){const eq=(window.__cry&&__cry.eq&&__cry.eq())||{};const m={tw_sapphire:{col:'#4da6ff',fill:'#102030',core:'#d0e8ff',glow:'#4da6ff',rgba:'80,180,255'},tw_ruby:{col:'#ff4d6d',fill:'#2a1016',core:'#ffd0d8',glow:'#ff4d6d',rgba:'255,80,110'},tw_gold:{col:'#ffd84d',fill:'#2a2410',core:'#fff4c0',glow:'#ffd84d',rgba:'255,216,80'},tw_obsidian:{col:'#b46bff',fill:'#160e24',core:'#e8d0ff',glow:'#b46bff',rgba:'180,107,255'},tw_ice:{col:'#9ef6ff',fill:'#102428',core:'#ffffff',glow:'#9ef6ff',rgba:'160,240,255'},tw_sun:{col:'#ff8c3a',fill:'#2a1608',core:'#ffe0a0',glow:'#ff8c3a',rgba:'255,140,60'}};
   return m[eq.tw]||{col:'#7dff6b',fill:'#152818',core:'#efffe8',glow:'#7dff6b',rgba:'180,255,160'}}
 function tdEnsureUI(){if($('tdUpBtn'))return;
@@ -675,7 +676,8 @@ let NOSP=[];function noSpAt(x,y){NOSP=NOSP.filter(z=>z.g===G&&G.t<z.until);for(c
 const SP_MIN=260,SP_TRIES=20; // SP_MIN: 30초 이후·무리 스폰 최소 거리(px)
 function spawnAnchors(around){ // 스폰 기준 대상 목록
   const out=[];const add=o=>{if(o&&!o.dead&&isFinite(o.x)&&isFinite(o.y)&&out.indexOf(o)<0)out.push(o)};
-  if(state==='raid'&&RP&&RP.length){for(const p of RP)if(!p.dead)add(p);if(G&&G.tower&&G.tower.hp>0)add(G.tower)}
+  const _rp=(typeof window!=='undefined'&&window.__raid&&window.__raid.RP)||null; // v136: IIFE 내부 RP를 전역에서 직접 참조하면 ReferenceError → window.__raid로 안전 접근
+  if(state==='raid'&&_rp&&_rp.length){for(const p of _rp)if(!p.dead)add(p);if(G&&G.tower&&G.tower.hp>0)add(G.tower)}
   else{if(around)add(around);else add(P);if(isTower()&&G&&G.tower&&G.tower.hp>0)add(G.tower)}
   if(!out.length)add(P);
   return out;
