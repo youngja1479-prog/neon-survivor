@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v134</title>
+<title>네온 생존자 - NEON SURVIVOR v135</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#07060f;color:#fff;
@@ -179,7 +179,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">Neon Survivor · v134</div>
+  <div class="sub">Neon Survivor · v135</div>
   <div class="box">
     <div class="hrow"><span class="ic"></span><span><b>이동</b> — <b class="m">WASD</b> / 방향키 · 모바일은 화면을 드래그</span></div>
     <div class="hrow k"><span class="ic"></span><span>모드와 시작 무기를 고르면 무기는 <b class="y">자동으로 공격</b>합니다. 피하는 데만 집중하세요.</span></div>
@@ -191,6 +191,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
     <br><b>v132</b> · 지뢰 A/B 스킬 · 여우 스킨 · 레벨업 다시 뽑기(1회) · 타이틀 설정에서 그래픽/데미지 숫자
     <br><b>v133</b> · 다시 뽑기 다 쓰면 버튼이 흐려져서 구분 쉬움
     <br><b>v134</b> · 일시정지 화면에서 최고 레벨 무기·패시브에 (MAX) 표시
+    <br><b>v135</b> · 벽 근처에서 적이 플레이어 위에 겹쳐 나오던 스폰 버그 수정
     </details>
   </div>
   <button class="btn" id="startBtn">게임 시작</button>
@@ -670,9 +671,44 @@ function spawnEnemy(type,x,y){
   if(isTower())e.aim=tdPickAim(type);enemies.push(e);return e;
 }
 let NOSP=[];function noSpAt(x,y){NOSP=NOSP.filter(z=>z.g===G&&G.t<z.until);for(const z of NOSP)if((x-z.x)**2+(y-z.y)**2<z.r*z.r)return true;return false}
-function offscreenPos(around){if(G&&G.t<30){const o=around||((isTower()&&G.tower)?G.tower:P);const v=viewHalf();const a=rand(0,TAU),d=Math.hypot(v.w,v.h)+rand(40,120);return {x:clamp(o.x+Math.cos(a)*d,-WH+20,WH-20),y:clamp(o.y+Math.sin(a)*d,-WH+20,WH-20)}} // v97 시작 30초는 화면 밖
-  const m=WH-20,s=(Math.random()*4)|0,u=rand(-m,m);
-  return s===0?{x:u,y:-m}:s===1?{x:u,y:m}:s===2?{x:-m,y:u}:{x:m,y:u}}
+// v135 스폰 겹침 수정: 기준 대상(플레이어·타워·레이드 전원)과의 거리를 확인하고, 벽에 눌려도 안전거리를 지킨다
+const SP_MIN=260,SP_TRIES=20; // SP_MIN: 30초 이후·무리 스폰 최소 거리(px)
+function spawnAnchors(around){ // 스폰 기준 대상 목록
+  const out=[];const add=o=>{if(o&&!o.dead&&isFinite(o.x)&&isFinite(o.y)&&out.indexOf(o)<0)out.push(o)};
+  if(state==='raid'&&RP&&RP.length){for(const p of RP)if(!p.dead)add(p);if(G&&G.tower&&G.tower.hp>0)add(G.tower)}
+  else{if(around)add(around);else add(P);if(isTower()&&G&&G.tower&&G.tower.hp>0)add(G.tower)}
+  if(!out.length)add(P);
+  return out;
+}
+function spMinD(x,y,anchors){let m=Infinity;for(const o of anchors){const dx=x-o.x,dy=y-o.y,d=dx*dx+dy*dy;if(d<m)m=d}return m===Infinity?1e9:Math.sqrt(m)}
+function spJitter(px,py){ // 무리 스폰 중심점 ±40: 중심점이 안전하므로 가까워지면 중심점을 그대로 쓴다
+  const x=clamp(px+rand(-40,40),-WH+20,WH-20),y=clamp(py+rand(-40,40),-WH+20,WH-20);
+  const an=spawnAnchors(null);return (an.length&&spMinD(x,y,an)<SP_MIN*0.8+40)?{x:px,y:py}:{x,y};
+}
+function offscreenPos(around){
+  const anchors=spawnAnchors(around);const v=viewHalf();const far=Math.hypot(v.w,v.h);
+  if(G&&G.t<30){ // v97/v135 시작 30초는 화면 밖 · 후보 각도를 여러 번 뽑아 안전거리 확보
+    const base=anchors.length?anchors[(Math.random()*anchors.length)|0]:(P||{x:0,y:0});
+    const minD=Math.max(far-10,SP_MIN);let best=null,bestD=-Infinity;
+    for(let i=0;i<SP_TRIES;i++){
+      const a=rand(0,TAU),d=far+rand(40,120);
+      const x=clamp(base.x+Math.cos(a)*d,-WH+20,WH-20),y=clamp(base.y+Math.sin(a)*d,-WH+20,WH-20);
+      const dd=spMinD(x,y,anchors)-(noSpAt(x,y)?1e9:0); // 금지 구역(NOSP)은 후순위
+      if(dd>=minD)return {x,y};
+      if(dd>bestD){bestD=dd;best={x,y}}
+    }
+    return best||{x:base.x,y:base.y};
+  }
+  const m=WH-20;let best=null,bestD=-Infinity; // v135 벽 스폰도 기준 대상 바로 위는 피한다
+  for(let i=0;i<12;i++){
+    const s=(Math.random()*4)|0,u=rand(-m,m);
+    const x=s===2?-m:s===3?m:u,y=s===0?-m:s===1?m:u;
+    const dd=spMinD(x,y,anchors)-(noSpAt(x,y)?1e9:0);
+    if(dd>=SP_MIN)return {x,y};
+    if(dd>bestD){bestD=dd;best={x,y}}
+  }
+  return best||{x:0,y:-m}
+}
 function pickType(){const t=diffT();const w=[['grunt',10]];
   const batT=isHard()?8:20,bruteT=isHard()?32:60,spitT=isHard()?50:95,chgT=isHard()?110:210,splT=isHard()?70:120;
   if(t>batT)w.push(['bat',t<60? (isHard()?5:3):(isHard()?8:6)]);if(t>bruteT)w.push(['brute',Math.min(isHard()?3.556:2.889,1+(t-bruteT)/(isHard()?40:60))]); // v93 후반 약 10%
@@ -687,8 +723,8 @@ function spawner(dt){
   while(G.spawnAcc>=1){G.spawnAcc-=1;if(enemies.length>=cap)continue;
     const type=pickType();const p=offscreenPos();
     // 가끔 무리 지어 등장
-    if(type==='grunt'&&Math.random()<Math.min(isHard()?0.4:(tdRush?0.45:0.25),st/(isHard()?380:600))){const n=(isHard()?7:5)*(isCrazy()?2:1)*(tdRush?2:1);for(let i=0;i<n;i++)spawnEnemy('grunt',p.x+rand(-40,40),p.y+rand(-40,40))}
-    else{spawnEnemy(type,p.x,p.y);if(isCrazy())spawnEnemy(type,p.x+rand(-40,40),p.y+rand(-40,40))}}
+    if(type==='grunt'&&Math.random()<Math.min(isHard()?0.4:(tdRush?0.45:0.25),st/(isHard()?380:600))){const n=(isHard()?7:5)*(isCrazy()?2:1)*(tdRush?2:1);for(let i=0;i<n;i++){const q=spJitter(p.x,p.y);spawnEnemy('grunt',q.x,q.y)}}
+    else{spawnEnemy(type,p.x,p.y);if(isCrazy()){const q=spJitter(p.x,p.y);spawnEnemy(type,q.x,q.y)}}}
   // 보스: 일반/하드 5분, 크레이지는 30초. 무한 모드면 이후 5분마다. 타워디펜스는 보스 없음, 5분 이후 급습.
   const bossAt=isCrazy()?30:300;
   if(isTower()){
@@ -2483,7 +2519,7 @@ function raidSpawner(dt){const st=diffT();const hm=isHard()?1.55:1;const tdRush=
   R.spawnAcc+=rate*dt;const ps=alive();if(!ps.length&&!(R.diff==='tower'&&G.tower&&G.tower.hp>0))return;
   while(R.spawnAcc>=1){R.spawnAcc-=1;if(enemies.length>=cap)continue;const tp=ps.length?ps[Math.random()*ps.length|0]:G.tower;P=tp||P;
     let type=pickType();if(R.godArmy&&R.diff==='story'){if(type==='grunt'&&Math.random()<ARMY.mix)type=Math.random()<0.5?'brute':'charger'}else if(R.crazy&&type==='grunt'&&Math.random()<0.2)type=Math.random()<0.5?'brute':'charger';else if(R.endless&&type==='grunt'&&Math.random()<ENDLESS.mix*enK())type=Math.random()<0.5?'brute':'charger';const pos=offscreenPos(R.diff==='tower'?G.tower:null);
-    if(type==='grunt'&&Math.random()<Math.min(isHard()?0.4:(tdRush?0.45:0.25),st/(isHard()?380:600))){const n=(isHard()?7:5)*(tdRush?2:1);for(let i=0;i<n;i++)spawnEnemy('grunt',pos.x+rand(-40,40),pos.y+rand(-40,40))}
+    if(type==='grunt'&&Math.random()<Math.min(isHard()?0.4:(tdRush?0.45:0.25),st/(isHard()?380:600))){const n=(isHard()?7:5)*(tdRush?2:1);for(let i=0;i<n;i++){const qj=spJitter(pos.x,pos.y);spawnEnemy('grunt',qj.x,qj.y)}}
     else spawnEnemy(type,pos.x,pos.y)}
   if(R.t>=R.nextElite&&canElite()){R.nextElite=R.t+eEvery();const tp=ps[Math.random()*ps.length|0];const a=rand(0,TAU),d=520;
     const x=clamp(tp.x+Math.cos(a)*d,-WH+60,WH-60),y=clamp(tp.y+Math.sin(a)*d,-WH+60,WH-60);G.elite=spawnEnemy('elite',x,y);G.elite.st=0;G.elite.stT=2.5;G.elite.slams=0;eliteSpawned(G.elite);
