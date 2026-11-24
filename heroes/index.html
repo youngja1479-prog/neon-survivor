@@ -2143,7 +2143,7 @@ function onHostData(c,d){
   else if(d.t==='sk')skQ.push([p.id,d.w,+d.ax||0,+d.ay||0,d.tx==null?null:+d.tx,d.ty==null?null:+d.ty])
   else if(d.t==='md'){if(window.__md)__md.host(p,String(d.v||''))}
   else if(d.t==='aim')p.aim=d.off?null:[+d.x||0,+d.y||0]}
-function setRaidUI(on){$('rChatBtn').style.display=on?'flex':'none';if(!on){closeChat();$('rChatOv').innerHTML='';storyHide()}}
+function setRaidUI(on){if(lobby.heroes)$('pbtn').style.display=on?'flex':'none';$('rChatBtn').style.display=on?'flex':'none';if(!on){closeChat();$('rChatOv').innerHTML='';storyHide()}}
 {const sd=$('storyDlg');if(sd)sd.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(R&&R.host)storyAdvance()})}
 // ---------- 엔진 시작/종료 ----------
 function beginEngine(diff,gs){const D=rDiffOf(diff);window.__raidMd=diff==='gift'?(gs==='heal'?{name:'힐링 모드',col:'#7dffb0'}:{name:'레이드 · 제작자의 선물',col:'#ff2e63'}):D.hud;savedMode=gameMode;gameMode=D.mode;startWeapon='bolt';newGame();banner=null;G.tip=null;G.tipQ=[];G.tipFlags={loop:1,loop2:1,elite:1};
@@ -4165,7 +4165,7 @@ $('heroPickStart').onclick=heroPickStart;
 
 // 협동 중 일시정지 → 탈출 확인
 $('pbtn').onclick=e=>{e.stopPropagation();
-  if(state==='raid'){showOnly('heroQuitOv');return}
+  if(window.__rsk&&__rsk.R){hideAll();$('heroQuitOv').classList.add('show');return}
   pauseGame()};
 $('hxQuitStay').onclick=()=>{$('heroQuitOv').classList.remove('show')};
 $('hxQuitLobby').onclick=()=>{$('heroQuitOv').classList.remove('show');if(window.__heroesRaid)__heroesRaid.lobby(HX.n)};
