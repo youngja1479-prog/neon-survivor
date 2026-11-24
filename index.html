@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 생존자 - NEON SURVIVOR v140</title>
+<title>네온 생존자 - NEON SURVIVOR v141</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#07060f;color:#fff;
@@ -180,7 +180,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 
 <div class="ov show" id="title">
   <h1>네온 생존자</h1>
-  <div class="sub">Neon Survivor · v140</div>
+  <div class="sub">Neon Survivor · v141</div>
   <div class="box">
     <div class="hrow"><span class="ic"></span><span><b>이동</b> — <b class="m">WASD</b> / 방향키 · 모바일은 화면을 드래그</span></div>
     <div class="hrow k"><span class="ic"></span><span>모드와 시작 무기를 고르면 무기는 <b class="y">자동으로 공격</b>합니다. 피하는 데만 집중하세요.</span></div>
@@ -194,6 +194,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
     <br><b>v134</b> · 일시정지 화면에서 최고 레벨 무기·패시브에 (MAX) 표시
     <br><b>v135</b> · 벽 근처에서 적이 플레이어 위에 겹쳐 나오던 스폰 버그 수정
     <br><b>v136</b> · 레이드 전 모드에서 적이 한 마리도 나오지 않던 긴급 버그 수정
+    <br><b>v141</b> · 힐링 모드·레이드 「제작자의 선물」 만렙 시작: 캐릭터 Lv100 + 모든 무기(지뢰 포함)·패시브 Lv15(MAX) 장착, 이후 레벨업은 카드 없이 크리스탈 자동 지급 (레이드는 모든 플레이어·AI 동일)
     <br><b>v140</b> · 힐링 모드: 몬스터·보스에게 받는 피해 60% 감소 (가볍게 즐기기)
     <br><b>v139</b> · 솔로 신규 「힐링 모드」 (모든 몬스터 한 방 · 처음부터 보스·엘리트 · 3분마다 고자라 → 강산 → God) · 레이드 「제작자의 선물」은 킬링 전용 · 보스 간격 5분 → 3분
     <br><b>v138</b> · 레이드 신규 모드 「제작자의 선물」 추가 (힐링: 모든 몬스터 한 방 · 킬링: 크레이지보다 어려움 · 처음부터 보스·엘리트 쏟아짐 · 고자라 → 강산 → God → ???)
@@ -2072,8 +2073,13 @@ let CBIMG=null;function chabakImg(){if(!CBIMG&&CHABAK_SRC){CBIMG=new Image();try
 chabakImg(); // 시작 시 미리 로드(data URL)
 function fitFont(w,size,txt,maxW){ctx.font=w+' '+size+'px '+FONT;const m=ctx.measureText(txt).width;if(m>maxW){size=Math.max(9,size*maxW/m);ctx.font=w+' '+size+'px '+FONT}return size}
 function rrPath(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+const GIFT_LV0=100; // v141 만렙 시작: 캐릭터 Lv100(크레이지와 동일 표기) + 모든 무기(보조무기 지뢰 포함)·패시브 Lv15
+function giftMaxBuild(p){const M=ITEM_TBL_MAX,first=p.wOrder[0]||'bolt',ws=Object.keys(WEAPONS).filter(id=>!SUB_W.has(id));
+  p.weapons={};p.wOrder=[];for(const id of [first].concat(ws.filter(x=>x!==first),[...SUB_W])){p.weapons[id]=M;p.wOrder.push(id)}
+  p.passives={};p.pOrder=[];for(const id in PASSIVES){p.passives[id]=M;p.pOrder.push(id)}
+  p.maxHp+=20*M;p.hp=p.maxHp;p.level=GIFT_LV0;p.xp=0;p.need=lvNeed(GIFT_LV0);p.pendingLv=0;p.opts=null;p.chooseT=0}
 function startHealSolo(w,pm){cleanupNet();net={role:'offline',code:'SOLO'};myId='p0';lobby.players=[{id:'p0',name:'P1',col:COLS[0],w:(WEAPONS[w]&&!SUB_W.has(w))?w:prefW(),cos:window.__cry?__cry.eq():null}];lobby.diff='gift';hostStartGift('heal');if(pm)savedMode=pm} // v139 솔로 힐링 모드
-function hostStartGift(solo){const gs=solo==='heal'?'heal':'kill';showOv(null);beginEngine('gift',gs);RP=lobby.players.map(mkPlayer);if(!solo)raidFillAi();const n=RP.length;
+function hostStartGift(solo){const gs=solo==='heal'?'heal':'kill';showOv(null);beginEngine('gift',gs);RP=lobby.players.map(mkPlayer);if(!solo)raidFillAi();for(const p of RP)giftMaxBuild(p);const n=RP.length;
   R={host:true,crazy:0,gift:gs,solo:solo?1:0,t:0,phase:'wave1',diff:'gift',n,spawnAcc:0,bossAt:GIFT_GAP,boss2At:null,boss:null,tele:[],waves:[],banner:null,votes:{},nextElite:1e9,lastElite:-1e9,evI:0,storyI:null,gStage:0,gBossT:1.2,gEliteT:0.6};
   if(takeGod()){const me=RP.find(p=>p.id===myId);if(me)me.god=true}
   swapIn(RP[0]);if(!solo)bcast({t:'start',diff:'gift',gs,cz:0,si:null,ba:GIFT_GAP});state='raid';setRaidUI(!solo);
@@ -2875,7 +2881,7 @@ function hostUpdate(dt){
   enemies=enemies.filter(e=>!e.dead);
   // 개인 레벨 업: 게임은 멈추지 않음 (선택 창 열릴 때 보호 없음)
   for(const p of RP){if(p.dead)continue;while(p.xp>=p.need){p.xp-=p.need;p.level++;p.need=lvNeed(p.level);p.pendingLv++}
-    if(!p.opts&&p.pendingLv>0){swapIn(p);const o=upgradeOptions();swapOut(p);p.pendingLv--;if(o.length){p.opts=o.map(x=>({kind:x.kind,id:x.id}));p.chooseT=0}}}
+    if(!p.opts&&p.pendingLv>0){swapIn(p);const o=upgradeOptions();swapOut(p);p.pendingLv--;if(o.length){p.opts=o.map(x=>({kind:x.kind,id:x.id}));p.chooseT=0;if(R.diff==='gift'&&o.every(x=>x.kind==='g'))applyPick(p,0)}}} // v141 만렙(전부 MAX)이면 레벨업 카드 없이 크리스탈 자동 지급
   if(alive().length||(isTower()&&G.tower&&G.tower.hp>0))for(const p of RP){if(!p.dead||p.left||!(p.reviveT>0))continue;p.reviveT-=dt;if(p.reviveT<=0)reviveP(p)}
   if(!alive().length&&R.phase!=='ending'&&!(isTower()&&G.tower&&G.tower.hp>0))R.phase='fail';
   if(R.banner){R.banner.t-=dt;if(R.banner.t<=0)R.banner=null}
