@@ -161,6 +161,43 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
   .hxcards{margin-top:8px;gap:8px}.hxcards .card canvas{width:40px;height:40px}
   .hxsub{font-size:10.5px}
 }
+/* ---------- 캐릭터 설정 ---------- */
+.titlerow{margin-top:16px;width:100%}.titlerow .btn{margin-top:0}
+.hxchars{display:grid;grid-template-columns:repeat(3,minmax(0,150px));gap:10px;justify-content:center;margin-top:12px;width:100%}
+.hxchars .hxc{position:relative;background:linear-gradient(168deg,rgba(32,26,70,.96),rgba(14,12,34,.96));border:1px solid rgba(150,132,255,.26);border-radius:14px;padding:12px 8px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:transform .14s,border-color .14s,box-shadow .14s}
+.hxchars .hxc:hover{transform:translateY(-2px);border-color:rgba(77,243,255,.5)}
+.hxchars .hxc.sel{border-color:rgba(77,243,255,.8);box-shadow:0 0 0 1px rgba(77,243,255,.35),0 12px 28px -16px rgba(77,243,255,.8)}
+.hxchars .hxc canvas{position:static;width:54px;height:54px}
+.hxchars .hxc .nm{font-size:14px;font-weight:900;line-height:1.2}
+.hxchars .hxc .lv{font-size:10.5px;color:#8ff6ff;font-weight:800;text-align:center;line-height:1.35}
+.hxchars .hxc.soon{opacity:.6;border-style:dashed;cursor:default}
+.hxchars .hxc.soon:hover{transform:none;border-color:rgba(150,132,255,.26)}
+.hxchars .hxc.soon canvas{filter:grayscale(1)}
+.hxchars .hxc.soon .lv{color:#9aa2d8}
+.hxchars .hxc .bdg{position:absolute;top:6px;right:6px;font-size:9px;font-weight:900;letter-spacing:.04em;padding:2px 6px;border-radius:999px;background:rgba(77,243,255,.16);color:#8ff6ff;border:1px solid rgba(77,243,255,.45)}
+.hxdetail{display:flex;gap:16px;align-items:center;justify-content:center;width:100%;max-width:660px;margin-top:12px;text-align:left;background:rgba(10,8,26,.74);border:1px solid rgba(150,132,255,.22);border-radius:16px;padding:14px 16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.hxdetail .prev{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:112px}
+.hxdetail .prev canvas{position:static;width:104px;height:104px}
+.hxdetail .prev .pn{font-size:15px;font-weight:900;color:#8ff6ff;line-height:1.2}
+.hxdetail .prev .pt{font-size:10.5px;color:#9aa2d8;font-weight:700;text-align:center;line-height:1.3}
+.hxdetail .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.hxdetail .info .cpt{font-size:11.5px;color:#b9c0ee;line-height:1.5;margin-bottom:1px}
+.hxdetail .sk{font-size:11.5px;color:#cfd5ff;line-height:1.45;border:1px solid rgba(150,132,255,.16);background:rgba(255,255,255,.03);border-radius:9px;padding:5px 8px}
+.hxdetail .sk b{color:#8ff6ff;font-weight:900}
+@media (max-width:560px){
+  .hxchars{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}
+  .hxchars .hxc{padding:9px 4px 8px}.hxchars .hxc canvas{width:42px;height:42px}
+  .hxchars .hxc .nm{font-size:12px}.hxchars .hxc .lv{font-size:9px}
+  .hxdetail{gap:10px;padding:10px;margin-top:10px}
+  .hxdetail .prev{width:80px}.hxdetail .prev canvas{width:74px;height:74px}
+  .hxdetail .prev .pn{font-size:13px}.hxdetail .prev .pt{font-size:9px}
+  .hxdetail .info{gap:4px}.hxdetail .info .cpt{font-size:10.5px}
+  .hxdetail .sk{font-size:10px;padding:4px 7px;line-height:1.4}
+  .titlerow{margin-top:12px}
+}
+@media (max-height:620px){
+  .hxchars{margin-top:8px}.hxdetail{margin-top:8px;padding:10px 12px}
+}
 #diffPick{display:none;gap:8px;justify-content:center;margin:10px 0 4px;flex-wrap:wrap}
 #diffPick button{min-width:112px;padding:8px 20px;font-size:14px;font-weight:900;border-radius:999px;font-family:inherit;letter-spacing:.02em;
  border:1px solid rgba(160,148,255,.3);background:rgba(20,17,46,.9);color:#c3c9f2;cursor:pointer;transition:border-color .15s,color .15s,box-shadow .15s}
@@ -212,7 +249,10 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
     <div class="hrow k"><span class="ic"></span><span>경험치 보석을 모아 <b class="y">Lv.5 MAX</b>까지 성장 · 최대 <b>4인</b> 협동 (AI 동료 / 온라인)</span></div>
     <div class="hrow"><span class="ic"></span><span><span class="kbd">J</span> A스킬 <span class="kbd">K</span> B스킬 <span class="kbd">C</span> 메이데이 · <span class="kbd">Space</span><span class="kbd">Esc</span> 일시정지</span></div>
   </div>
-  <button class="btn" id="startBtn">게임 시작</button>
+  <div class="row titlerow">
+    <button class="btn" id="startBtn">게임 시작</button>
+    <button class="btn sec" id="heroCharBtn">캐릭터 설정</button>
+  </div>
   <div class="footrow"><div id="cryTitle" style="display:none">◆</div></div>
   <div class="msg" id="codeMsg" style="display:none"></div>
   <div class="best" id="bestTitle"></div>
@@ -274,7 +314,18 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
   <div id="heroPickSub" class="hxsub">지금은 네온 한 명 · 마법화살 / 충격파 / 메이데이</div>
   <div id="heroPickCard" class="hxpick"></div>
   <button class="btn" id="heroPickStart">네온으로 시작</button>
-  <div class="row" style="margin-top:10px"><button class="btn sec" id="heroPickBack">뒤로</button></div>
+  <div class="row" style="margin-top:10px"><button class="btn sec" id="heroPickChar">캐릭터 설정</button><button class="btn sec" id="heroPickBack">뒤로</button></div>
+</div>
+
+<div class="ov" id="heroChar">
+  <div class="big" style="color:#4df3ff;text-shadow:0 0 22px rgba(77,243,255,.55)">캐릭터 설정</div>
+  <div class="hxsub" id="heroCharSub">지금은 네온 한 명 · 새 히어로가 계속 추가됩니다</div>
+  <div class="hxchars" id="heroCharGrid"></div>
+  <div class="hxdetail" id="heroCharDetail"></div>
+  <div class="row" style="margin-top:14px">
+    <button class="btn" id="heroCharPlay">이 캐릭터로 플레이</button>
+    <button class="btn sec" id="heroCharBack">닫기</button>
+  </div>
 </div>
 
 <div class="ov" id="pickmode">
@@ -1729,7 +1780,7 @@ function chooseUpgrade(i){
 }
 
 // ================== 화면 전환 ==================
-function hideAll(){for(const id of ['settings','title','pickmode','pickstart','levelup','pause','over','victory','heroModes','heroWip','heroCount','heroTeam','heroPick','heroQuitOv']){const el=$(id);if(el)el.classList.remove('show')}}
+function hideAll(){for(const id of ['settings','title','pickmode','pickstart','levelup','pause','over','victory','heroModes','heroWip','heroCount','heroTeam','heroPick','heroChar','heroQuitOv']){const el=$(id);if(el)el.classList.remove('show')}}
 function openModePick(){
   initAudio();hideAll();state='pickmode';$('pbtn').style.display='none';
   const box=$('modeCards');box.innerHTML='';
@@ -1857,7 +1908,7 @@ function heroMayday(){
   }else{
     if(state!=='play')return;fireSkill('mayday',me.fx||1,me.fy||0);
   }
-  heroMdCd=MAY_CD;addShake(12);showBanner('메이데이! 마법화살이 사방으로!','#ffd84d');S.boom();
+  heroMdCd=MAY_CD;addShake(12);S.boom();
 }
 
 // ================== 입력 ==================
@@ -4055,9 +4106,23 @@ refresh();
 'use strict';
 (function(){
 const $=id=>document.getElementById(id);
-const HERO={name:'네온',tag:'전 네온 생존자',w:'bolt'};
-const HX={mode:'solo',n:1,ai:false,next:null};
-window.HX=HX;
+// ---- 캐릭터(히어로) 목록 — 새 캐릭터는 여기에 한 줄 추가하면 설정 화면에 자동으로 나타납니다 ----
+const HERO_LIST=[
+  {id:'neon',name:'네온',tag:'전 네온 생존자',icon:'bolt',col:'#4df3ff',w:'bolt',wname:'마법화살',ready:true,
+   concept:'네온 빛을 몸에 두른 마지막 생존자. 가볍게 움직이며 마법화살로 적을 꿰뚫습니다.',
+   skills:[['A · 마법화살','#8ff6ff','강화 마법화살 7발을 부채꼴로 발사 · 적을 꿰뚫습니다 (6초)'],
+           ['B · 지뢰','#ff9ecb','네온 지뢰 7개 설치 · 적이 밟으면 폭발 · 18초 유지 (15초)'],
+           ['메이데이 · 사방 마법화살','#ffe27a','사방으로 마법화살이 폭발합니다 (30초)']]},
+  {id:'hx-soon1',name:'준비 중',tag:'새 히어로 추가 예정',ready:false},
+  {id:'hx-soon2',name:'준비 중',tag:'새 히어로 추가 예정',ready:false}
+];
+const HX_SEL_KEY='nhHeroSel';
+function hxReadyList(){return HERO_LIST.filter(h=>h.ready)}
+function hxSaved(){try{const v=localStorage.getItem(HX_SEL_KEY);if(v&&hxReadyList().some(h=>h.id===v))return v}catch(e){}return HERO_LIST[0].id}
+function hxSelect(id){if(!hxReadyList().some(h=>h.id===id))return false;HX.hero=id;try{localStorage.setItem(HX_SEL_KEY,id)}catch(e){}return true}
+function hxHero(){return HERO_LIST.find(h=>h.id===HX.hero)||HERO_LIST[0]}
+const HX={mode:'solo',n:1,ai:false,next:null,hero:hxSaved(),charFrom:'title'};
+window.HX=HX;window.HERO_LIST=HERO_LIST;
 
 function showOnly(id){hideAll();state='title';$(id).classList.add('show')}
 function cardHTML(o){return o}
@@ -4114,11 +4179,12 @@ function heroOpenTeam(){
 // ---- 히어로 선택 ----
 function heroOpenPick(){
   showOnly('heroPick');
-  $('heroPickSub').textContent=HX.mode==='coop'?(HX.n+'인 협동 · 지금은 네온 한 명'):'지금은 네온 한 명 · 마법화살 / 충격파 / 메이데이';
+  $('heroPickSub').textContent=(HX.mode==='coop'?(HX.n+'인 협동 · '):'')+'지금은 '+hxHero().name+' 한 명 · 캐릭터 설정에서 자세히 볼 수 있어요';
+  $('heroPickStart').textContent=hxHero().name+'으로 시작';
   const box=$('heroPickCard');box.innerHTML='';
   const c=document.createElement('div');c.className='card';
-  const ic=makeCanvas(144,144);const g=ic.getContext('2d');g.translate(72,72);drawIcon(g,'bolt',120);c.appendChild(ic);
-  c.insertAdjacentHTML('beforeend','<span class="tag p">HERO</span><div class="nm">네온</div><div class="lv" style="color:#8ff6ff">전 네온 생존자</div>');
+  const ic=makeCanvas(144,144);const g=ic.getContext('2d');g.translate(72,72);drawIcon(g,hxHero().icon||'bolt',120);c.appendChild(ic);
+  c.insertAdjacentHTML('beforeend','<span class="tag p">HERO</span><div class="nm">'+hxHero().name+'</div><div class="lv" style="color:#8ff6ff">'+hxHero().tag+'</div>');
   c.insertAdjacentHTML('beforeend','<div class="hxskills">'
     +'<div><b>기본 무기 · 마법화살</b> — 가장 가까운 적에게 자동 발사</div>'
     +'<div><b>A · 마법화살</b> — 강화된 마법화살 7발을 부채꼴로 (6초)</div>'
@@ -4128,10 +4194,77 @@ function heroOpenPick(){
     +'</div>');
   box.appendChild(c);
 }
+// ---- 캐릭터 설정 화면 ----
+function hxDrawPreview(cv){
+  const g=cv.getContext('2d'),W=cv.width,H=cv.height,t=performance.now()/1000;
+  g.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2+8,u=W/160,glow=.55+.45*Math.sin(t*2.4),h=hxHero();
+  const rg=g.createRadialGradient(cx,cy,4,cx,cy,W*.5);
+  rg.addColorStop(0,'rgba(77,243,255,'+(.40*glow).toFixed(3)+')');
+  rg.addColorStop(.55,'rgba(140,90,255,'+(.18*glow).toFixed(3)+')');
+  rg.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=rg;g.fillRect(0,0,W,H);
+  g.save();g.translate(cx,cy);
+  g.strokeStyle='rgba(77,243,255,'+(.22+.28*glow).toFixed(3)+')';g.lineWidth=2*u;
+  g.beginPath();g.arc(0,0,52*u,0,Math.PI*2);g.stroke();
+  g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(0,44*u,30*u,10*u,0,0,Math.PI*2);g.fill();
+  g.shadowColor=h.col||'#4df3ff';g.shadowBlur=28*u;g.fillStyle='#0d2a44';g.strokeStyle=h.col||'#4df3ff';g.lineWidth=5*u;
+  g.beginPath();g.arc(0,0,30*u,0,Math.PI*2);g.fill();g.stroke();g.shadowBlur=0;
+  g.fillStyle='#fff';g.beginPath();g.arc(-8*u,-4*u,5.5*u,0,Math.PI*2);g.arc(8*u,-4*u,5.5*u,0,Math.PI*2);g.fill();
+  g.fillStyle='#b46bff';g.beginPath();g.moveTo(-18*u,-18*u);g.lineTo(18*u,-18*u);g.lineTo(4*u,-48*u);g.closePath();g.fill();
+  g.fillStyle='#ffd84d';g.beginPath();g.arc(4*u,-48*u,5*u,0,Math.PI*2);g.fill();
+  g.restore();
+}
+let hxPrevRAF=0;
+function hxPreviewRun(){
+  cancelAnimationFrame(hxPrevRAF);hxPrevRAF=0;
+  const wrap=$('heroCharDetail');if(!wrap)return;
+  const cv=wrap.querySelector('canvas');if(!cv)return;
+  const loop=()=>{const ov=$('heroChar');if(!ov||!ov.classList.contains('show')){hxPrevRAF=0;return}hxDrawPreview(cv);hxPrevRAF=requestAnimationFrame(loop)};
+  hxPrevRAF=requestAnimationFrame(loop);
+}
+function hxRenderChars(){
+  const box=$('heroCharGrid');if(!box)return;box.innerHTML='';
+  for(const h of HERO_LIST){
+    const c=document.createElement('div');
+    c.className='hxc'+(h.ready?'':' soon')+(h.ready&&h.id===HX.hero?' sel':'');
+    const ic=makeCanvas(120,120);const g=ic.getContext('2d');g.translate(60,60);
+    try{drawIcon(g,h.icon||'aura',96)}catch(e){}
+    c.appendChild(ic);
+    if(h.ready&&h.id===HX.hero)c.insertAdjacentHTML('beforeend','<span class="bdg">선택됨</span>');
+    c.insertAdjacentHTML('beforeend','<div class="nm">'+h.name+'</div><div class="lv">'+(h.ready?h.tag:'새 히어로 추가 예정')+'</div>');
+    if(h.ready)c.onclick=()=>{hxSelect(h.id);hxRenderChars()};
+    box.appendChild(c);
+  }
+}
+function hxRenderDetail(){
+  const h=hxHero(),d=$('heroCharDetail');if(!d)return;d.innerHTML='';
+  const pv=document.createElement('div');pv.className='prev';
+  const cv=makeCanvas(240,240);pv.appendChild(cv);
+  pv.insertAdjacentHTML('beforeend','<div class="pn">'+h.name+'</div><div class="pt">'+h.tag+'</div>');
+  d.appendChild(pv);
+  const info=document.createElement('div');info.className='info';
+  info.insertAdjacentHTML('beforeend','<div class="cpt">'+h.concept+'</div>');
+  info.insertAdjacentHTML('beforeend','<div class="sk"><b>시작 무기 · '+h.wname+'</b> — 가장 가까운 적에게 자동 발사</div>');
+  for(const s of h.skills)info.insertAdjacentHTML('beforeend','<div class="sk"><b style="color:'+s[1]+'">'+s[0]+'</b> — '+s[2]+'</div>');
+  d.appendChild(info);
+}
+function heroOpenChar(from){
+  HX.charFrom=from||'title';
+  HX.hero=hxSaved();
+  try{localStorage.setItem(HX_SEL_KEY,HX.hero)}catch(e){}
+  showOnly('heroChar');
+  $('heroCharSub').textContent=hxReadyList().length+'명 플레이 가능 · 새 히어로가 계속 추가됩니다';
+  hxRenderChars();hxRenderDetail();hxPreviewRun();
+}
+function heroCharClose(){
+  cancelAnimationFrame(hxPrevRAF);hxPrevRAF=0;
+  if(HX.charFrom==='pick')heroOpenPick();else toTitle();
+}
 // ---- 시작 ----
 function heroSoloStart(){
   HX.mode='solo';setTimeout(()=>{},0);
-  startWeapon='bolt';gameMode='normal';
+  startWeapon=hxHero().w||'bolt';gameMode='normal';
   hideAll();startGame();
 }
 function heroStartAI(){window.__heroesRaid.startAI(HX.n)}
@@ -4162,6 +4295,10 @@ $('heroCountBack').onclick=heroOpenModes;
 $('heroTeamBack').onclick=heroOpenCount;
 $('heroPickBack').onclick=()=>{if(HX.mode==='coop')heroOpenTeam();else heroOpenCount()};
 $('heroPickStart').onclick=heroPickStart;
+$('heroPickChar').onclick=()=>heroOpenChar('pick');
+$('heroCharBtn').onclick=()=>heroOpenChar('title');
+$('heroCharBack').onclick=heroCharClose;
+$('heroCharPlay').onclick=()=>{if(HX.charFrom==='pick')heroOpenPick();else heroOpenModes()};
 
 // 협동 중 일시정지 → 탈출 확인
 $('pbtn').onclick=e=>{e.stopPropagation();
