@@ -3854,7 +3854,7 @@ function tryCode(){const v=$('codeIn').value.trim(),m=$('codeMsg');if(!v)return;
   else m.textContent='코드가 틀렸어요';$('codeIn').value=''}
 $('codeBtn').onclick=tryCode;$('codeIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')tryCode()});$('codeIn').addEventListener('keyup',e=>e.stopPropagation());
 // ---- 스킨 그리기 ----
-function cosOf(p){const R=typeof rR==='function'?rR():null;if(state==='raid'&&R&&p&&p.id!==rMe()){const lp=RB.lobby&&RB.lobby.players.find(q=>q.id===p.id);return (lp&&lp.cos)||{}}return PF.eq}
+function cosOf(p){return {c:null,t:null,s:null,tw:null}} // 네온 히어로즈: 1편 스킨 설정(PF.eq) 미적용 · 항상 네온 본래 모습
 function clean(c){const o={c:null,t:null,s:null,tw:null};if(c&&typeof c==='object')for(const k of ['c','t','s','tw'])if(ALL[c[k]]&&ALL[c[k]].k===k)o[k]=c[k];return o}
 function shapePath(g,sk,col,blink){g.lineWidth=3;g.strokeStyle=blink?'#fff':col;g.fillStyle=blink?'#fff':'#0d2a44';g.shadowColor=col;g.shadowBlur=lowGfx()?0:16;g.beginPath();
   if(sk==='star'){for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?9:21;g.lineTo(Math.cos(a)*rr,Math.sin(a)*rr-2)}g.closePath();g.fill();g.stroke();g.shadowBlur=0;g.fillStyle='#fff';g.beginPath();g.arc(-4,-2,2.5,0,TAU);g.arc(4,-2,2.5,0,TAU);g.fill()}
