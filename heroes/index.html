@@ -2448,7 +2448,8 @@ const AI_PS={power:8,haste:8,heart:6,armor:6,area:6,speed:5,regen:4,magnet:3,tra
 function raidFillAi(){if(!R&&lobby.diff==='vs')return;const ws=Object.keys(WEAPONS).filter(id=>!SUB_W.has(id));let k=1;
   for(let i=RP.length;i<Math.max(2,lobby.targetN||4,RP.length);i++){const T=AI_TIERS[(Math.random()*AI_TIERS.length)|0];const id='ai'+(k++);
     const p=mkPlayer({id,name:'AI·'+T.n,col:COLS[i%COLS.length],w:lobby.heroes?'bolt':ws[(Math.random()*ws.length)|0],hero:lobby.heroes?(i%2===1?'electric':'neon'):undefined},i);
-    const SK=window.__skill&&__skill.SKILLS?Object.keys(__skill.SKILLS).filter(id=>!SUB_W.has(id)):[];const sa=SK.splice((Math.random()*SK.length)|0,1)[0],sb=SK.length?SK[(Math.random()*SK.length)|0]:null;
+    const _HF=lobby.heroes&&window.HX_HEROES?window.HX_HEROES[p.hero]:null; // AI 동료: 배정된 히어로의 전용 A·B 스킬 고정
+    const SK=window.__skill&&__skill.SKILLS?Object.keys(__skill.SKILLS).filter(id=>!SUB_W.has(id)):[];const sa=_HF?_HF.skA:SK.splice((Math.random()*SK.length)|0,1)[0],sb=_HF?_HF.skB:(SK.length?SK[(Math.random()*SK.length)|0]:null);
     p.rai={sk:[sa,sb].filter(Boolean),skT:rand(4,9),t:T,dt:0,vx:0,vy:0,orb:Math.random()<0.5?-1:1,wa:Math.random()*TAU,mode:'normal',modeT:rand(3,6),po:null,pickT:0,voteT:rand(0.8,2.5),fb:false};RP.push(p)}
   const n=RP.length,rad=isTower()?220:70;RP.forEach((p,i)=>{const a=-Math.PI/2+i*TAU/n;p.x=Math.cos(a)*rad;p.y=Math.sin(a)*rad})}
 const T_SK=T=>T.troll?rand(3,9):rand(1.5,3)+(T.pb<=0?rand(2,6):0);
