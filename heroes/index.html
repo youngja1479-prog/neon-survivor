@@ -501,7 +501,7 @@ const MODES={
   normal:{name:'일반 모드',short:'일반',col:'#4df3ff',desc:'들어가면 무기와 난이도(노멀·하드)를 고릅니다. 모든 무기를 쓰며, 5분 보스를 처치하면 클리어.'},
   warrior:{name:'전사 모드',short:'전사',col:'#ffb24d',desc:'원거리 무기가 전부 사라집니다. 회전 칼날·충격파·불꽃 오라·화염 방사기 + 보조무기 지뢰만 씁니다.'},
   hard:{name:'일반 · 하드',short:'하드',col:'#ff4d6d',desc:'무기는 전부 사용. 적 체력·피해·속도·물량이 크게 오르고, 위험한 적이 더 빨리 나옵니다. 5분 보스도 더 셉니다.'},
-  crazy:{name:'크레이지 모드',short:'크레이지',col:'#ff00e5',desc:'캐릭터 Lv100 시작! 무기·패시브 Lv5(최대 10). 30초 뒤 강화 보스. 하트 드묾, 폭탄·자석 희귀, 엘리트는 하트+자석. 회복 물약 카드 없음.'},
+  crazy:{name:'크레이지 모드',short:'크레이지',col:'#ff00e5',desc:'캐릭터 Lv100 시작! 무기·패시브 Lv5(최대 10). 30초 뒤 강화 보스. 하트 드랍 없음, 폭탄·자석 희귀, 엘리트는 자석 확정. 회복 물약 카드 없음.'},
   heal:{name:'힐링 모드',short:'힐링',col:'#7dffb0',desc:'모든 몬스터 한 방! 처음부터 보스·엘리트가 쏟아진다. 3분마다 고자라 → 강산 → God, God를 잡으면 클리어. 무기·패시브 Lv15.'},
   tower:{name:'타워디펜스',short:'타워',col:'#7dff6b',desc:'맵 중앙의 타워를 지키세요. 타워가 부서지면 패배. 플레이어는 죽어도 10초 뒤 부활합니다. 적에게서 코어를 모아 타워를 강화하세요. 5분 이후에는 적이 급격히 몰려옵니다.'}
 };
@@ -523,13 +523,13 @@ const PASSIVES={
   magnet:{name:'자석',desc:'보석 획득 범위 +30%'},
   haste:{name:'시간 가속',desc:'모든 무기 쿨타임 -7%'},
   power:{name:'파괴의 힘',desc:'모든 피해량 +10%'},
-  regen:{name:'재생의 반지',desc:'초당 체력 +0.7 회복'},
+  regen:{name:'재생의 반지',desc:'초당 체력 +0.2 회복'},
   area:{name:'확장의 룬',desc:'무기 공격 범위 +10%'},
   trail:{name:'네온 잉크',desc:'궤적 길이 +15%, 올가미 피해 +20%'},
   armor:{name:'방어의 갑옷',desc:'받는 피해 -7%'},
 };
-// v137: 재생의 반지 초당 회복량(레벨당) — 설명 문구와 반드시 같은 값을 쓸 것
-const REGEN_PS=0.7,
+// v139: 재생의 반지 너프 — 레벨당 초당 0.2 회복(5레벨 만렙 1.0/s). 설명 문구와 반드시 같은 값을 쓸 것
+const REGEN_PS=0.2,
   MAXLV=5, MAX_WEAPONS=6, CRAZY_ITEM_MAX=10, ITEM_TBL_MAX=15;window.LV_GOLD=10;const LV_GOLD=window.LV_GOLD;
 // 네온 히어로즈: 무기·패시브는 Lv.5가 만렙 (캐릭터 레벨은 상한 없이 계속 상승)
 const HX_MAXLV=5;window.HX_MAXLV=HX_MAXLV;
@@ -753,7 +753,7 @@ function drawTowerHUD(){if(!isTower()||!G.tower)return;const T=G.tower;
     ctx.font=`800 18px ${FONT}`;ctx.fillStyle='#cfd3ff';ctx.fillText('타워를 지켜라!',W/2,H*0.42+36)}}
 function newGame(){
   runNewRec=false;
-  G={runId:Date.now().toString(36)+Math.random().toString(36).slice(2,6),t:0,kills:0,level:1,xp:0,need:xpNeed(1),spawnAcc:0,nextBoss:300,bossN:0,victory:false,pendingLv:0,dropCd:0,healCd:0,
+  G={runId:Date.now().toString(36)+Math.random().toString(36).slice(2,6),t:0,kills:0,level:1,xp:0,need:xpNeed(1),spawnAcc:0,nextBoss:300,bossN:0,victory:false,pendingLv:0,dropCd:0,
      events:[{t:150,done:false},{t:270,done:false},{t:420,done:false},{t:540,done:false},{t:690,done:false}],timers:{},auraT:0,boss:null,bossSpawned:false,
      beatPh:0,beatFlash:0,combo:0,bestCombo:0,loops:0,perfects:0,loopKills:0,trail:[],loopFx:[],calls:[],
      ev:null,evs:EVSCHED.map(o=>({t:o.t,k:o.k,done:false})),nextEvEndless:760,evToggle:false,strikes:[],
@@ -1124,7 +1124,7 @@ function killEnemy(e,q){
   e.dead=true;G.kills++;tdGrantCores(e);const T=ETYPES[e.type];
   if(!q||e.type==='boss'||e.type==='elite'||Math.random()<0.12)burst(e.x,e.y,T.color,e.type==='boss'?80:(e.type==='brute'?18:9),e.type==='boss'?400:180,0.5,e.type==='boss'?5:3);
   S.kill();
-  if(e.type==='boss'&&giftR()){addShake(8);G.boss=null;rings.push({x:e.x,y:e.y,r:0,max:200,t:0,dur:0.5,c:'#ff2e63'});for(let i=0;i<8;i++)dropGem(e.x+rand(-50,50),e.y+rand(-50,50),5);if(Math.random()<0.08)pickups.push({type:'heart',x:e.x,y:e.y,t:0});return} // v138 제작자의 선물: 보스가 잡몹처럼 나오므로 보상 축소
+  if(e.type==='boss'&&giftR()){addShake(8);G.boss=null;rings.push({x:e.x,y:e.y,r:0,max:200,t:0,dur:0.5,c:'#ff2e63'});for(let i=0;i<8;i++)dropGem(e.x+rand(-50,50),e.y+rand(-50,50),5);return} // v138 제작자의 선물: 보스가 잡몹처럼 나오므로 보상 축소
   if(e.type==='boss'){addShake(16);G.boss=null;rings.push({x:e.x,y:e.y,r:0,max:300,t:0,dur:0.6,c:'#ff2e63'});
     for(let i=0;i<30;i++)dropGem(e.x+rand(-60,60),e.y+rand(-60,60),5);
     pickups.push({type:'chest',x:e.x,y:e.y,t:0});showBanner('보스 격파!','#ffd84d');if(window.__cry){__cry.add(20,'boss')}
@@ -1133,16 +1133,14 @@ function killEnemy(e,q){
     return}
   if(e.type==='elite'){addShake(12);if(G.elite===e)G.elite=null;rings.push({x:e.x,y:e.y,r:0,max:240,t:0,dur:0.6,c:'#ffcf40'});
     for(let i=0;i<18;i++)dropGem(e.x+rand(-70,70),e.y+rand(-70,70),6);
-    pickups.push({type:'heart',x:e.x-34,y:e.y,t:0});pickups.push({type:'magnet',x:e.x+34,y:e.y,t:0});G.pendingLv+=1;
+    pickups.push({type:'magnet',x:e.x+34,y:e.y,t:0});G.pendingLv+=1;
     showBanner('👑 엘리트 격파! 큰 보상 획득','#ffd84d');if(G.ev&&G.ev.k==='elite')G.ev.dur=Math.min(G.ev.dur,G.ev.t+2.5);return}
   if(e.type==='splitter'&&enemies.length<640){for(let i=0;i<3;i++){const a=rand(0,TAU),sh=spawnEnemy('shard',e.x+Math.cos(a)*12,e.y+Math.sin(a)*12);sh.kbx=Math.cos(a)*240;sh.kby=Math.sin(a)*240}burst(e.x,e.y,'#3cffd0',10,200,0.4,3)}
   {const _r=window.__raid&&window.__raid.R;if(!(state==='raid'&&_r&&_r.diff!=='vs'&&Math.random()>=(_r.diff==='tower'?0.75:0.65)))dropGem(e.x,e.y,e.xp*gemMul())} // v69 레이드 경험치 75%
   if(Math.random()<0.05)pickups.push({type:'crystal',x:e.x+rand(-8,8),y:e.y+rand(-8,8),t:0}); // 크리스탈 5%
-  // 회복 물약 드롭: 일반 1.2%/10초, 하드 0.8%/14초, 크레이지 0.5%/18초. 엘리트는 위에서 확정 드롭
+  // v139: 적 처치 시 하트(회복 물약) 드랍 완전 삭제 — 자석/폭탄 드랍만 유지
   const cz=isCrazy();
-  if(!rCz()&&G.healCd<=0&&Math.random()<(cz?0.005:isHard()?0.008:0.012)){
-    G.healCd=cz?18:isHard()?14:10;pickups.push({type:'heart',x:e.x+rand(-10,10),y:e.y+rand(-10,10),t:0});
-  } else if(G.dropCd<=0&&Math.random()<(cz?0.003:isHard()?0.005:0.008)){
+  if(G.dropCd<=0&&Math.random()<(cz?0.003:isHard()?0.005:0.008)){
     // 자석/폭탄: 0.8%/20초, 하드 0.5%/28초, 크레이지 0.3%/35초
     G.dropCd=cz?35:isHard()?28:20;pickups.push({type:Math.random()<0.6?'magnet':'bomb',x:e.x,y:e.y,t:0});
   }
@@ -1253,7 +1251,7 @@ function updateWeapons(dt){
 
 // ================== 업데이트 ==================
 function gameUpdate(dt){
-  G.t+=dt;G.dropCd-=dt;G.healCd-=dt;tickXpDie(dt);
+  G.t+=dt;G.dropCd-=dt;tickXpDie(dt);
   // 플레이어 이동
   let mx=0,my=0;
   if(keys.ArrowLeft||keys.KeyA)mx--;if(keys.ArrowRight||keys.KeyD)mx++;if(keys.ArrowUp||keys.KeyW)my--;if(keys.ArrowDown||keys.KeyS)my++;
@@ -1755,7 +1753,7 @@ function describe(o){
   for(const k in b)if(a[k]!==b[k]){if(k==='cd'||k==='tick')ch.push(`${STAT_LBL[k]} ${a[k]}초 → ${b[k]}초`);else if(k==='rad'||k==='len')ch.push(`${STAT_LBL[k]} +${Math.round((b[k]/a[k]-1)*100)}%`);else ch.push(`${STAT_LBL[k]} ${a[k]} → ${b[k]}`)}
   return {name:Wd.name,lv:`Lv.${l} → ${l+1}${l+1===wMaxLv()?' (최대)':''}`,ds:ch.join('<br>'),tag:'w',tagT:SUB_W.has(o.id)?'보조무기':'무기'};
 }
-const PICKUP_LIFE=20,PICKUP_BLINK=5; // 하트·자석·폭탄: 15초 뒤부터 깜빡이다 20초에 소멸 (보물 상자는 유지)
+const PICKUP_LIFE=20,PICKUP_BLINK=5; // 자석·폭탄: 15초 뒤부터 깜빡이다 20초에 소멸 (보물 상자는 유지)
 let curOpts=[],lvOpenT=0;const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
 function openLevelUp(){
   curOpts=upgradeOptions();
@@ -2920,7 +2918,7 @@ function hostUpdate(dt){
   if(R.phase==='clear'||R.phase==='fail'||R.phase==='inter')return;
   if(R.phase==='ending'){R.endT-=dt;if(R.banner)R.banner.t-=dt;if(R.endT<=0){R.phase='clear';R.banner=null}return}
   for(const r of rings)if(r.fo){r.x=r.fo.x;r.y=r.fo.y}
-  R.t+=dt;G.t=R.t;G.dropCd-=dt;G.healCd-=dt;tickXpDie(dt);
+  R.t+=dt;G.t=R.t;G.dropCd-=dt;tickXpDie(dt);
   if(isTower())updateTower(dt);
   if(R.phase==='wave1'&&R.t>=R.bossAt){
     if(R.diff==='tower'){if(!G.tdRush){G.tdRush=true;const T=G.tower||{x:0,y:0};for(let i=0;i<Math.round(72*SPWN*RAID_DENS.rush);i++){const a=i/Math.round(72*SPWN*RAID_DENS.rush)*TAU+rand(-0.06,0.06),d=480+rand(0,200),ty=pickType();spawnEnemy(ty,T.x+Math.cos(a)*d,T.y+Math.sin(a)*d)}showBanner('⚠ 적들이 몰려온다! ⚠','#ff4d6d');S.boss();shake=Math.max(shake,10)}}
