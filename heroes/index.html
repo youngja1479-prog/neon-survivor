@@ -4517,7 +4517,7 @@ function mkIco(id,size){const c=makeCanvas(size,size);const g=c.getContext('2d')
 function chapCard(n,name,desc,foot,col,on,click){
   const c=document.createElement('div');c.className='card'+(on?' sel':' soon');
   c.appendChild(mkIco(on?'meteor':'orbit',144));
-  c.insertAdjacentHTML('beforeend','<span class="tag '+(on?'w':'n')+'">'+(on?'CHAPTER '+n:'COMING SOON')+'</span>'
+  c.insertAdjacentHTML('beforeend','<span class="tag '+(on?'w':'n')+'">'+(on?'CHAPTER '+n:'NEXT')+'</span>'
     +'<div class="nm">'+name+'</div><div class="lv" style="color:'+col+'">'+foot+'</div>'
     +'<div class="ds">'+desc+'</div><div class="key">'+(on?'탭하여 오프닝 시작':'준비 중')+'</div>');
   if(on&&click)c.onclick=click;
@@ -4535,7 +4535,7 @@ function heroCard(id){
 }
 function storyRender(){
   const cy=$('storyChapters');if(!cy)return;cy.innerHTML='';
-  cy.appendChild(chapCard(1,'챕터 1: 새로운 재앙','2054년 4월 4일 · 네온시티 상공에 거대한 외계 우주선이 나타났다.','보스 : 강산','#ffd84d',true,()=>cutPlay(selHero)));
+  cy.appendChild(chapCard(1,'챕터 1: 새로운 재앙','2054년 4월 4일<br>네온시티 상공에 거대한 외계 우주선이 나타났다.','보스 : 강산','#ffd84d',true,()=>cutPlay(selHero)));
   cy.appendChild(chapCard(2,'챕터 2','강산을 넘어, 우주선의 진짜 대장이 기다린다.','다음 업데이트','#9aa2d8',false));
   const hy=$('storyHeroes');hy.innerHTML='';
   for(const id of SH_ORDER)hy.appendChild(heroCard(id));
