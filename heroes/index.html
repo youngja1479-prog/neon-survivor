@@ -471,7 +471,6 @@ const WEAPONS={
   // 네온 히어로즈 전용 스킬 항목 (무기 슬롯을 차지하지 않음 · LEVEL 카드에 나오지 않음)
   heroArrow:{name:'마법 화살',color:'#4df3ff',desc:'A스킬 · 강화 마법화살을 부채꼴로 3연속 발사합니다.',lv:Array.from({length:15},()=>({dmg:10,n:7,cd:11,pierce:3}))},
   mayday:{name:'메이데이',color:'#ffd84d',desc:'메이데이 · 마법화살이 사방으로 3연속 폭발합니다.',lv:Array.from({length:15},()=>({dmg:10,n:36,cd:42,pierce:4}))},
-  chainBurst:{name:'연쇄 번개',color:'#fff27a',desc:'A스킬 · 번개가 적들을 연쇄로 튕기며 감전시킵니다. 3연속 방전.',lv:Array.from({length:15},()=>({dmg:26,n:9,cd:9}))},
   charge:{name:'번개 충전',color:'#ffd84d',desc:'B스킬 · 6초간 공격력이 오르고 주변 적이 계속 감전됩니다.',lv:Array.from({length:15},()=>({dmg:18,cd:12,rad:150}))},
   bolt:{name:'마법 화살',color:'#4df3ff',desc:'가장 가까운 적에게 마법 화살을 자동으로 발사합니다.',
     lv:[{dmg:10,n:1,cd:0.8,pierce:0},{dmg:13,n:1,cd:0.8,pierce:1},{dmg:13,n:2,cd:0.8,pierce:1},{dmg:17,n:2,cd:0.72,pierce:2},{dmg:22,n:3,cd:0.62,pierce:3},{dmg:32,n:4,cd:0.52,pierce:4}]}, // Lv.6 한계돌파(네온): 피해·개수·관통·연사 모두 상승
@@ -516,7 +515,7 @@ const CRAZY_T0=600; // ~10분 경과 스폰/난이도
 const diffT=()=>{if(!G)return 0;const t=G.t+(isCrazy()?CRAZY_T0:0);const _r=state==='raid'&&window.__raid&&window.__raid.R;return _r&&_r.endless?Math.min(t,ENDLESS.T):t};
 const ENDLESS={T:1200,ramp:600,hp:7.28,dmgCap:5.04,spd:1.15,rate:7.0,cap:1.3,mix:0.35,eliteEvery:25,eliteGap:20}; // v122 레이드 일반 무한 모드: 크레이지 최고 난이도(신의 군대 단계)를 상한으로
 const enK=()=>{const _r=window.__raid&&window.__raid.R;return _r&&_r.endless?Math.max(0,Math.min(1,(_r.t-_r.endlessAt)/ENDLESS.ramp)):0};
-const SUB_W=new Set(['mine','heroArrow','mayday','chainBurst','charge']); // 보조무기: 시작 무기 불가(레벨 업 카드로 획득) · v132부터 지뢰는 A/B 스킬로도 선택 가능
+const SUB_W=new Set(['mine','heroArrow','mayday','charge']); // 보조무기: 시작 무기 불가(레벨 업 카드로 획득) · v132부터 지뢰는 A/B 스킬로도 선택 가능
 function allowedWeapons(){return Object.keys(WEAPONS).filter(id=>!SUB_W.has(id)&&(gameMode!=='warrior'||!RANGED_W.has(id)))}
 function isAllowedWeapon(id){return !!WEAPONS[id]&&!SUB_W.has(id)&&(gameMode!=='warrior'||!RANGED_W.has(id))}
 const PASSIVES={
@@ -537,7 +536,7 @@ const REGEN_PS=0.2,
 const HX_MAXLV=5,HX_LV6_MAX=6;window.HX_MAXLV=HX_MAXLV;window.HX_LV6_MAX=HX_LV6_MAX;
 window.HX_HEROES={
   neon:{name:'네온',col:'#4df3ff',w:['bolt','mine'],p:['trail'],lv6:['bolt','trail','mine'],maxW:7,skA:'heroArrow',skB:'mine'},
-  electric:{name:'네온 일렉트릭',col:'#fff27a',w:['chain'],p:['haste','speed'],lv6:['chain','haste','speed'],maxW:6,skA:'chainBurst',skB:'charge'}
+  electric:{name:'네온 일렉트릭',col:'#fff27a',w:['chain'],p:['haste','speed'],lv6:['chain','haste','speed'],maxW:6,skA:'chain',skB:'charge'}
 };
 function hxHeroDef(h){return (window.HX_HEROES&&window.HX_HEROES[h])||window.HX_HEROES.neon}
 function hxCurHero(){try{return (P&&P.hero)||(window.HX&&window.HX.hero)||'neon'}catch(e){return (window.HX&&window.HX.hero)||'neon'}}
@@ -650,7 +649,6 @@ function drawIcon(g,id,s){
   switch(id){
     case 'heroArrow':glow('#4df3ff');for(const a of [-0.36,0,0.36]){g.save();g.rotate(a);g.beginPath();g.moveTo(-12,2);g.lineTo(10,-2);g.stroke();g.beginPath();g.moveTo(10,-2);g.lineTo(3,-3);g.lineTo(8,3);g.closePath();g.fill();g.restore()}break;
     case 'mayday':glow('#ffd84d');for(let i=0;i<8;i++){const a=i/8*TAU;g.beginPath();g.moveTo(Math.cos(a)*6,Math.sin(a)*6);g.lineTo(Math.cos(a)*17,Math.sin(a)*17);g.stroke()}g.beginPath();g.arc(0,0,4,0,TAU);g.fill();break;
-    case 'chainBurst':glow('#fff27a');for(const o of [[-9,-4],[0,2],[9,-4]]){g.beginPath();g.moveTo(o[0]+4,o[1]-13);g.lineTo(o[0]-5,o[1]);g.lineTo(o[0]+2,o[1]);g.lineTo(o[0]-4,o[1]+13);g.lineTo(o[0]+6,o[1]-3);g.lineTo(o[0]-1,o[1]-3);g.closePath();g.fill()}break;
     case 'charge':glow('#ffd84d');g.beginPath();g.moveTo(5,-17);g.lineTo(-7,1);g.lineTo(1,1);g.lineTo(-5,17);g.lineTo(9,-4);g.lineTo(1,-4);g.closePath();g.fill();g.beginPath();g.arc(0,0,18,0,TAU);g.stroke();break;
     case 'bolt':glow('#4df3ff');g.beginPath();g.moveTo(-14,10);g.lineTo(12,-12);g.stroke();g.beginPath();g.moveTo(12,-12);g.lineTo(2,-10);g.lineTo(10,-2);g.closePath();g.fill();g.beginPath();g.arc(-12,8,4,0,TAU);g.fill();break;
     case 'orbit':glow('#b9f');g.beginPath();g.arc(0,0,4,0,TAU);g.fill();g.beginPath();g.arc(0,0,13,0,TAU);g.globalAlpha=.35;g.stroke();g.globalAlpha=1;
@@ -3515,12 +3513,12 @@ window.__heroesRaid={
 'use strict';
 // 스킬 정의: 쿨타임(초), 레이저는 dur초 지속 후 쿨타임 시작
 const SKILLS={heroArrow:{cd:11,d:'강화 마법화살 7발 부채꼴 × 3연속 · 적을 꿰뚫습니다'},mayday:{cd:42,d:'메이데이: 마법화살이 사방으로 3연속 폭발'},
-  chainBurst:{cd:9,d:'연쇄 번개 3연속 · 최대 11홉으로 적들을 튕기며 감전'},charge:{cd:12,d:'6초간 공격력 증가 + 주변 지속 감전'},
+  charge:{cd:12,d:'6초간 공격력 증가 + 주변 지속 감전'},
   bolt:{cd:15,d:'거대한 화살 4방향 관통'},orbit:{cd:15,d:'칼날 회전 후 직진'},pulse:{cd:15,d:'거대 충격파 3연속·강한 넉백'},chain:{cd:18,d:'번개 두르고 적진 돌진 · 충돌 시 번개와 충격파'},
   boom:{cd:10,d:'부메랑 5개 부채꼴 왕복 2타'},seek:{cd:10,d:'유도 구체 다수'},aura:{cd:25,d:'10초간 오라 거대화'},meteor:{cd:80,d:'거대 메테오: 보스 제외 맵 전체 적 전멸 (시작 후 80초 뒤 사용 가능)'},beam:{cd:15,dur:10,d:'10초 지속 레이저 · 빠르게 돌려도 적중'},flame:{cd:15,d:'불바다: 플레이어 주위로 불길이 쫘라락 퍼지고 5초간 바닥이 불탐 · 화상'},
   mine:{cd:15,d:'네온 지뢰 7개 설치 · 0.35초 뒤 장전, 적이 밟으면 폭발 · 18초 유지'}}; // v132 지뢰 A/B 스킬
 const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
-const SK_EXTRA=new Set(['mine','heroArrow','mayday','chainBurst','charge']); // 보조무기지만 A/B 스킬로도 쓸 수 있는 무기 (v132)
+const SK_EXTRA=new Set(['mine','heroArrow','mayday','charge']); // 보조무기지만 A/B 스킬로도 쓸 수 있는 무기 (v132)
 const skOK=id=>!!SKILLS[id]&&(!SUB_W.has(id)||SK_EXTRA.has(id));
 if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
 // 네온 히어로즈: 선택한 히어로의 A/B 스킬을 그대로 사용 (네온: 마법화살/지뢰 · 일렉트릭: 연쇄번개/번개충전)
@@ -3562,17 +3560,7 @@ function fireSkill(id,ax,ay,tx,ty){if(P&&P.down)return;const l=Math.hypot(ax,ay)
     volley(0);const gap=id==='heroArrow'?0.16:0.28;hxVolley(gap,()=>volley(1));hxVolley(gap*2,()=>volley(2));
     return}
   const st=skBase(id),D=st.dmg,am=areaMul(),a=Math.atan2(ay,ax),x=P.x,y=P.y;
-  if(id==='chainBurst'){ // 네온 일렉트릭 A스킬: 연쇄 번개 3연속 — 적들을 튕기며 감전
-    const cw=(P.weapons&&P.weapons.chain)||1,cl=WEAPONS.chain.lv[Math.max(0,Math.min(WEAPONS.chain.lv.length-1,cw-1))],me=P,hopN=st.n+2;
-    for(let w=0;w<3;w++)hxVolley(w*0.18,()=>{let node=nearestN(me.x,me.y,1,900)[0]||null;const pts=[{x:me.x,y:me.y-26}],seen=new Set();let px=me.x,py=me.y-20;
-      for(let i=0;i<hopN&&node;i++){seen.add(node);pts.push({x:node.x,y:node.y});
-        hurtEnemy(node,Math.round(cl.dmg*1.9*Math.pow(0.94,i)),node.x-px,node.y-py,70,i>0);
-        if(!node.dead&&node.type!=='boss')node.slowT=Math.max(node.slowT||0,0.5); // 감전: 잠시 느려짐
-        burst(node.x,node.y,'#fff27a',5,150,0.3,2.5);px=node.x;py=node.y;
-        let bd=250*250,nx=null;query(px,py,250,(e,ddx,ddy)=>{if(seen.has(e)||e.dead)return;const d=ddx*ddx+ddy*ddy;if(d<bd){bd=d;nx=e}});node=nx}
-      zaps.push({pts,t:0.32});rings.push({x:px,y:py,r:0,max:110,t:0,dur:0.3,c:'#fff27a'});skShake(3);S.zap()});
-    return}
-  else if(id==='charge'){ // 네온 일렉트릭 B스킬: 6초 공격력 증가 + 주변 지속 감전
+  if(id==='charge'){ // 네온 일렉트릭 B스킬: 6초 공격력 증가 + 주변 지속 감전
     P.chgT=HX_CHG_T;P.chgTick=0.12;
     rings.push({x,y,r:0,max:280,t:0,dur:0.5,c:'#ffd84d'});rings.push({x,y,r:0,max:150,t:0,dur:0.32,c:'#ffffff'});
     burst(x,y,'#fff27a',42,520,0.6,4);burst(x,y,'#4df3ff',18,300,0.45,3);skShake(8);S.zap();S.boom();
@@ -4207,7 +4195,7 @@ const HERO_LIST=[
    start:'시작 무기 <b>연쇄 번개</b> Lv.1 · 시작 패시브 <b>시간 가속 · 신속의 장화</b> Lv.1 · 무기 슬롯 6칸',
    lv6name:'연쇄 번개 · 시간 가속 · 신속의 장화',
    wdesc:'적에게 번개를 떨어뜨리고 주변 적에게 튀어 나갑니다',
-   skills:[['A · 연쇄 번개','#fff27a','번개가 적들을 연쇄로 튕기며 감전 · 3연속 방전 (9초)'],
+   skills:[['A · 연쇄 번개','#fff27a','번개를 두르고 적진으로 연쇄 돌진 · 충돌 시 번개와 충격파 (18초)'],
            ['B · 번개 충전','#ffd84d','6초간 공격력 +60% · 주변 적 지속 감전 (12초)'],
            ['메이데이 · 뇌전 폭풍','#ffe27a','전장에 다연발 낙뢰가 쏟아집니다 (42초)']]},
   {id:'hx-soon2',name:'준비 중',tag:'새 히어로 추가 예정',ready:false}
@@ -4218,7 +4206,7 @@ function hxSaved(){try{const v=localStorage.getItem(HX_SEL_KEY);if(v&&hxReadyLis
 function hxSelect(id){if(!hxReadyList().some(h=>h.id===id))return false;HX.hero=id;try{localStorage.setItem(HX_SEL_KEY,id)}catch(e){}hxApplySkillSet(id);return true}
 // 선택한 히어로의 A/B 스킬과 메이데이 이름을 버튼·설정에 반영
 function hxApplySkillSet(id){const el=id==='electric';
-  try{SET.skA=el?'chainBurst':'heroArrow';SET.skB=el?'charge':'mine';saveSettings()}catch(e){}
+  try{SET.skA=el?'chain':'heroArrow';SET.skB=el?'charge':'mine';saveSettings()}catch(e){}
   try{const b=document.getElementById('mdBtn');if(b){const n=b.querySelector('.nm');if(n)n.textContent=el?'뇌전 폭풍':'메이데이'}}catch(e){}}
 function hxHero(){return HERO_LIST.find(h=>h.id===HX.hero)||HERO_LIST[0]}
 const HX={mode:'solo',n:1,ai:false,next:null,hero:hxSaved(),charFrom:'title'};
