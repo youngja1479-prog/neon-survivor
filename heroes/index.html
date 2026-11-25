@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 히어로즈 - NEON HEROES v2</title>
+<title>네온 서바이벌 - NEON SURVIVAL v2</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#07060f;color:#fff;
@@ -137,7 +137,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
  #startCards .card .ds{font-size:10.5px}#startCards .card canvas{width:40px;height:40px}#startCards .card .nm{font-size:13px}
 }
 #pickSub,#pickTitle{color:#b9c0ee;font-size:clamp(11.5px,2vw,13.5px);font-weight:700}
-/* ---------- 네온 히어로즈 화면 ---------- */
+/* ---------- 네온 서바이벌 화면 ---------- */
 .hxsub{color:#b9c0ee;font-size:clamp(11.5px,2vw,13.5px);font-weight:700;margin-bottom:4px;line-height:1.6}
 .hxcards{display:grid;gap:14px;justify-content:center;margin-top:14px;grid-template-columns:repeat(2,minmax(0,260px));max-width:640px}
 .hxcards.hx4{grid-template-columns:repeat(4,minmax(0,170px));max-width:760px}
@@ -240,11 +240,11 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 <div id="pbtn" title="일시정지"><i></i><i></i></div>
 
 <div class="ov show" id="title">
-  <h1>네온 히어로즈</h1>
-  <div class="sub">Neon Heroes · v2</div>
+  <h1>네온 서바이벌</h1>
+  <div class="sub">Neon Survival · v2</div>
   <div class="box">
     <div class="hrow"><span class="ic"></span><span><b>이동</b> — <b class="m">WASD</b> / 방향키 · 모바일은 화면을 드래그</span></div>
-    <div class="hrow k"><span class="ic"></span><span>영웅 <b class="y">네온</b>·<b class="y">네온 일렉트릭</b>의 기본 무기는 자동으로 발사됩니다. 움직이며 피하는 데 집중하세요.</span></div>
+    <div class="hrow k"><span class="ic"></span><span>영웅 <b class="y">네온 생존자</b>·<b class="y">네온 일렉트릭</b>의 기본 무기는 자동으로 발사됩니다. 움직이며 피하는 데 집중하세요.</span></div>
     <div class="hrow"><span class="ic"></span><span><b class="m">A</b> 히어로 전용 스킬 · <b class="m">B</b> 히어로 전용 스킬 · <b class="y">메이데이</b> 필살기 — 모바일은 화면 오른쪽 스킬 버튼</span></div>
     <div class="hrow k"><span class="ic"></span><span>경험치 보석을 모아 캐릭터 레벨을 끝없이 성장 · 무기·패시브는 Lv.5, 히어로 전용 항목은 <b class="y">Lv.6 한계돌파</b> · 최대 <b>4인</b> 협동</span></div>
     <div class="hrow"><span class="ic"></span><span><span class="kbd">J</span> A스킬 <span class="kbd">K</span> B스킬 <span class="kbd">C</span> 메이데이 · <span class="kbd">Space</span><span class="kbd">Esc</span> 일시정지</span></div>
@@ -265,7 +265,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
   </div>
 </div>
 
-<!-- ===== 네온 히어로즈 전용 화면 ===== -->
+<!-- ===== 네온 서바이벌 전용 화면 ===== -->
 <div class="ov" id="heroModes">
   <div class="big" style="color:#7bf6ff;text-shadow:0 0 22px rgba(77,243,255,.55)">게임 모드</div>
   <div id="heroModesSub" class="hxsub">플레이할 모드를 고르세요</div>
@@ -277,7 +277,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
   <div class="big" style="color:#ffd84d;text-shadow:0 0 22px rgba(255,216,77,.55)">스토리 모드</div>
   <div class="box" style="text-align:center;max-width:440px;margin-top:6px">
     <div style="font-size:clamp(24px,5vw,34px);font-weight:900;letter-spacing:.06em;color:#ffe27a;text-shadow:0 0 18px rgba(255,216,77,.5);margin:4px 0 10px">공사중</div>
-    <div style="color:#cfd5ff;font-size:clamp(12.5px,2.2vw,14px);line-height:1.7">네온 히어로즈의 스토리는 지금 공사중입니다.<br>먼저 <b style="color:#7bf6ff">무한 모드</b>에서 히어로를 시험해 보세요.</div>
+    <div style="color:#cfd5ff;font-size:clamp(12.5px,2.2vw,14px);line-height:1.7">네온 서바이벌의 스토리는 지금 공사중입니다.<br>먼저 <b style="color:#7bf6ff">무한 모드</b>에서 히어로를 시험해 보세요.</div>
   </div>
   <div class="row" style="margin-top:16px">
     <button class="btn" id="heroWipPlay">무한 모드 하러 가기</button>
@@ -311,15 +311,15 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 
 <div class="ov" id="heroPick">
   <div class="big" style="color:#4df3ff;text-shadow:0 0 22px rgba(77,243,255,.55)">히어로 선택</div>
-  <div id="heroPickSub" class="hxsub">지금은 네온 한 명 · 마법화살 / 충격파 / 메이데이</div>
+  <div id="heroPickSub" class="hxsub">지금은 네온 생존자 한 명 · 마법화살 / 충격파 / 메이데이</div>
   <div id="heroPickCard" class="hxpick"></div>
-  <button class="btn" id="heroPickStart">네온으로 시작</button>
+  <button class="btn" id="heroPickStart">네온 생존자로 시작</button>
   <div class="row" style="margin-top:10px"><button class="btn sec" id="heroPickChar">캐릭터 설정</button><button class="btn sec" id="heroPickBack">뒤로</button></div>
 </div>
 
 <div class="ov" id="heroChar">
   <div class="big" style="color:#4df3ff;text-shadow:0 0 22px rgba(77,243,255,.55)">캐릭터 설정</div>
-  <div class="hxsub" id="heroCharSub">지금은 네온 한 명 · 새 히어로가 계속 추가됩니다</div>
+  <div class="hxsub" id="heroCharSub">지금은 네온 생존자 한 명 · 새 히어로가 계속 추가됩니다</div>
   <div class="hxchars" id="heroCharGrid"></div>
   <div class="hxdetail" id="heroCharDetail"></div>
   <div class="row" style="margin-top:14px">
@@ -468,12 +468,12 @@ function musicStep(half){const beat=half>>1;
 
 // ================== 데이터: 무기 / 패시브 / 적 ==================
 const WEAPONS={
-  // 네온 히어로즈 전용 스킬 항목 (무기 슬롯을 차지하지 않음 · LEVEL 카드에 나오지 않음)
+  // 네온 서바이벌 전용 스킬 항목 (무기 슬롯을 차지하지 않음 · LEVEL 카드에 나오지 않음)
   heroArrow:{name:'마법 화살',color:'#4df3ff',desc:'A스킬 · 강화 마법화살을 부채꼴로 3연속 발사합니다.',lv:Array.from({length:15},()=>({dmg:10,n:7,cd:11,pierce:3}))},
   mayday:{name:'메이데이',color:'#ffd84d',desc:'메이데이 · 마법화살이 사방으로 3연속 폭발합니다.',lv:Array.from({length:15},()=>({dmg:10,n:36,cd:42,pierce:4}))},
   charge:{name:'번개 충전',color:'#ffd84d',desc:'B스킬 · 6초간 공격력이 오르고 주변 적이 계속 감전됩니다.',lv:Array.from({length:15},()=>({dmg:18,cd:12,rad:150}))},
   bolt:{name:'마법 화살',color:'#4df3ff',desc:'가장 가까운 적에게 마법 화살을 자동으로 발사합니다.',
-    lv:[{dmg:10,n:1,cd:0.8,pierce:0},{dmg:13,n:1,cd:0.8,pierce:1},{dmg:13,n:2,cd:0.8,pierce:1},{dmg:17,n:2,cd:0.72,pierce:2},{dmg:22,n:3,cd:0.62,pierce:3},{dmg:32,n:4,cd:0.52,pierce:4}]}, // Lv.6 한계돌파(네온): 피해·개수·관통·연사 모두 상승
+    lv:[{dmg:10,n:1,cd:0.8,pierce:0},{dmg:13,n:1,cd:0.8,pierce:1},{dmg:13,n:2,cd:0.8,pierce:1},{dmg:17,n:2,cd:0.72,pierce:2},{dmg:22,n:3,cd:0.62,pierce:3},{dmg:32,n:4,cd:0.52,pierce:4}]}, // Lv.6 한계돌파(네온 생존자): 피해·개수·관통·연사 모두 상승
   orbit:{name:'회전 칼날',color:'#b9f',desc:'몸 주위를 도는 칼날이 닿는 적을 베어냅니다.',
     lv:[{dmg:8,n:2,rad:72,size:1.0},{dmg:9,n:3,rad:78,size:1.15},{dmg:11,n:3,rad:88,size:1.3},{dmg:13,n:4,rad:96,size:1.45},{dmg:16,n:5,rad:108,size:1.6}]},
   pulse:{name:'충격파',color:'#8ff6ff',desc:'주기적으로 주변에 충격파를 일으켜 적을 밀쳐냅니다.',
@@ -483,7 +483,7 @@ const WEAPONS={
   boom:{name:'부메랑',color:'#ffb24d',desc:'적을 관통하며 날아갔다가 되돌아오는 부메랑을 던집니다.',
     lv:[{dmg:14,cd:1.7,n:1},{dmg:17,cd:1.6,n:1},{dmg:20,cd:1.5,n:2},{dmg:24,cd:1.35,n:2},{dmg:30,cd:1.15,n:3}]},
   mine:{name:'지뢰',color:'#ff5d5d',desc:'발밑에 지뢰를 설치합니다. 적이 밟으면 폭발!',
-    lv:[{dmg:32,cd:1.8,rad:75},{dmg:40,cd:1.6,rad:82},{dmg:48,cd:1.4,rad:90},{dmg:58,cd:1.2,rad:100},{dmg:72,cd:1.0,rad:115},{dmg:98,cd:0.85,rad:132}]}, // Lv.6 한계돌파(네온): 지뢰 피해·범위·설치 속도 상승
+    lv:[{dmg:32,cd:1.8,rad:75},{dmg:40,cd:1.6,rad:82},{dmg:48,cd:1.4,rad:90},{dmg:58,cd:1.2,rad:100},{dmg:72,cd:1.0,rad:115},{dmg:98,cd:0.85,rad:132}]}, // Lv.6 한계돌파(네온 생존자): 지뢰 피해·범위·설치 속도 상승
   aura:{name:'불꽃 오라',color:'#ff7a3c',desc:'몸 주위에 불꽃 영역을 만들어 계속 피해를 줍니다.',
     lv:[{dmg:5,rad:72},{dmg:6,rad:82},{dmg:8,rad:92},{dmg:10,rad:104},{dmg:13,rad:120}]},
   seek:{name:'유도 구체',color:'#7dffb3',desc:'적을 끝까지 쫓아가는 네온 구체를 발사합니다.',
@@ -532,10 +532,10 @@ const PASSIVES={
 // v139: 재생의 반지 너프 — 레벨당 초당 0.2 회복(5레벨 만렙 1.0/s). 설명 문구와 반드시 같은 값을 쓸 것
 const REGEN_PS=0.2,
   MAXLV=5, MAX_WEAPONS=6, CRAZY_ITEM_MAX=10, ITEM_TBL_MAX=15;window.LV_GOLD=10;const LV_GOLD=window.LV_GOLD;
-// 네온 히어로즈: 히어로별 시작 장비 · 전용 Lv.6 한계돌파 · 히어로별 무기 슬롯 수
+// 네온 서바이벌: 히어로별 시작 장비 · 전용 Lv.6 한계돌파 · 히어로별 무기 슬롯 수
 const HX_MAXLV=5,HX_LV6_MAX=6;window.HX_MAXLV=HX_MAXLV;window.HX_LV6_MAX=HX_LV6_MAX;
 window.HX_HEROES={
-  neon:{name:'네온',col:'#4df3ff',w:['bolt','mine'],p:['trail'],lv6:['bolt','trail','mine'],maxW:7,skA:'heroArrow',skB:'mine'},
+  neon:{name:'네온 생존자',col:'#4df3ff',w:['bolt','mine'],p:['trail'],lv6:['bolt','trail','mine'],maxW:7,skA:'heroArrow',skB:'mine'},
   electric:{name:'네온 일렉트릭',col:'#fff27a',w:['chain'],p:['haste','speed'],lv6:['chain','haste','speed'],maxW:6,skA:'chain',skB:'charge'}
 };
 function hxHeroDef(h){return (window.HX_HEROES&&window.HX_HEROES[h])||window.HX_HEROES.neon}
@@ -549,9 +549,9 @@ function hxApplyHero(p,hero){const H=window.HX_HEROES[hero];if(!H||!p)return p;p
   p.passives={};p.pOrder=[];for(const q of H.p)if(PASSIVES[q]){p.passives[q]=1;p.pOrder.push(q)}
   return p}
 // 전용 Lv.6: 히어로별로 지정된 항목만 최대 Lv.6, 나머지는 Lv.5
-const maxLv=()=>HX_MAXLV; // 네온 히어로즈: 무기·패시브 만렙 Lv.5
-const pMaxLv=id=>hxIsLv6(id)?HX_LV6_MAX:HX_MAXLV; // 네온 히어로즈: 패시브 — 히어로 전용 항목만 Lv.6
-const wMaxLv=id=>hxIsLv6(id)?HX_LV6_MAX:HX_MAXLV; // 네온 히어로즈: 무기 — 히어로 전용 항목만 Lv.6
+const maxLv=()=>HX_MAXLV; // 네온 서바이벌: 무기·패시브 만렙 Lv.5
+const pMaxLv=id=>hxIsLv6(id)?HX_LV6_MAX:HX_MAXLV; // 네온 서바이벌: 패시브 — 히어로 전용 항목만 Lv.6
+const wMaxLv=id=>hxIsLv6(id)?HX_LV6_MAX:HX_MAXLV; // 네온 서바이벌: 무기 — 히어로 전용 항목만 Lv.6
 // 크레이지 전용 Lv6~10 무기 수치: Lv5 이후 성장 공식을 연장 (피해 +18%/레벨, 쿨 ×0.93(최소 0.35초), 범위·사거리 +6%, 개수·관통 2레벨마다 +1)
 for(const id in WEAPONS){const L=WEAPONS[id].lv;while(L.length<CRAZY_ITEM_MAX){const a=L[L.length-1],k=L.length+1,o={};
   for(const s in a){const v=a[s];o[s]=s==='dmg'?Math.round(v*1.18):s==='cd'?Math.max(0.35,+(v*0.93).toFixed(2)):(s==='rad'||s==='len')?Math.round(v*1.06):(s==='n'||s==='pierce')?v+(k%2===0?1:0):v}
@@ -684,7 +684,7 @@ function drawIcon(g,id,s){
 
 // ================== 게임 상태 ==================
 let state='title'; // title, pickmode, pickstart, play, levelup, paused, dying, over, victory
-let heroMdCd=0; // 네온 히어로즈 메이데이 쿨타임
+let heroMdCd=0; // 네온 서바이벌 메이데이 쿨타임
 let startWeapon='bolt';
 let gameMode='normal';
 try{const sw=localStorage.getItem('neonSurvivorStartW');if(sw&&WEAPONS[sw])startWeapon=sw}catch(e){}
@@ -780,7 +780,7 @@ function newGame(){
   let sw=isAllowedWeapon(startWeapon)?startWeapon:(gameMode==='warrior'?'orbit':'bolt');
   const hp0=isHard()?80:100;
   P={x:0,y:0,r:14,hp:hp0,maxHp:hp0,baseSpd:isHard()?198:210,inv:0,fx:1,fy:0,weapons:{[sw]:1},passives:{},wOrder:[sw],pOrder:[],hurtT:0,moving:false,walk:0,down:false,revT:0,dead:false};
-  if(window.HX_START)hxApplyHero(P,window.HX_START.hero||'neon'); // 네온 히어로즈: 히어로별 시작 무기·패시브
+  if(window.HX_START)hxApplyHero(P,window.HX_START.hero||'neon'); // 네온 서바이벌: 히어로별 시작 무기·패시브
   if(isCrazy()){
     const wids=Object.keys(WEAPONS),pids=Object.keys(PASSIVES);
     P.weapons={};P.wOrder=[];for(const id of wids){P.weapons[id]=MAXLV;P.wOrder.push(id)}
@@ -797,7 +797,7 @@ function xpNeed(L){return Math.floor(3+(L-1)*2.6+Math.pow(L-1,1.9)*0.35)}
 const CRAZY_LV0=100; // 크레이지: 캐릭터 Lv100 시작(상한 없음), 필요 경험치는 (레벨-99) 기준 곡선
 const lvNeed=L=>xpNeed(L); // 크레이지도 일반 모드 곡선 (Lv100→101부터)
 const pl=k=>P.passives[k]||0;const armK=()=>{const l=pl('armor');return l<=10?1-0.07*l:Math.max(0.25,0.3-0.01*(l-10))}; // v110 Lv11~15 방어 완만(최대 75% 감소)
-const spdMul=()=>1+0.08*pl('speed')+0.04*((P&&P.bSpd)||0), cdMul=()=>Math.max(0.4,Math.pow(0.93,pl('haste'))), dmgMul=()=>1+0.1*pl('power')+0.05*((P&&P.bDmg)||0)+((P&&P.chgT>0)?0.6:0), areaMul=()=>1+0.1*pl('area'), pickR=()=>110*(1+0.3*pl('magnet'))*(G&&G.ev&&G.ev.k==='magnet'?3:1); // 네온 히어로즈: 보너스 카드(공격력·이동속도) 반영
+const spdMul=()=>1+0.08*pl('speed')+0.04*((P&&P.bSpd)||0), cdMul=()=>Math.max(0.4,Math.pow(0.93,pl('haste'))), dmgMul=()=>1+0.1*pl('power')+0.05*((P&&P.bDmg)||0)+((P&&P.chgT>0)?0.6:0), areaMul=()=>1+0.1*pl('area'), pickR=()=>110*(1+0.3*pl('magnet'))*(G&&G.ev&&G.ev.k==='magnet'?3:1); // 네온 서바이벌: 보너스 카드(공격력·이동속도) 반영
 function wstat(id){const l=P.weapons[id];return l?WEAPONS[id].lv[l-1]:null}
 
 // ================== 공간 분할 그리드 ==================
@@ -915,7 +915,7 @@ function spawner(dt){
     else{spawnEnemy(type,p.x,p.y);if(isCrazy()){const q=spJitter(p.x,p.y);spawnEnemy(type,q.x,q.y)}}}
   extraSpawn(dt,rate,cap); // v137 잡몹 추가 스폰(화살표형·원거리 적 제외)
   // 보스: 일반/하드 5분, 크레이지는 30초. 무한 모드면 이후 5분마다. 타워디펜스는 보스 없음, 5분 이후 급습.
-  const bossAt=isCrazy()?30:300; // 네온 히어로즈: 첫 보스 5분(300초), 크레이지는 30초
+  const bossAt=isCrazy()?30:300; // 네온 서바이벌: 첫 보스 5분(300초), 크레이지는 30초
   if(isTower()){
     if(!G.tdRush&&t>=300){G.tdRush=true;G.bossSpawned=true;const T=G.tower||{x:0,y:0};
       for(let i=0;i<Math.round(80*SPWN);i++){const a=i/Math.round(80*SPWN)*TAU+rand(-0.06,0.06),d=480+rand(0,200),ty=pickType();spawnEnemy(ty,T.x+Math.cos(a)*d,T.y+Math.sin(a)*d)}
@@ -1364,7 +1364,7 @@ function gameUpdate(dt){
   projs=compact(projs,p=>!p.dead&&(p.life===undefined||p.life>0));
   // 지뢰
   for(const m of mines){m.t+=dt;m.life-=dt;
-    if(m.life<=0){mineBoom(m);continue} // 네온 히어로즈: 수명 만료 → 폭발하며 사멸
+    if(m.life<=0){mineBoom(m);continue} // 네온 서바이벌: 수명 만료 → 폭발하며 사멸
     if(m.t<0.4)continue;let trig=false;query(m.x,m.y,m.sk?26:12,()=>{trig=true});
     if(trig)mineBoom(m)}
   mines=compact(mines,m=>!m.dead&&m.life>0);
@@ -1379,7 +1379,7 @@ function gameUpdate(dt){
   for(const g of gems){const dx=P.x-g.x,dy=P.y-g.y,d2=dx*dx+dy*dy;
     if(!g.mag&&d2<PR*PR)g.mag=true;
     if(g.mag&&state!=='dying'&&!(P&&P.down)){const d=Math.sqrt(d2)||1;g.sp=Math.min(900,g.sp+1400*dt);g.x+=dx/d*g.sp*dt;g.y+=dy/d*g.sp*dt;
-      if(d<P.r+8){g.dead=true;G.xp+=g.v;S.gem()}}} // 네온 히어로즈: 캐릭터 레벨 상한 없음 → 보석 경험치 항상 획득
+      if(d<P.r+8){g.dead=true;G.xp+=g.v;S.gem()}}} // 네온 서바이벌: 캐릭터 레벨 상한 없음 → 보석 경험치 항상 획득
   gems=compact(gems,g=>!g.dead);
   // 아이템
   for(const it of pickups){it.t+=dt;if(it.type!=='chest'&&it.type!=='crystal'&&it.t>=PICKUP_LIFE){it.dead=true;continue}const dx=P.x-it.x,dy=P.y-it.y,d=Math.hypot(dx,dy);
@@ -1394,7 +1394,7 @@ function gameUpdate(dt){
   pickups=compact(pickups,i=>!i.dead);
   enemies=compact(enemies,e=>!e.dead);
   // 레벨 업 체크
-  while(G.xp>=G.need){G.xp-=G.need;G.level++;G.need=lvNeed(G.level);G.pendingLv++} // 네온 히어로즈: Lv.5에서도 일반 레벨업과 동일 (배너·특별 이벤트 없음)
+  while(G.xp>=G.need){G.xp-=G.need;G.level++;G.need=lvNeed(G.level);G.pendingLv++} // 네온 서바이벌: Lv.5에서도 일반 레벨업과 동일 (배너·특별 이벤트 없음)
   if(G.pendingLv>0&&state==='play'&&!(P&&P.down)){G.pendingLv--;openLevelUp()}
   // 클리어는 5분 보스 처치로만 판정
 }
@@ -1587,12 +1587,12 @@ function drawPlayer(){
   ctx.beginPath();ctx.arc(0,0,P.r,0,TAU);ctx.fill();ctx.stroke();ctx.shadowBlur=0;
   // 눈 (바라보는 방향)
   ctx.fillStyle='#fff';const ex=P.fx*5,ey=P.fy*4;ctx.beginPath();ctx.arc(ex-4,ey-2,3,0,TAU);ctx.arc(ex+4,ey-2,3,0,TAU);ctx.fill();
-  if(P.hero==='electric'){ // 네온 일렉트릭: 번개 장식 + 전격 스파크 (네온과 구분)
+  if(P.hero==='electric'){ // 네온 일렉트릭: 번개 장식 + 전격 스파크 (네온 생존자와 구분)
     ctx.fillStyle='#fff27a';ctx.shadowColor='#fff27a';ctx.shadowBlur=14;
     ctx.beginPath();ctx.moveTo(3,-10);ctx.lineTo(-7,-23);ctx.lineTo(-1,-22);ctx.lineTo(-6,-37);ctx.lineTo(10,-21);ctx.lineTo(3,-21);ctx.lineTo(9,-10);ctx.closePath();ctx.fill();ctx.shadowBlur=0;
     ctx.strokeStyle='rgba(77,243,255,.9)';ctx.lineWidth=2;
     for(let i=0;i<3;i++){const aa=G.t*5.4+i*TAU/3,rr=P.r+7+Math.sin(G.t*9+i)*2.5;ctx.beginPath();ctx.arc(Math.cos(aa)*rr,Math.sin(aa)*rr,2.6,0,TAU);ctx.stroke()}
-  }else{ // 네온: 고깔모자
+  }else{ // 네온 생존자: 고깔모자
   ctx.fillStyle='#b46bff';ctx.beginPath();ctx.moveTo(-10,-10);ctx.lineTo(10,-10);ctx.lineTo(2,-26);ctx.closePath();ctx.fill();ctx.fillStyle='#ffd84d';ctx.beginPath();ctx.arc(2,-26,3,0,TAU);ctx.fill();}
   ctx.restore();
   // 캐릭터 아래 체력바
@@ -1705,7 +1705,7 @@ function drawHUD(){
   else{const nx=G.evs.find(o=>!o.done);const nt=nx?nx.t:G.nextEvEndless;if(nt-G.t<=5&&nt-G.t>0){ctx.fillStyle='#ff8c9c';ctx.fillText(`! 이상 신호 ${Math.ceil(nt-G.t)}초`,W-12,ry);ry+=20}}
   if(G.combo>1){ctx.fillStyle='#ffd84d';ctx.fillText(`♪ 콤보 ×${G.combo}`,W-12,ry)}
   // ---- 무기 / 패시브 슬롯
-  const HXW=hxMaxW(); // 네온 히어로즈: 히어로별 무기 슬롯(네온 7칸 · 네온 일렉트릭 6칸)
+  const HXW=hxMaxW(); // 네온 서바이벌: 히어로별 무기 슬롯(네온 생존자 7칸 · 네온 일렉트릭 6칸)
   const cz=P.pOrder.length>9;
   const SZ=(cz?19:26)*S,GAP=(cz?22:32)*S,IC=(cz?14:20)*S,ROW=(cz?26:34)*S;
   const PER=Math.max(HXW,Math.floor(Math.min(W*0.62,cz?300:420)/GAP));
@@ -1760,13 +1760,13 @@ function renderTitleBg(){
 // ================== 레벨 업 ==================
 function upgradeOptions(){
   const opts=[];
-  for(const id of P.wOrder)if(P.weapons[id]<wMaxLv(id))opts.push({kind:'w',id,w:3}); // 네온 히어로즈: 히어로 전용 항목은 Lv.6까지
-  if(P.wOrder.length<hxMaxW())for(const id of allowedWeapons())if(!P.weapons[id])opts.push({kind:'w',id,w:G.level<6?4:2.5}); // 네온 7칸 · 일렉트릭 6칸
-  // 네온 히어로즈: 지뢰는 B스킬로 고정 제공 (레벨업 카드 제외)
-  for(const id in PASSIVES)if(pl(id)<pMaxLv(id))opts.push({kind:'p',id,w:2}); // 네온 히어로즈: 히어로 전용 패시브는 Lv.6까지
+  for(const id of P.wOrder)if(P.weapons[id]<wMaxLv(id))opts.push({kind:'w',id,w:3}); // 네온 서바이벌: 히어로 전용 항목은 Lv.6까지
+  if(P.wOrder.length<hxMaxW())for(const id of allowedWeapons())if(!P.weapons[id])opts.push({kind:'w',id,w:G.level<6?4:2.5}); // 네온 생존자 7칸 · 일렉트릭 6칸
+  // 네온 서바이벌: 지뢰는 B스킬로 고정 제공 (레벨업 카드 제외)
+  for(const id in PASSIVES)if(pl(id)<pMaxLv(id))opts.push({kind:'p',id,w:2}); // 네온 서바이벌: 히어로 전용 패시브는 Lv.6까지
   const hxGrow=P.wOrder.some(id=>P.weapons[id]<wMaxLv(id))||Object.keys(PASSIVES).some(id=>pl(id)<pMaxLv(id))||(P.wOrder.length<hxMaxW()&&allowedWeapons().some(id=>!P.weapons[id]));
-  if(hxGrow)opts.push({kind:'b',id:'heal',ic:'food',w:1.4}); // 네온 히어로즈: 기본 체력 회복 카드
-  else opts.push({kind:'b',id:'heal',ic:'food',w:1.2},{kind:'b',id:'maxhp',ic:'heart',w:1.1},{kind:'b',id:'power',ic:'power',w:1.0},{kind:'b',id:'speed',ic:'speed',w:0.9}); // 네온 히어로즈: 전부 만렙이면 회복·스탯 보너스
+  if(hxGrow)opts.push({kind:'b',id:'heal',ic:'food',w:1.4}); // 네온 서바이벌: 기본 체력 회복 카드
+  else opts.push({kind:'b',id:'heal',ic:'food',w:1.2},{kind:'b',id:'maxhp',ic:'heart',w:1.1},{kind:'b',id:'power',ic:'power',w:1.0},{kind:'b',id:'speed',ic:'speed',w:0.9}); // 네온 서바이벌: 전부 만렙이면 회복·스탯 보너스
   const pick=[];while(pick.length<3&&opts.length){let s=0;for(const o of opts)s+=o.w;let r=Math.random()*s;let idx=0;for(;idx<opts.length;idx++){r-=opts[idx].w;if(r<=0)break}
     pick.push(opts.splice(Math.min(idx,opts.length-1),1)[0])}
   if(!pick.length&&!isCrazy())pick.push({kind:'g',id:'gold'});
@@ -1928,7 +1928,7 @@ $('dmgBtn').onclick=()=>{SET.dmgNum=!SET.dmgNum;if(!SET.dmgNum)texts=[];saveSett
 $('gfxBtn').onclick=()=>{SET.gfx=SET.gfx==='low'?'high':'low';if(lowGfx()&&parts.length>500)parts.splice(0,parts.length-500);saveSettings();updSetBtns()};
 $('musicBtn').onclick=()=>{musicOn=!musicOn;try{localStorage.setItem('neonSurvivorMusic',musicOn?'1':'0')}catch(e){}$('musicBtn').textContent='음악: '+(musicOn?'켜짐':'꺼짐')};
 
-// ================== 네온 히어로즈 ==================
+// ================== 네온 서바이벌 ==================
 window.HEROES=true;
 const MAY_CD=42; // 메이데이 쿨타임(초) — 사방 3연속 발사로 30→42초 상향
 // 네온 일렉트릭 메이데이: 뇌전 폭풍 — 전장에 다연발 낙뢰를 떨어뜨린다
@@ -2149,7 +2149,7 @@ setInterval(()=>{if(state==='raid')renderChat()},500);
 // ---------- 로비 ----------
 function openLobby(){cleanupNet();R=null;state='raidlobby';$('pbtn').style.display='none';$('raidLvl').classList.remove('show');storyHide();setRaidUI(false);
   lobby={players:[],diff:RDIFF[lobby.diff]?lobby.diff:'normal',gs:gsOf(lobby.gs)};$('rHome').style.display='';$('rRoom').style.display='none';msg('');showOv('raidLobby');refreshPub()}
-function renderLobby(){const L=$('rPlist');L.innerHTML='';lobby.players.forEach((p,i)=>{const d=document.createElement('div');d.style.borderColor=p.col;d.innerHTML=`<span style="color:${p.col}">●</span> ${lobby.heroes?('네온 '+(i+1)):p.name}${p.id===myId?' (나)':''}${i===0?' 👑':''}`;const W0=WEAPONS[p.w]||WEAPONS.bolt;const t=document.createElement('span');t.className='rwn';t.appendChild(wIcon(p.w in WEAPONS?p.w:'bolt',22));t.appendChild(document.createTextNode(W0.name));t.style.color=W0.color;d.prepend(t);L.appendChild(d)});if(lobby.diff!=='vs')for(let i=lobby.players.length;i<4;i++){const d=document.createElement('div');d.style.borderColor='#3a3a6a';d.style.opacity='0.6';d.innerHTML=`<span style="color:${COLS[i%COLS.length]}">●</span> 🤖 AI (빈 자리 · 실력 랜덤)`;L.appendChild(d)}renderWpick(); // v117
+function renderLobby(){const L=$('rPlist');L.innerHTML='';lobby.players.forEach((p,i)=>{const d=document.createElement('div');d.style.borderColor=p.col;d.innerHTML=`<span style="color:${p.col}">●</span> ${lobby.heroes?('네온 생존자 '+(i+1)):p.name}${p.id===myId?' (나)':''}${i===0?' 👑':''}`;const W0=WEAPONS[p.w]||WEAPONS.bolt;const t=document.createElement('span');t.className='rwn';t.appendChild(wIcon(p.w in WEAPONS?p.w:'bolt',22));t.appendChild(document.createTextNode(W0.name));t.style.color=W0.color;d.prepend(t);L.appendChild(d)});if(lobby.diff!=='vs')for(let i=lobby.players.length;i<4;i++){const d=document.createElement('div');d.style.borderColor='#3a3a6a';d.style.opacity='0.6';d.innerHTML=`<span style="color:${COLS[i%COLS.length]}">●</span> 🤖 AI (빈 자리 · 실력 랜덤)`;L.appendChild(d)}renderWpick(); // v117
   const host=net.role==='host'||net.role==='offline';
   lobby.diff=RDIFF[lobby.diff]?lobby.diff:'normal';
   $('rDiff').innerHTML=host?('난이도: '+Object.keys(RDIFF).map(k=>{const D=RDIFF[k];return `<button class="btn sec" id="rD_${k}" style="margin:4px;${lobby.diff===k?'border:2px solid '+D.col:''}">${D.label}</button>`}).join(''))
@@ -2260,7 +2260,7 @@ function beginEngine(diff,gs){const D=rDiffOf(diff);window.__raidMd=diff==='gift
 function endRaid(){clearRunGod();vsHideReadyUI();rjoy=null;joy=null;window.__raidDrawPlayers=null;QM=58;if(R)gameMode=savedMode;R=null;RP=[];state='raidlobby';setRaidUI(false);$('raidLvl').classList.remove('show')}
 function mkPlayer(lp,i){const hp0=isHard()?80:100;const n=Math.max(1,(lobby.players||[]).length),rad=isTower()?220:70,ang=-Math.PI/2+(i*TAU/n);return hxApplyHero({id:lp.id,name:lp.name,col:lp.col,x:Math.cos(ang)*rad,y:Math.sin(ang)*rad,r:14,hp:hp0,maxHp:hp0,baseSpd:isHard()?198:210,inv:0,fx:1,fy:0,
   weapons:{[WEAPONS[lp.w]&&!SUB_W.has(lp.w)?lp.w:'bolt']:1},passives:{},wOrder:[WEAPONS[lp.w]&&!SUB_W.has(lp.w)?lp.w:'bolt'],pOrder:[],hurtT:0,moving:false,walk:0,mx:0,my:0,dead:false,
-  level:1,xp:0,need:xpNeed(1),pendingLv:0,timers:{},auraT:0,opts:null,chooseT:0,dmgDone:0,trail:[],combo:0},lobby.heroes?(lp.hero||(window.HX&&window.HX.hero)||'neon'):null)} // 네온 히어로즈 협동에서만 히어로 시작 장비 적용
+  level:1,xp:0,need:xpNeed(1),pendingLv:0,timers:{},auraT:0,opts:null,chooseT:0,dmgDone:0,trail:[],combo:0},lobby.heroes?(lp.hero||(window.HX&&window.HX.hero)||'neon'):null)} // 네온 서바이벌 협동에서만 히어로 시작 장비 적용
 function swapIn(p){P=p;if(p.trail){G.trail=p.trail;G.combo=p.combo|0}G.level=p.level;G.xp=p.xp;G.need=p.need;G.pendingLv=p.pendingLv;G.timers=p.timers;G.auraT=p.auraT}
 function swapOut(p){if(p.trail){p.trail=G.trail;p.combo=G.combo}p.level=G.level;p.xp=G.xp;p.need=G.need;p.pendingLv=G.pendingLv;p.timers=G.timers;p.auraT=G.auraT}
 function tryStart(){if(lobby.heroes){hostStart();return}if(lobby.diff==='vs'){hostStart();return}if(lobby.players.length<=1){$('raidConfirm').classList.add('show');return}hostStart()}
@@ -2920,7 +2920,7 @@ function raidSpawner(dt){if(R.diff==='gift'){giftSpawner(dt);return}const st=dif
   if(R.godArmy&&R.diff==='story')rate*=ARMY.rate; // v109
   if(R.endless)rate*=1+(ENDLESS.rate-1)*enK();
   if(R.diff==='normal'&&R.surge)rate*=R.surge>=3?3.5:2; // v123 일반: 2구간 x2, 3구간~ x3.5
-  if(R.heroesV){rate*=0.5} // 네온 히어로즈 협동: 인원 배율과 함께 조정(1P<2P<3P<4P)
+  if(R.heroesV){rate*=0.5} // 네온 서바이벌 협동: 인원 배율과 함께 조정(1P<2P<3P<4P)
   rate*=SPWN;if(R.diff!=='vs')rate*=RAID_DENS.rate; // v120 레이드 전 모드 적 수 증가(인원 무관 동일)
   let cap=Math.round((R.godArmy&&R.diff==='story'?ARMY.cap:R.endless?1+(ENDLESS.cap-1)*enK():1)*Math.min(R.diff==='tower'?(tdRush?340:220):isHard()?640:520,R.diff==='tower'?(24+st*0.55+(tdRush?90+(st-300)*0.5:0)):(((isHard()?46:30)+st*(isHard()?1.3:1.0))*1.5*(R.diff!=='vs'?1.5:1)))*SPWN*(R.gozRush?1.7:1));if(R.diff!=='vs')cap=Math.max(cap,Math.min(RAID_DENS.ceil,Math.round(cap*RAID_DENS.cap)));if(R.heroesV)cap=Math.round(cap*(1+0.12*((R.n||1)-1)));if(R.diff==='normal'&&R.surge)cap=Math.max(cap,Math.min(R.surge>=3?1700:1450,Math.round(cap*(R.surge>=3?1.5:1.25)))); // v120 상한도 늘림(최대 ceil까지, 기존보다 낮아지지 않음)
   if(R.armyBanAt&&R.t>=R.armyBanAt){R.armyBanAt=0;rbanner('⚠ 신의 군대가 몰려온다! 난이도 급상승 ⚠','#ff5a5a',4)}
@@ -3053,7 +3053,7 @@ function hostUpdate(dt){
       query(p.x,p.y,p.r,(e)=>{if(p.life<=0||p.hit.has(e))return;p.hit.add(e);hurtEnemy(e,p.dmg,p.vx,p.vy,90);burst(p.x,p.y,'#7dffb3',5,110,0.25,2.4);p.life=0})}});
   projs=projs.filter(p=>!p.dead&&(p.life===undefined||p.life>0));
   for(const m of mines)withOwner(m,()=>{m.t+=dt;m.life-=dt;
-    if(m.life<=0){mineBoom(m);return} // 네온 히어로즈: 수명 만료 → 폭발하며 사멸
+    if(m.life<=0){mineBoom(m);return} // 네온 서바이벌: 수명 만료 → 폭발하며 사멸
     if(m.t<0.4)return;let trig=false;query(m.x,m.y,m.sk?26:12,()=>{trig=true});
     if(trig)mineBoom(m)});
   mines=mines.filter(m=>!m.dead&&m.life>0);
@@ -3092,7 +3092,7 @@ function hostUpdate(dt){
   for(const w of R.waves){w.r+=w.spd*dt;for(const p of alive()){const d=Math.hypot(p.x-w.x,p.y-w.y);if(w.r>0&&!w.hit[p.id]&&Math.abs(d-w.r)<22&&(!w.max||d<=w.max)){w.hit[p.id]=1;hurtP(p,w.dmg)}}}R.waves=R.waves.filter(w=>w.r<w.max);
   enemies=enemies.filter(e=>!e.dead);
   // 개인 레벨 업: 게임은 멈추지 않음 (선택 창 열릴 때 보호 없음)
-  for(const p of RP){if(p.dead)continue;while(p.xp>=p.need){p.xp-=p.need;p.level++;p.need=lvNeed(p.level);p.pendingLv++} // 네온 히어로즈: 협동 캐릭터 레벨도 무제한
+  for(const p of RP){if(p.dead)continue;while(p.xp>=p.need){p.xp-=p.need;p.level++;p.need=lvNeed(p.level);p.pendingLv++} // 네온 서바이벌: 협동 캐릭터 레벨도 무제한
     if(!p.opts&&p.pendingLv>0){swapIn(p);const o=upgradeOptions();swapOut(p);p.pendingLv--;if(o.length){p.opts=o.map(x=>({kind:x.kind,id:x.id,ic:x.ic}));p.chooseT=0;if(R.diff==='gift'&&o.every(x=>x.kind==='g'))applyPick(p,0)}}} // v141 만렙(전부 MAX)이면 레벨업 카드 없이 크리스탈 자동 지급
   if(alive().length||(isTower()&&G.tower&&G.tower.hp>0))for(const p of RP){if(!p.dead||p.left||!(p.reviveT>0))continue;p.reviveT-=dt;if(p.reviveT<=0)reviveP(p)}
   if(!alive().length&&R.phase!=='ending'&&!(isTower()&&G.tower&&G.tower.hp>0))R.phase='fail';
@@ -3359,7 +3359,7 @@ function drawRaidWorld(){drawTele();
   const cam=camP;
   for(const p of RP){P=p;if(p.dead){ctx.globalAlpha=0.4;ctx.strokeStyle=p.col;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(p.x-10,p.y-10);ctx.lineTo(p.x+10,p.y+10);ctx.moveTo(p.x+10,p.y-10);ctx.lineTo(p.x-10,p.y+10);ctx.stroke();ctx.globalAlpha=1}
     else{if(p!==cam)drawOtherWeapons(p);drawPlayer()}
-    ctx.fillStyle=p.col;ctx.font='900 13px '+FONT;ctx.textAlign='center';ctx.fillText((R&&R.heroesV?('네온 '+(RP.findIndex(q=>q.id===p.id)+1)):p.name)+(p.id===myId?' (나)':''),p.x,p.y-32)}
+    ctx.fillStyle=p.col;ctx.font='900 13px '+FONT;ctx.textAlign='center';ctx.fillText((R&&R.heroesV?('네온 생존자 '+(RP.findIndex(q=>q.id===p.id)+1)):p.name)+(p.id===myId?' (나)':''),p.x,p.y-32)}
   P=cam}
 function raidHUD(){const ph=R.phase;ctx.textAlign='center';
   let tl='';if(ph==='wave1'&&R.diff==='tower')tl=R.t<(R.bossAt||300)?'적 대습격까지 '+fmtTime(Math.max(0,(R.bossAt||300)-R.t)):'⚠ 대습격! 타워를 끝까지 지켜라'; // v119 레이드 타워: 보스 없음
@@ -3368,7 +3368,7 @@ function raidHUD(){const ph=R.phase;ctx.textAlign='center';
   if(tl){ctx.font='800 14px '+FONT;ctx.fillStyle='#ffd84d';const tw=ctx.measureText(tl).width;const ty=(window.__slotR||0)>W/2-tw/2-4?Math.max(84,(window.__slotB||0)+18):84;ctx.fillText(tl,W/2,ty)}
   if(R.boss){const b=R.boss,bw=Math.min(W-40,760),x=(W-bw)/2,y=76;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(x-4,y-4,bw+8,34);ctx.fillStyle=b.kind==='chabak'?'#ff4dff':b.kind==='god'?(b.enr?'#ff4d6d':'#ffd84d'):b.kind==='gozara'?'#3dffc8':b.enr?'#ff2e63':'#ff8c3a';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=14;ctx.fillRect(x,y,bw*Math.max(0,b.hp)/b.maxHp,26);ctx.shadowBlur=0;
     ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.strokeRect(x,y,bw,26);ctx.fillStyle='#fff';ctx.font='bold 16px '+FONT;if(b.kind==='chabak'){fitFont(900,16,b.name+'  ∞ / ∞',bw-10);ctx.fillText(b.name+'  ∞ / ∞',W/2,y+19);ctx.font='bold 12px '+FONT;ctx.fillText('처치 불가',W/2,y+44)}else{ctx.fillText(`${b.name}${b.enr?' (격노)':''}  ${Math.max(0,b.hp)|0} / ${b.maxHp|0}`,W/2,y+19);ctx.font='bold 12px '+FONT;ctx.fillText((R.diff==='normal'&&!R.crazy&&(b.kind==='kangsan'||b.kind==='god'))?'고정 체력 (인원 무관)':RP.length+'인 체력 보정',W/2,y+44)}} // v127 일반 강산·God은 고정 체력이라 문구 맞춤
-  ctx.textAlign='right';ctx.font='bold 14px '+FONT;RP.forEach((p,i)=>{ctx.fillStyle=p.col;ctx.fillText(`● ${R.heroesV?('네온 '+(i+1)):p.name}${p.id===myId?'(나)':''} Lv${p.level} ${p.dead?'💀'+(p.reviveT>0?' '+Math.ceil(p.reviveT)+'s':''):Math.ceil(p.hp)+'HP'}`,W-12,H-14-(RP.length-1-i)*18)});
+  ctx.textAlign='right';ctx.font='bold 14px '+FONT;RP.forEach((p,i)=>{ctx.fillStyle=p.col;ctx.fillText(`● ${R.heroesV?('네온 생존자 '+(i+1)):p.name}${p.id===myId?'(나)':''} Lv${p.level} ${p.dead?'💀'+(p.reviveT>0?' '+Math.ceil(p.reviveT)+'s':''):Math.ceil(p.hp)+'HP'}`,W-12,H-14-(RP.length-1-i)*18)});
   ctx.textAlign='left';ctx.fillStyle=R.solo?'#7dffb0':rDiffOf(R.crazy?'crazy':R.diff).col;ctx.font='900 13px '+FONT;ctx.fillText((R.heroesV?'무한 모드':R.diff==='vs'?'VS':R.solo?'힐링 모드':'레이드 · '+(R.diff==='gift'?giftName(R.gift):rDiffOf(R.crazy?'crazy':R.diff).label)),12,H-14);
   if(R.diff==='vs'&&R.phase==='vsarena'){ctx.textAlign='center';ctx.font='800 14px '+FONT;ctx.fillStyle='#ff4d9d';ctx.fillText('최후의 1인!',W/2,84)}
   const me=RP.find(p=>p.id===myId);
@@ -3421,10 +3421,10 @@ hurtBoss(f){if(R&&R.boss)R.boss.hp-=R.boss.maxHp*f},god(v){if(R)R.god=v!==false}
   skipVsPrep(){if(R&&R.host&&R.diff==='vs'&&R.phase==='vsprep'){R.prepLeft=0;return true}return false},
   raidSpawner, // v137: 밸런스 계측용(스폰 스트림 직접 측정)
   forceMode(m){if(R&&R.boss){R.boss.mode='chase';R.boss.mt=0;R.boss.cyc=({slam:0,wave:2,breath:3,dash:0,slam3:1,barrage:2})[m]??0}}};
-// ---------- 네온 히어로즈 협동 진입점 ----------
+// ---------- 네온 서바이벌 협동 진입점 ----------
 function hxLobbySkin(){$('rPub').style.display='none';$('rDiff').style.display='none';
   if($('rWsub'))$('rWsub').style.display='none';if($('rWpick'))$('rWpick').style.display='none';
-  const t=document.querySelector('#raidLobby .big');if(t){t.textContent='네온 히어로즈 · 온라인 협동';t.style.color='#4df3ff';t.style.textShadow='0 0 18px rgba(77,243,255,.65)'}
+  const t=document.querySelector('#raidLobby .big');if(t){t.textContent='네온 서바이벌 · 온라인 협동';t.style.color='#4df3ff';t.style.textShadow='0 0 18px rgba(77,243,255,.65)'}
   if($('rCreateBtn'))$('rCreateBtn').textContent='방 만들기';
   if($('rStartBtn'))$('rStartBtn').textContent='게임 시작';
   const h=$('rHome');if(h&&!h.dataset.hx){h.dataset.hx='1';
@@ -3523,7 +3523,7 @@ const RB=window.__rsk;const rR=()=>RB.R,rRP=()=>RB.RP||[],rMe=()=>RB.myId;
 const SK_EXTRA=new Set(['mine','heroArrow','mayday','charge']); // 보조무기지만 A/B 스킬로도 쓸 수 있는 무기 (v132)
 const skOK=id=>!!SKILLS[id]&&(!SUB_W.has(id)||SK_EXTRA.has(id));
 if(!skOK(SET.skA))SET.skA='bolt';if(!skOK(SET.skB)||SET.skB===SET.skA)SET.skB=SET.skA==='pulse'?'bolt':'pulse';
-// 네온 히어로즈: 선택한 히어로의 A/B 스킬을 그대로 사용 (네온: 마법화살/지뢰 · 일렉트릭: 연쇄번개/번개충전)
+// 네온 서바이벌: 선택한 히어로의 A/B 스킬을 그대로 사용 (네온 생존자: 마법화살/지뢰 · 일렉트릭: 연쇄번개/번개충전)
 {let _hs='neon';try{_hs=localStorage.getItem('nhHeroSel')||'neon'}catch(e){}const _H=window.HX_HEROES[_hs]||window.HX_HEROES.neon;SET.skA=_H.skA;SET.skB=_H.skB;}
 const skCD={},skAct={},skQ=[];let skHold=null;
 function skIcon(id,sz){const c=makeCanvas(sz*2,sz*2);const g=c.getContext('2d');g.translate(sz,sz);drawIcon(g,id,sz*1.7);return c}
@@ -3542,7 +3542,7 @@ function renderSkSet(){for(const slot of ['A','B']){const row=$('skRow'+slot);ro
 $('setMenuBtn').onclick=()=>{initAudio();openSettings()};
 $('setBackBtn').onclick=()=>{$('settings').classList.remove('show');toTitle()};
 // ---------- 스킬 발동 (현재 P 기준; 레이드 호스트는 swapIn 후 호출) ----------
-const HXV=[]; // 네온 히어로즈: 3연속 스킬 웨이브 예약 큐 (연사 간격을 프레임 시간으로 처리)
+const HXV=[]; // 네온 서바이벌: 3연속 스킬 웨이브 예약 큐 (연사 간격을 프레임 시간으로 처리)
 function hxVolley(d,fn){HXV.push({t:d,fn})}
 function hxVolleyTick(dt){for(let i=HXV.length-1;i>=0;i--){const v=HXV[i];v.t-=dt;if(v.t<=0){HXV.splice(i,1);try{v.fn()}catch(e){}}}}
 function fireSkill(id,ax,ay,tx,ty){if(P&&P.down)return;const l=Math.hypot(ax,ay);if(l<0.01){ax=1;ay=0}else{ax/=l;ay/=l}
@@ -3579,7 +3579,7 @@ function fireSkill(id,ax,ay,tx,ty){if(P&&P.down)return;const l=Math.hypot(ax,ay)
   else if(id==='flame'){const Rr=fireSkR(st,am);projs.push({k:'Sfire',x,y,R:Rr,r:Math.min(63,Math.round(Rr/8)),t:0,life:5.5,tick:0.25,dmg:D,burn:st.burn||3,hit:new Set(),rot:-Math.PI});
     rings.push({x,y,r:0,max:Rr*0.45,t:0,dur:0.3,c:'#ffd27a'});burst(x,y,'#ff8a2a',30,520,0.5,4);burst(x,y,'#ffd27a',14,320,0.35,3);skShake(8);S.boom()}
   else if(id==='beam'){projs.push({k:'Slaser',x,y,r:Math.min(63,Math.round(760*am/20)),t:0,life:10,tick:0,dmg:D*1.5,ax,ay,rot:a,len:760*am});rings.push({x,y,r:0,max:240,t:0,dur:0.42,c:'#ff6ad5'});rings.push({x,y,r:0,max:130,t:0,dur:0.28,c:'#ffffff'});burst(x,y,'#ff6ad5',36,520,0.5,4);burst(x,y,'#ffffff',16,340,0.35,3);skShake(6);S.zap()}
-  else if(id==='mine'){ // 네온 히어로즈 B스킬 지뢰: 발밑에 설치 → 0.35초 장전 → 적이 밟으면 폭발 (18초 유지)
+  else if(id==='mine'){ // 네온 서바이벌 B스킬 지뢰: 발밑에 설치 → 0.35초 장전 → 적이 밟으면 폭발 (18초 유지)
     const n=7,ring=Math.min(210,110*am),mrad=Math.max(120,st.rad*1.75*am),mdmg=D*6;
     for(let k=0;k<n;k++){const aa=a+k*TAU/n;mines.push({x:x+Math.cos(aa)*ring,y:y+Math.sin(aa)*ring,t:0.35,dmg:mdmg,rad:mrad,life:18,slow:1.1,sk:1})}
     while(mines.length>60)mines.shift();
@@ -3903,7 +3903,7 @@ const ITEMS={
 const ALL={};for(const k in ITEMS)for(const it of ITEMS[k])ALL[it.id]=it;
 let PF=(()=>{const d={cry:0,own:[],eq:{c:null,t:null,s:null,tw:null},dev:false,used:[]};try{const o=JSON.parse(localStorage.getItem(KEY));if(o)return Object.assign(d,o,{eq:Object.assign(d.eq,o.eq||{})})}catch(e){}return d})();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(PF))}catch(e){}}
-const FREE=new Set(['mayday'].concat(Object.keys(SKILLS).filter(w=>skOK(w)).map(w=>'sk_'+w))); // 네온 히어로즈: 스킬·메이데이 기본 해금
+const FREE=new Set(['mayday'].concat(Object.keys(SKILLS).filter(w=>skOK(w)).map(w=>'sk_'+w))); // 네온 서바이벌: 스킬·메이데이 기본 해금
 const owns=id=>PF.dev||FREE.has(id)||PF.own.includes(id);const ownsSk=w=>owns('sk_'+w);
 function skFix(){const L=Object.keys(SKILLS).filter(w=>skOK(w)&&ownsSk(w));let ch=false;
   const ok=w=>!!w&&ownsSk(w);if(!ok(SET.skA)){SET.skA=ok(SET.skB)?SET.skB:(L[0]||null);ch=true}
@@ -3930,7 +3930,7 @@ function tryCode(){const v=$('codeIn').value.trim(),m=$('codeMsg');if(!v)return;
   else m.textContent='코드가 틀렸어요';$('codeIn').value=''}
 $('codeBtn').onclick=tryCode;$('codeIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')tryCode()});$('codeIn').addEventListener('keyup',e=>e.stopPropagation());
 // ---- 스킨 그리기 ----
-function cosOf(p){return {c:null,t:null,s:null,tw:null}} // 네온 히어로즈: 1편 스킨 설정(PF.eq) 미적용 · 항상 네온 본래 모습
+function cosOf(p){return {c:null,t:null,s:null,tw:null}} // 네온 서바이벌: 1편 스킨 설정(PF.eq) 미적용 · 항상 네온 생존자 본래 모습
 function clean(c){const o={c:null,t:null,s:null,tw:null};if(c&&typeof c==='object')for(const k of ['c','t','s','tw'])if(ALL[c[k]]&&ALL[c[k]].k===k)o[k]=c[k];return o}
 function shapePath(g,sk,col,blink){g.lineWidth=3;g.strokeStyle=blink?'#fff':col;g.fillStyle=blink?'#fff':'#0d2a44';g.shadowColor=col;g.shadowBlur=lowGfx()?0:16;g.beginPath();
   if(sk==='star'){for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?9:21;g.lineTo(Math.cos(a)*rr,Math.sin(a)*rr-2)}g.closePath();g.fill();g.stroke();g.shadowBlur=0;g.fillStyle='#fff';g.beginPath();g.arc(-4,-2,2.5,0,TAU);g.arc(4,-2,2.5,0,TAU);g.fill()}
@@ -4177,14 +4177,14 @@ refresh();
 })();
 </script>
 
-<!-- ================== 네온 히어로즈: 화면 흐름 ================== -->
+<!-- ================== 네온 서바이벌: 화면 흐름 ================== -->
 <script>
 'use strict';
 (function(){
 const $=id=>document.getElementById(id);
 // ---- 캐릭터(히어로) 목록 — 새 캐릭터는 여기에 한 줄 추가하면 설정 화면에 자동으로 나타납니다 ----
 const HERO_LIST=[
-  {id:'neon',name:'네온',tag:'전 네온 생존자',icon:'bolt',col:'#4df3ff',w:'bolt',wname:'마법화살 + 지뢰',ready:true,
+  {id:'neon',name:'네온 생존자',tag:'기본 히어로',icon:'bolt',col:'#4df3ff',w:'bolt',wname:'마법화살 + 지뢰',ready:true,
    concept:'네온 빛을 몸에 두른 마지막 생존자. 마법화살과 지뢰로 적을 몰아붙이고, 빛의 궤적(네온 잉크)으로 가둡니다.',
    start:'시작 무기 <b>마법화살 · 지뢰</b> Lv.1 · 시작 패시브 <b>네온 잉크</b> Lv.1 · <b>무기 슬롯 7칸</b>',
    lv6name:'마법 화살 · 네온 잉크 · 지뢰',
@@ -4193,7 +4193,7 @@ const HERO_LIST=[
            ['B · 지뢰','#ff9ecb','네온 지뢰 7개 설치 · 적이 밟으면 폭발 · 18초 유지 (15초)'],
            ['메이데이 · 사방 마법화살','#ffe27a','사방으로 마법화살이 3연속 폭발합니다 (42초)']]},
   {id:'electric',name:'네온 일렉트릭',tag:'번개 계열 · 신규',icon:'chain',col:'#fff27a',w:'chain',wname:'연쇄 번개',ready:true,
-   concept:'번개를 몸에 두른 네온. 연쇄 번개로 적진을 타고 흐르고, 번개 충전으로 화력을 끌어올립니다.',
+   concept:'번개를 몸에 두른 네온 일렉트릭. 연쇄 번개로 적진을 타고 흐르고, 번개 충전으로 화력을 끌어올립니다.',
    start:'시작 무기 <b>연쇄 번개</b> Lv.1 · 시작 패시브 <b>시간 가속 · 신속의 장화</b> Lv.1 · 무기 슬롯 6칸',
    lv6name:'연쇄 번개 · 시간 가속 · 신속의 장화',
    wdesc:'적에게 번개를 떨어뜨리고 주변 적에게 튀어 나갑니다',
@@ -4204,6 +4204,8 @@ const HERO_LIST=[
 ];
 const HX_SEL_KEY='nhHeroSel';
 function hxReadyList(){return HERO_LIST.filter(h=>h.ready)}
+// 이름 끝소리에 맞춰 '로/으로' 선택 (네온 생존자 → 로, 네온 일렉트릭 → 으로)
+function hxRo(n){const c=(n||'').charCodeAt((n||'').length-1);if(c<0xac00||c>0xd7a3)return '으로';return (c-0xac00)%28?'으로':'로'}
 function hxSaved(){try{const v=localStorage.getItem(HX_SEL_KEY);if(v&&hxReadyList().some(h=>h.id===v))return v}catch(e){}return HERO_LIST[0].id}
 function hxSelect(id){if(!hxReadyList().some(h=>h.id===id))return false;HX.hero=id;try{localStorage.setItem(HX_SEL_KEY,id)}catch(e){}hxApplySkillSet(id);return true}
 // 선택한 히어로의 A/B 스킬과 메이데이 이름을 버튼·설정에 반영
@@ -4234,7 +4236,7 @@ function heroOpenModes(){
   showOnly('heroModes');
   const box=$('heroModeCards');box.innerHTML='';
   box.appendChild(mkCard({icon:'meteor',tag:'STORY',tagCls:'w',name:'스토리 모드',lv:'준비 중',col:'#ff9ecb',
-    desc:'네온 히어로즈의 이야기를 따라가는 모드. 지금은 공사중입니다.',key:'탭하여 보기',
+    desc:'네온 서바이벌의 이야기를 따라가는 모드. 지금은 공사중입니다.',key:'탭하여 보기',
     onclick:()=>{showOnly('heroWip')}}));
   box.appendChild(mkCard({icon:'bolt',tag:'ENDLESS',tagCls:'p',name:'무한 모드',lv:'1~4인',col:'#8ff6ff',
     desc:'끝없이 몰려오는 적을 상대로 버티세요. 혼자, AI 동료와, 또는 온라인 친구와 함께.',key:'탭하여 시작',
@@ -4270,7 +4272,7 @@ function heroOpenTeam(){
 function heroOpenPick(){
   showOnly('heroPick');
   $('heroPickSub').textContent=(HX.mode==='coop'?(HX.n+'인 협동 · '):'')+'지금은 '+hxHero().name+' 한 명 · 캐릭터 설정에서 자세히 볼 수 있어요';
-  $('heroPickStart').textContent=hxHero().name+'으로 시작';
+  $('heroPickStart').textContent=hxHero().name+hxRo(hxHero().name)+' 시작';
   const box=$('heroPickCard');box.innerHTML='';
   const c=document.createElement('div');c.className='card';
   const ic=makeCanvas(144,144);const g=ic.getContext('2d');g.translate(72,72);drawIcon(g,hxHero().icon||'bolt',120);c.appendChild(ic);
@@ -4365,7 +4367,7 @@ function heroCharClose(){
 // ---- 시작 ----
 function heroSoloStart(){
   HX.mode='solo';startWeapon='bolt';gameMode='normal';
-  window.HX_START={hero:HX.hero||'neon'}; // 네온 히어로즈: 선택한 히어로의 시작 장비
+  window.HX_START={hero:HX.hero||'neon'}; // 네온 서바이벌: 선택한 히어로의 시작 장비
   hideAll();startGame();
 }
 function heroStartAI(){window.__heroesRaid.startAI(HX.n)}
