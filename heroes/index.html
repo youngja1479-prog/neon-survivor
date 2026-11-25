@@ -1372,7 +1372,7 @@ function gameUpdate(dt){
   pickups=compact(pickups,i=>!i.dead);
   enemies=compact(enemies,e=>!e.dead);
   // 레벨 업 체크
-  while(G.xp>=G.need){G.xp-=G.need;G.level++;G.need=lvNeed(G.level);G.pendingLv++;if(G.level===HX_MAXLV){P.hp=P.maxHp;showBanner('Lv.5 달성! 캐릭터 레벨 무제한','#ffd84d');burst(P.x,P.y,'#ffd84d',60,520,1.1,4);burst(P.x,P.y,'#4df3ff',30,380,0.9,3);S.level();S.boom()}}
+  while(G.xp>=G.need){G.xp-=G.need;G.level++;G.need=lvNeed(G.level);G.pendingLv++} // 네온 히어로즈: Lv.5에서도 일반 레벨업과 동일 (배너·특별 이벤트 없음)
   if(G.pendingLv>0&&state==='play'&&!(P&&P.down)){G.pendingLv--;openLevelUp()}
   // 클리어는 5분 보스 처치로만 판정
 }
