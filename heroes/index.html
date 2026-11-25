@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 히어로즈 - NEON HEROES v1</title>
+<title>네온 히어로즈 - NEON HEROES v2</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#07060f;color:#fff;
@@ -241,7 +241,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 
 <div class="ov show" id="title">
   <h1>네온 히어로즈</h1>
-  <div class="sub">Neon Heroes · v1</div>
+  <div class="sub">Neon Heroes · v2</div>
   <div class="box">
     <div class="hrow"><span class="ic"></span><span><b>이동</b> — <b class="m">WASD</b> / 방향키 · 모바일은 화면을 드래그</span></div>
     <div class="hrow k"><span class="ic"></span><span>영웅 <b class="y">네온</b>·<b class="y">네온 일렉트릭</b>의 기본 무기는 자동으로 발사됩니다. 움직이며 피하는 데 집중하세요.</span></div>
@@ -507,7 +507,7 @@ const MODES={
   tower:{name:'타워디펜스',short:'타워',col:'#7dff6b',desc:'맵 중앙의 타워를 지키세요. 타워가 부서지면 패배. 플레이어는 죽어도 10초 뒤 부활합니다. 적에게서 코어를 모아 타워를 강화하세요. 5분 이후에는 적이 급격히 몰려옵니다.'}
 };
 const isHard=()=>gameMode==='hard';const UPD=()=>isCrazy()?1:(state==='raid'?1.3:1.0);
-const SPWN=1.3; // v95 생성 속도·생성량
+const SPWN=1.7; // v2 난이도: 생성 속도·생성량 +31% (v1: 1.3)
 const isCrazy=()=>gameMode==='crazy';const giftR=()=>{const r=window.__raid&&window.__raid.R;return (state==='raid'&&r&&r.diff==='gift')?r:null}; // v138 레이드 제작자의 선물
 const rCz=()=>{const r=window.__raid&&window.__raid.R;return !!(state==='raid'&&r&&r.crazy)}; // v107 레이드 크레이지(스토리 흐름 + 강화)
 const isTower=()=>gameMode==='tower';const soloEasy=()=>(gameMode==='normal'||gameMode==='hard'||gameMode==='warrior')&&!(window.__raid&&window.__raid.R)&&state!=='raid';
@@ -561,17 +561,18 @@ for(const id in WEAPONS){const L=WEAPONS[id].lv;while(L.length<CRAZY_ITEM_MAX){c
   for(const s in a){const v=a[s];o[s]=s==='dmg'?Math.round(v*1.16):s==='cd'?Math.max(0.35,+(v*0.95).toFixed(2)):(s==='rad'||s==='len')?Math.round(v*1.04):(s==='n'||s==='pierce')?v+(k%2===0?1:0):s==='arc'?Math.min(66,v+2):s==='tick'?Math.max(0.2,+(v-0.005).toFixed(3)):s==='burn'?v+(k%2===0?1:0):v}
   L.push(o)}}
 const ETYPES={
-  grunt:{r:13,hp:10,spd:72,dmg:6,xp:1,color:'#ff4d6d'},
-  bat:{r:9,hp:5,spd:135,dmg:4,xp:1,color:'#ffd84d'},
-  brute:{r:24,hp:70,spd:44,dmg:16,xp:5,color:'#b46bff',kb:0.3},
-  spitter:{r:13,hp:16,spd:64,dmg:6,xp:3,color:'#5dff8a'},
-  charger:{r:14,hp:30,spd:60,dmg:12,xp:4,color:'#ff9a3c',kb:0.6},
-  boss:{r:54,hp:2200,spd:58,dmg:25,xp:0,color:'#ff2e63',kb:0.04},
-  elite:{r:40,hp:240,spd:72,dmg:16,xp:0,color:'#ffcf40',kb:0.12},
-  splitter:{r:16,hp:34,spd:60,dmg:9,xp:3,color:'#3cffd0',kb:0.8},
-  shard:{r:8,hp:5,spd:125,dmg:5,xp:1,color:'#3cffd0'},
+  grunt:{r:13,hp:13,spd:72,dmg:8,xp:1,color:'#ff4d6d'},
+  bat:{r:9,hp:7,spd:135,dmg:5,xp:1,color:'#ffd84d'},
+  brute:{r:24,hp:91,spd:44,dmg:21,xp:5,color:'#b46bff',kb:0.3},
+  spitter:{r:13,hp:21,spd:64,dmg:8,xp:3,color:'#5dff8a'},
+  charger:{r:14,hp:39,spd:60,dmg:16,xp:4,color:'#ff9a3c',kb:0.6},
+  boss:{r:54,hp:3080,spd:58,dmg:35,xp:0,color:'#ff2e63',kb:0.04},
+  elite:{r:40,hp:312,spd:72,dmg:21,xp:0,color:'#ffcf40',kb:0.12},
+  splitter:{r:16,hp:44,spd:60,dmg:12,xp:3,color:'#3cffd0',kb:0.8},
+  shard:{r:8,hp:7,spd:125,dmg:7,xp:1,color:'#3cffd0'},
   // v137 신규: 자폭형 「뇌관충」 — 접근 후 1.5초 점멸 경고 → 폭발(주변 적까지 휘말림)
-  bomber:{r:15,hp:24,spd:58,dmg:8,xp:3,color:'#ff5a1f',kb:0.9},
+  // v2 난이도: 잡몹 체력·피해 +30%, 보스 +40%
+  bomber:{r:15,hp:31,spd:58,dmg:10,xp:3,color:'#ff5a1f',kb:0.9},
 };
 const BOMB_TRIG=130, BOMB_FUSE=1.5, BOMB_R=150, BOMB_CHAIN=0.3; // v137 뇌관충: 폭발 트리거 거리 · 도화선 시간 · 폭발 반경 · 연쇄 도화선
 
@@ -2101,10 +2102,10 @@ const NUM={
   mobRateMul:1.8,           // 일반 모드 스폰 공식(하드는 원래 하드 배율 포함) x1.8
   hard:{bossHp:1.6,bossDmg:1.3,bossSpd:1.15}, // 몹 하드 배율은 원본 엔진(isHard) 그대로
   scale:n=>1+0.75*(n-1),
-  gozara:{hp:6000,spd:95,contact:20,slam:35,wave:22,r:150,slamR:150,slamWave:400,roarWave:520,bodyR:0.58,breathLen:450,breathDeg:40,breathWarn:1.0,breathDur:1.5,breathTick:0.55,breathDmg:10,breathDmgHard:16},
-  kangsan:{hp:20000,spd:175,enrSpd:235,contact:26,dash:34,slam:40,bullet:16,r:130},
-  god:{hp:32000,spd:120,contact:28,slam:44,wave:26,dash:38,bullet:18,r:180,slamR:170,slamWave:440,roarWave:560,bodyR:0.6,breathLen:480,breathDeg:44,breathWarn:1.0,breathDur:1.5,breathTick:0.55,breathDmg:12,breathDmgHard:18,
-    pillar:40,judge:46,sweep:22,cross:40,haloR:760,pullR:300,sweepLen:900}, // v108 스토리 최종 보스 God
+  gozara:{hp:8400,spd:103,contact:26,slam:46,wave:29,r:150,slamR:150,slamWave:400,roarWave:520,bodyR:0.58,breathLen:450,breathDeg:40,breathWarn:1.0,breathDur:1.5,breathTick:0.55,breathDmg:13,breathDmgHard:21},
+  kangsan:{hp:28000,spd:189,enrSpd:254,contact:34,dash:44,slam:52,bullet:21,r:130},
+  god:{hp:44800,spd:130,contact:36,slam:57,wave:34,dash:49,bullet:23,r:180,slamR:170,slamWave:440,roarWave:560,bodyR:0.6,breathLen:480,breathDeg:44,breathWarn:1.0,breathDur:1.5,breathTick:0.55,breathDmg:16,breathDmgHard:23,
+    pillar:52,judge:60,sweep:29,cross:52,haloR:760,pullR:300,sweepLen:900}, // v108 스토리 최종 보스 God · v2 체력 +40%·피해 +30%
   boss2Delay:300, eliteEvery:150, eliteMinGap:90,
   chabak:{hp:99999999,spd:60,r:170} // v138 네온 생존자 2 최종 보스 (처치 불가)
 };
