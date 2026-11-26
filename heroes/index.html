@@ -1706,6 +1706,7 @@ function render(){
   for(const p of parts){ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.c;ctx.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s)}ctx.globalAlpha=1;
   ctx.globalCompositeOperation='source-over';
   drawSkillWorld();
+  if(window.__m2eWorldDraw)window.__m2eWorldDraw();
   // 플레이어
   if(state!=='dying'&&state!=='over'){if(window.__raidDrawPlayers)window.__raidDrawPlayers();else{if(P&&P.down)ctx.globalAlpha=0.38+0.12*Math.sin((G&&G.t||0)*7);drawPlayer();ctx.globalAlpha=1}}
   // 데미지 숫자
@@ -1720,6 +1721,7 @@ function render(){
   if(hurtFlash>0){const gr=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.7);gr.addColorStop(0,'rgba(255,0,40,0)');gr.addColorStop(1,`rgba(255,0,40,${hurtFlash*0.9})`);ctx.fillStyle=gr;ctx.fillRect(0,0,W,H)}
   if(P.hp/P.maxHp<0.3&&state==='play'){const a=0.18+Math.sin(G.t*6)*0.1;const gr=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.max(W,H)*0.75);gr.addColorStop(0,'rgba(255,0,40,0)');gr.addColorStop(1,`rgba(255,0,40,${a})`);ctx.fillStyle=gr;ctx.fillRect(0,0,W,H)}
   drawHUD();drawTowerHUD();drawTip();
+  if(window.__m2eHudDraw)window.__m2eHudDraw();
   if(joy&&(state==='play'||state==='raid')){ctx.globalAlpha=0.5;ctx.strokeStyle='#8fa0ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(joy.ox,joy.oy,55,0,TAU);ctx.stroke();
     const dx=joy.x-joy.ox,dy=joy.y-joy.oy,l=Math.hypot(dx,dy),k=l>55?55/l:1;ctx.fillStyle='#4df3ff';ctx.beginPath();ctx.arc(joy.ox+dx*k,joy.oy+dy*k,24,0,TAU);ctx.fill();ctx.globalAlpha=1}
 }
@@ -6299,6 +6301,559 @@ window.addEventListener('blur',()=>{for(const k in MK)delete MK[k];mjoy=null});
 window.addEventListener('resize',()=>{if(MS.on){mFit();mClamp(MP);mClamp(MA)}});
 document.addEventListener('visibilitychange',()=>{if(MS.on&&!document.hidden)MS.last=0});
 /* ============================================================
+   챕터1 · 두 번째 미션 = 무한모드 엔진 (2026-11-27)
+   ============================================================ */
+const M2E={active:false,phase:'idle',pods:[],ally:null,hero:'neon',aiHero:'electric',
+  spawnT:0,stop:0,toastT:0,toast:'',toastCol:'#ffd84d',lvMark:1,cleared:0,failT:0};
+const M2E_RING=600,M2E_PODR=44;
+const M2E_ANG=[-90,-18,54,126,198];
+
+function m2eReach(pod){return pod.r+((P&&P.r)||14)+62}
+function m2eNearestEnemy(x,y,range){let b=null,bd=range*range;for(const e of enemies){if(e.dead)continue;const dx=e.x-x,dy=e.y-y,d=dx*dx+dy*dy;if(d<bd){bd=d;b=e}}return b}
+function m2eToast(txt,col){M2E.toast=txt;M2E.toastCol=col||'#ffd84d';M2E.toastT=2.6}
+
+/* ---------- 아군 히어로 만들기(엔진 히어로 정의 그대로) ---------- */
+function m2eMakeHero(hero,x,y){
+  const H=window.HX_HEROES[hero]||window.HX_HEROES.neon;
+  const a={x:x,y:y,r:14,hp:100,maxHp:100,baseSpd:210,inv:1.2,fx:1,fy:0,walk:0,moving:false,
+    down:false,dead:false,revT:0,vx:0,vy:0,atkT:0.8,mineT:7,hero:hero,col:H.col,
+    weapons:{},passives:{},wOrder:[],pOrder:[]};
+  hxApplyHero(a,hero);
+  return a;
+}
+
+/* ---------- 시작 ---------- */
+window.__m2eStart=function(){
+  try{
+    if(typeof NET!=='undefined'&&NET&&NET.online)return false;   // 2인 온라인은 기존 경로
+    if(typeof MS==='undefined'||typeof SH==='undefined')return false;
+  }catch(e){return false}
+  try{if(C.open)cutClose()}catch(e){}
+  try{hideAll()}catch(e){}
+  const sm=$('storyMission');if(sm){sm.classList.remove('show');sm.classList.remove('m2');sm.classList.remove('m2end')}
+  const mov=$('mOv');if(mov)mov.classList.remove('on');
+  const eo=$('m2eEnd');if(eo)eo.classList.remove('show');
+
+  const main=(typeof selHero!=='undefined'&&selHero==='electric')?'electric':'neon';
+  const other=(main==='neon')?'electric':'neon';
+  M2E.hero=main;M2E.aiHero=other;
+
+  M2E.active=true;M2E.phase='run';M2E.spawnT=1.5;M2E.stop=0;M2E.toastT=0;M2E.toast='';
+  M2E.lvMark=1;M2E.cleared=0;M2E.failT=0;
+
+  /* 엔진 모드 준비 */
+  if(!MODES.story)MODES.story={name:'스토리 · 챕터 1',short:'스토리',col:'#ff6ad5'};
+  MODES.story.name=(window.HX_HEROES[main]||{}).name||'스토리';
+  MODES.story.col=(window.HX_HEROES[main]||{}).col||'#ff6ad5';
+  gameMode='story';
+  startWeapon=(window.HX_HEROES[main]||{}).w?window.HX_HEROES[main].w[0]:'bolt';
+  window.HX_START={hero:main};
+  try{initAudio()}catch(e){}
+  newGame();
+  state='play';
+  $('pbtn').style.display='flex';
+  camX=P.x;camY=P.y;
+
+  /* 아군 + 물체 */
+  M2E.ally=m2eMakeHero(other,P.x+78,P.y+52);
+  m2ePodsInit();
+  m2eBadge(true);
+  m2eSwapBtn(true);
+  window.__raidDrawPlayers=m2eDrawHeroes;
+  window.__m2eWorldDraw=m2eWorldDraw;
+  window.__m2eHudDraw=m2eHudDraw;
+  showBanner('이상한 물체 5개를 멈춰라!','#ff9ecb');
+  m2eToast('생존자로 물체의 전선을 찾고, Q로 교대해 일렉트릭으로 흡수!','#ffd84d');
+  return true;
+};
+
+function m2ePodsInit(){
+  M2E.pods=[];
+  for(let i=0;i<5;i++){
+    const a=M2E_ANG[i]*Math.PI/180;
+    M2E.pods.push({i:i,x:Math.round(Math.cos(a)*M2E_RING),y:Math.round(Math.sin(a)*M2E_RING),r:M2E_PODR,
+      stage:0,scan:0,abs:0,pop:0});
+  }
+  M2E.stop=0;
+}
+
+/* ---------- 메이데이 버튼 키 표시 · 교대 버튼 위치 ---------- */
+function m2eBadge(on){
+  try{const b=$('mdBtn');const n=b&&b.querySelector('b');if(n)n.textContent=on?'MD':'C'}catch(e){}
+}
+function m2eSwapBtn(on){
+  try{const b=$('hxSwapBtn');if(!b)return;
+    if(on){b.style.right='auto';b.style.left='max(12px,env(safe-area-inset-left))'}
+    else{b.style.right='';b.style.left=''} }catch(e){}
+}
+
+/* ---------- 교대(Q/C) ---------- */
+function m2eSwap(){
+  if(!M2E.active||state!=='play')return false;
+  const a=M2E.ally;
+  if(!a)return false;
+  if(a.down){m2eToast('동료가 쓰러졌다. 잠시 후 복귀!','#ff8c8c');return false}
+  const px=P.x,py=P.y,pvx=P.vx,pvy=P.vy;
+  const old=P;
+  P=a;M2E.ally=old;
+  P.x=px;P.y=py;M2E.ally.x=px+62;M2E.ally.y=py+48;
+  P.inv=Math.max(P.inv||0,0.9);M2E.ally.inv=Math.max(M2E.ally.inv||0,0.5);
+  M2E.ally.atkT=Math.max(M2E.ally.atkT||0,0.35);
+  G.trail=[];
+  const H=window.HX_HEROES[P.hero]||window.HX_HEROES.neon;
+  try{SET.skA=H.skA;SET.skB=H.skB}catch(e){}
+  MODES.story.name=H.name||'스토리';MODES.story.col=H.col||'#ff6ad5';
+  rings.push({x:P.x,y:P.y,r:0,max:150,t:0,dur:0.4,c:H.col||'#8ff6ff'});
+  rings.push({x:P.x,y:P.y,r:0,max:90,t:0,dur:0.3,c:'#ffffff'});
+  burst(P.x,P.y,H.col||'#8ff6ff',20,300,0.45,3.4);
+  S.pick();addShake(3);
+  if(P.hero==='electric')m2eToast('교대! 네온 일렉트릭 · A 돌진 / B 번개 충전','#fff27a');
+  else m2eToast('교대! 네온 생존자 · A 3연속 마법화살 / B 지뢰','#4df3ff');
+  return true;
+}
+
+/* ---------- 물체 2단계 기믹 ---------- */
+function m2ePodsTick(dt){
+  const hero=(P&&P.hero==='electric')?'electric':'neon';
+  for(const pod of M2E.pods){
+    pod.pop=Math.min(1,pod.pop+dt*2.4);
+    if(pod.stage===2)continue;
+    const near=Math.hypot(P.x-pod.x,P.y-pod.y)<m2eReach(pod);
+    if(pod.stage===0){
+      if(near&&hero==='neon'){
+        pod.scan=Math.min(1,pod.scan+dt/1.6);
+        if(Math.random()<dt*12&&pod.scan<1)burst(pod.x,pod.y,'#ffd84d',1,70,0.3,2.4);
+      }else pod.scan=Math.max(0,pod.scan-dt/8);
+      if(near&&hero!=='neon')m2eToast('전선은 네온 생존자만 찾을 수 있어 · Q 교대','#ffd84d');
+      if(pod.scan>=1)m2ePodStage(pod,1);
+    }else if(pod.stage===1){
+      if(near&&hero==='electric'){
+        pod.abs=Math.min(1,pod.abs+dt/1.45);
+        if(Math.random()<dt*16)zaps.push({pts:[{x:pod.x+rand(-34,34),y:pod.y+rand(-30,30)},{x:pod.x,y:pod.y}],t:0.1});
+      }else pod.abs=Math.max(0,pod.abs-dt/9);
+      if(near&&hero!=='electric')m2eToast('전선 노출! Q 교대로 네온 일렉트릭 흡수','#4df3ff');
+      if(pod.abs>=1)m2ePodStage(pod,2);
+    }
+  }
+}
+function m2ePodStage(pod,st){
+  if(!pod||pod.stage>=st)return;
+  pod.stage=st;
+  if(st===1){
+    pod.scan=1;pod.abs=0;
+    rings.push({x:pod.x,y:pod.y,r:0,max:200,t:0,dur:0.5,c:'#ffd84d'});
+    burst(pod.x,pod.y,'#ffe89a',20,280,0.5,3.4);
+    addShake(5);S.pick();showBanner('전선 발견!','#ffd84d');
+  }else{
+    pod.abs=1;M2E.stop++;
+    {const h=Math.round(P.maxHp*0.22);P.hp=Math.min(P.maxHp,P.hp+h);
+      dmgText(P.x,P.y-30,'+'+h,'#5dff8a',20,true);burst(P.x,P.y,'#5dff8a',18,200,0.5,3)}
+    rings.push({x:pod.x,y:pod.y,r:0,max:270,t:0,dur:0.6,c:'#4df3ff'});
+    rings.push({x:pod.x,y:pod.y,r:0,max:170,t:0,dur:0.4,c:'#ffffff'});
+    burst(pod.x,pod.y,'#8ff6ff',32,360,0.6,3.6);
+    addShake(10);S.level();
+    showBanner('물체 정지! ('+M2E.stop+' / 5)','#8ff6ff');
+    if(M2E.stop>=5)m2eClear();
+  }
+}
+
+/* ---------- 적 스폰(물체에서 웨이브로) ---------- */
+function m2ePickType(){
+  const t=G?G.t:0;
+  const w=[['grunt',10]];
+  if(t>5)w.push(['bat',6]);
+  if(t>16)w.push(['brute',2.4]);
+  if(t>28)w.push(['spitter',2.6]);
+  if(t>42)w.push(['bomber',1.7]);
+  if(t>58)w.push(['charger',2.2]);
+  if(t>72)w.push(['splitter',2.0]);
+  let s=0;for(const x of w)s+=x[1];
+  let r=Math.random()*s;
+  for(const x of w){r-=x[1];if(r<=0)return x[0]}
+  return 'grunt';
+}
+function m2eSpawner(dt){
+  if(!M2E.active)return;
+  const act=M2E.pods.filter(function(p){return p.stage<2});
+  if(!act.length)return;
+  M2E.spawnT-=dt;
+  if(M2E.spawnT>0)return;
+  const t=G?G.t:0;
+  const wave=(t<8?2:3)+((Math.random()<0.55)?1:0)+((Math.random()<0.35)?1:0)+((Math.random()<0.2)?1:0);
+  const cap=54+(5-act.length)*10+Math.min(32,Math.floor(t*0.35));
+  let made=0;
+  for(let i=0;i<wave;i++){
+    if(enemies.length>=cap)break;
+    const pod=act[(Math.random()*act.length)|0];
+    const a=Math.random()*TAU,d=pod.r+rand(26,96);
+    const e=spawnEnemy(m2ePickType(),pod.x+Math.cos(a)*d,pod.y+Math.sin(a)*d);
+    if(e)made++;
+  }
+  if(made){
+    const p0=act[(Math.random()*act.length)|0];
+    rings.push({x:p0.x,y:p0.y,r:0,max:p0.r*2.6,t:0,dur:0.35,c:'#ff5aa8'});
+    burst(p0.x,p0.y,'#ff5aa8',5,130,0.32,3);
+  }
+  M2E.spawnT=Math.max(0.21,0.42-t*0.0016)+rand(0,0.1);
+}
+
+/* ---------- AI 동료 ---------- */
+function m2eAllyTick(dt){
+  const a=M2E.ally;if(!a)return;
+  if(a.down){
+    a.revT-=dt;a.moving=false;
+    if(a.revT<=0){
+      a.down=false;a.hp=Math.round(a.maxHp*0.6);a.inv=2.4;
+      rings.push({x:a.x,y:a.y,r:0,max:140,t:0,dur:0.45,c:'#7dffb6'});
+      burst(a.x,a.y,'#7dffb6',24,260,0.5,3.4);m2eToast('동료 복귀!','#7dffb6');
+    }
+    return;
+  }
+  let tx=P.x-104,ty=P.y+74;
+  const e=m2eNearestEnemy(a.x,a.y,520);
+  if(e){const d=Math.hypot(e.x-a.x,e.y-a.y);if(d>160){tx=e.x-Math.sin(G.t*1.3)*80;ty=e.y+Math.cos(G.t*1.3)*80}}
+  const dx=tx-a.x,dy=ty-a.y,l=Math.hypot(dx,dy)||1;
+  const sp=a.baseSpd*(1+0.08*((a.passives&&a.passives.speed)||0));
+  const vx=l>10?dx/l*sp:0,vy=l>10?dy/l*sp:0;
+  const k=Math.min(1,dt*6);
+  a.vx=(a.vx||0)+(vx-(a.vx||0))*k;a.vy=(a.vy||0)+(vy-(a.vy||0))*k;
+  a.x=clamp(a.x+a.vx*dt,-WH+a.r,WH-a.r);a.y=clamp(a.y+a.vy*dt,-WH+a.r,WH-a.r);
+  a.moving=Math.hypot(a.vx,a.vy)>20;
+  if(a.moving){a.walk+=dt*10;const nl=Math.hypot(a.vx,a.vy)||1;a.fx=a.vx/nl;a.fy=a.vy/nl}
+  a.inv=Math.max(0,(a.inv||0)-dt);
+  a.atkT=(a.atkT||0)-dt;
+  if(a.atkT<=0)m2eAllyFire(a);
+  a.mineT=Math.max(0,(a.mineT||0)-dt);
+  if(a.hero!=='electric'&&a.weapons.mine&&a.mineT<=0&&m2eNearestEnemy(a.x,a.y,150)){
+    a.mineT=8;
+    const ms=WEAPONS.mine.lv[Math.min(WEAPONS.mine.lv.length-1,(a.weapons.mine|0)-1)]||WEAPONS.mine.lv[0];
+    mines.push({x:a.x,y:a.y,t:0.35,dmg:ms.dmg,rad:ms.rad,life:14});
+  }
+}
+function m2eAllyFire(a){
+  const tg=m2eNearestEnemy(a.x,a.y,560);
+  if(!tg){a.atkT=0.25;return}
+  if(a.hero==='electric'&&a.weapons.chain){
+    const tb=WEAPONS.chain.lv;const s=tb[Math.min(tb.length-1,Math.max(0,(a.weapons.chain|0)-1))];
+    const pts=[{x:a.x,y:a.y}];const hit=new Set();let cur=tg;
+    const hops=Math.max(2,(s.n||3)-1);
+    for(let i=0;i<hops&&cur;i++){
+      hit.add(cur);pts.push({x:cur.x,y:cur.y});
+      hurtEnemy(cur,Math.round(s.dmg*0.8),0,0,0);
+      let nx=null,bd=230*230;
+      for(const o of enemies){if(o.dead||hit.has(o))continue;const d=(o.x-cur.x)*(o.x-cur.x)+(o.y-cur.y)*(o.y-cur.y);if(d<bd){bd=d;nx=o}}
+      cur=nx;
+    }
+    zaps.push({pts:pts,t:0.25});S.zap();
+    a.atkT=Math.max(0.9,s.cd||1.6);
+  }else{
+    const tb=WEAPONS.bolt.lv;const s=tb[Math.min(tb.length-1,Math.max(0,(a.weapons.bolt||1)-1))];
+    const ang=Math.atan2(tg.y-a.y,tg.x-a.x);
+    const n=Math.max(1,s.n||1);
+    for(let i=0;i<n;i++){
+      const aa=ang+(i?rand(-0.22,0.22):0);
+      projs.push({k:'bolt',x:a.x,y:a.y,vx:Math.cos(aa)*520,vy:Math.sin(aa)*520,r:6,
+        dmg:Math.round((s.dmg||10)*0.7),pierce:s.pierce||0,life:1.2,hit:new Set()});
+    }
+    S.shoot();a.atkT=Math.max(0.55,s.cd||0.8);
+  }
+}
+/* AI 동료는 기믹(교대)이 막히지 않도록 쓰러지지 않는다 — 압박은 플레이어에게만 간다 */
+function m2eAllyHurtCheck(dt){
+  const a=M2E.ally;if(!a||a.down)return;
+  a.hp=a.maxHp;a.down=false;
+}
+/* 물체·플레이어·적이 겹치지 않게 */
+function m2ePushOut(){
+  for(const pod of M2E.pods){
+    const dr=pod.r*0.92;
+    let dx=P.x-pod.x,dy=P.y-pod.y,rr=dr+P.r,d2=dx*dx+dy*dy;
+    if(d2<rr*rr&&d2>0.01){const d=Math.sqrt(d2);P.x=pod.x+dx/d*rr;P.y=pod.y+dy/d*rr}
+    const a=M2E.ally;
+    if(a&&!a.down){dx=a.x-pod.x;dy=a.y-pod.y;rr=dr+a.r;d2=dx*dx+dy*dy;
+      if(d2<rr*rr&&d2>0.01){const d=Math.sqrt(d2);a.x=pod.x+dx/d*rr;a.y=pod.y+dy/d*rr}}
+  }
+  for(const e of enemies){
+    if(e.dead)continue;
+    for(const pod of M2E.pods){
+      const dx=e.x-pod.x,dy=e.y-pod.y,rr=pod.r*0.92+e.r,d2=dx*dx+dy*dy;
+      if(d2<rr*rr&&d2>0.01){const d=Math.sqrt(d2);e.x=pod.x+dx/d*rr;e.y=pod.y+dy/d*rr}
+    }
+  }
+}
+/* 동료도 함께 성장(공용 레벨 2마다 무기·패시브 +1, 최대 5) */
+function m2eAllyLevel(){
+  const a=M2E.ally;if(!a||a.down||!G)return;
+  if(G.level<=M2E.lvMark)return;
+  const steps=G.level-M2E.lvMark;M2E.lvMark=G.level;
+  for(let s=0;s<steps;s++){
+    if((G.level-s)%2!==0)continue;
+    for(const id of a.wOrder){if((a.weapons[id]|0)<5)a.weapons[id]=(a.weapons[id]|0)+1}
+    for(const id of a.pOrder){if((a.passives[id]|0)<5)a.passives[id]=(a.passives[id]|0)+1}
+  }
+}
+
+/* ---------- 프레임 훅 ---------- */
+function m2ePost(dt){
+  if(!M2E.active)return;
+  if(M2E.toastT>0)M2E.toastT=Math.max(0,M2E.toastT-dt);
+  if(state!=='play')return;
+  m2ePodsTick(dt);
+  m2eAllyTick(dt);
+  m2ePushOut();
+  m2eAllyHurtCheck(dt);
+  m2eAllyLevel();
+}
+
+/* ---------- 클리어 / 실패 ---------- */
+function m2eEnsureEndUI(){
+  if($('m2eEnd'))return;
+  const o=document.createElement('div');o.className='ov';o.id='m2eEnd';
+  o.innerHTML='<div class="big" id="m2eEndT"></div>'
+    +'<div style="font-size:clamp(13px,2.2vw,16px);margin-bottom:10px;color:#d9ddff;font-weight:700" id="m2eEndD"></div>'
+    +'<div class="stats" id="m2eEndS"></div>'
+    +'<div class="row" style="margin-top:16px"><button class="btn" id="m2eRetry">다시 도전</button>'
+    +'<button class="btn sec" id="m2eTitle">스토리로</button></div>';
+  document.body.appendChild(o);
+  $('m2eRetry').onclick=function(){$('m2eEnd').classList.remove('show');window.__m2eStart()};
+  $('m2eTitle').onclick=function(){m2eQuit()};
+}
+function m2eShowEnd(fail){
+  m2eEnsureEndUI();
+  const o=$('m2eEnd');
+  const T=$('m2eEndT'),D=$('m2eEndD'),S2=$('m2eEndS');
+  if(T){T.textContent=fail?'MISSION FAILED':'MISSION CLEAR';T.style.color=fail?'#ff5aa8':'#8ff6ff';T.style.textShadow='0 0 22px '+(fail?'rgba(255,90,168,.6)':'rgba(77,243,255,.55)')}
+  if(D)D.innerHTML=fail?'적에게 쓰러졌다. 물체에 붙어 게이지를 채우고, 스킬로 쓸어버리자.'
+    :'이상한 물체 5개가 모두 멈췄다!<br><span style="color:#9aa2d8">다음: 강산 중간보스전 (다음 업데이트)</span>';
+  if(S2)S2.innerHTML='물체 정지 <span>'+(M2E.stop|0)+' / 5</span> · 처치 <span>'+(G?G.kills|0:0)+'</span> · 도달 레벨 <span>'+(G?G.level|0:0)+'</span><br>생존 시간 <span>'+(G?fmtTime(G.t):'00:00')+'</span>';
+  o.classList.add('show');
+}
+function m2eClear(){
+  if(M2E.phase==='clear')return;
+  M2E.phase='clear';M2E.cleared=1;
+  state='storyend';
+  enemies.length=0;ebullets.length=0;projs.length=0;mines.length=0;
+  try{localStorage.setItem('nhCh1M2Clear','1')}catch(e){}
+  showBanner('모든 물체 정지 완료!','#8ff6ff');
+  addShake(8);S.level();
+  setTimeout(function(){if(M2E.phase==='clear')m2eShowEnd(false)},1100);
+}
+function m2eFail(){
+  if(M2E.phase==='fail'||M2E.phase==='clear')return;
+  M2E.phase='fail';
+  state='storyend';
+  m2eShowEnd(true);
+}
+function m2eQuit(){
+  M2E.active=false;M2E.phase='idle';
+  window.__raidDrawPlayers=null;
+  window.__m2eWorldDraw=null;
+  window.__m2eHudDraw=null;
+  try{$('skBtns').classList.remove('show')}catch(e){}
+  const el=$('m2eEnd');if(el)el.classList.remove('show');
+  const pv=$('pause');if(pv)pv.classList.remove('show');
+  $('pbtn').style.display='none';
+  m2eBadge(false);m2eSwapBtn(false);
+  try{hideAll()}catch(e){}
+  state='title';
+  try{if(typeof heroOpenStory==='function')heroOpenStory();else toTitle()}catch(e){try{toTitle()}catch(_){}}
+}
+
+/* ---------- 그리기: 물체(월드) ---------- */
+function m2eWorldDraw(){
+  if(!M2E.active||!G)return;
+  const t=G.t;
+  const og=(typeof g!=='undefined'&&g)?g:null;
+  try{ g=ctx; }catch(e){}
+  try{
+    for(const pod of M2E.pods){
+      m2PodDraw(pod.x,pod.y,pod.r,pod.stage,t,{pop:pod.pop});
+      const k=pod.stage===0?pod.scan:(pod.stage===1?pod.abs:1);
+      if(pod.stage<2&&k>0.01){
+        ctx.save();ctx.globalCompositeOperation='lighter';
+        ctx.strokeStyle=pod.stage===1?'rgba(255,216,77,.95)':'rgba(77,243,255,.95)';
+        ctx.lineWidth=Math.max(2.4,pod.r*0.16);ctx.lineCap='round';
+        ctx.beginPath();ctx.arc(pod.x,pod.y,pod.r*1.5,-Math.PI/2,-Math.PI/2+TAU*k);ctx.stroke();
+        ctx.restore();
+      }
+      const d=Math.hypot(P.x-pod.x,P.y-pod.y);
+      if(pod.stage<2){
+        if(d<m2eReach(pod)+70){
+          ctx.save();ctx.globalCompositeOperation='lighter';
+          ctx.strokeStyle=pod.stage===0?'rgba(255,216,77,.42)':'rgba(77,243,255,.42)';
+          ctx.lineWidth=2;ctx.setLineDash([7,9]);ctx.lineDashOffset=-t*26;
+          ctx.beginPath();ctx.arc(pod.x,pod.y,m2eReach(pod),0,TAU);ctx.stroke();
+          ctx.setLineDash([]);ctx.restore();
+        }
+        if(d<m2eReach(pod)+260){
+          const lab=pod.stage===0?'네온 생존자로 전선 탐색':'일렉트릭으로 전기 흡수';
+          const col=pod.stage===0?'#ffd84d':'#4df3ff';
+          ctx.font=fnt(900,12);ctx.textAlign='center';ctx.textBaseline='middle';
+          const w=ctx.measureText(lab).width;
+          const ly=pod.y-pod.r*2.0;
+          ctx.fillStyle='rgba(6,5,18,.72)';roundRect(pod.x-w/2-8,ly-9,w+16,18,7);ctx.fill();
+          ctx.strokeStyle=pod.stage===0?'rgba(255,216,77,.5)':'rgba(77,243,255,.5)';ctx.lineWidth=1;
+          roundRect(pod.x-w/2-8,ly-9,w+16,18,7);ctx.stroke();
+          ctx.fillStyle=col;ctx.fillText(lab,pod.x,ly+0.5);
+          ctx.textBaseline='alphabetic';
+        }
+      }else{
+        ctx.font=fnt(900,11);ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillStyle='rgba(143,246,255,.75)';ctx.fillText('정지',pod.x,pod.y-pod.r*2.0);
+        ctx.textBaseline='alphabetic';
+      }
+    }
+  }catch(e){if(!M2E._dwErr){M2E._dwErr=1;console.error('[m2e] world draw',e)}}
+  finally{ if(og)try{g=og}catch(e){} }
+}
+
+/* 화면 밖 물체 방향 표시 */
+function m2eArrow(pod){
+  const X=(pod.x-camX)*VS+W/2,Y=(pod.y-camY)*VS+H/2;
+  const ml=30,mr=30,mt=134,mb=152;
+  if(X>=ml&&X<=W-mr&&Y>=mt&&Y<=H-mb)return;
+  let dx=X-W/2,dy=Y-H/2,l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;
+  const kx=(dx>0?(W/2-mr)/dx:(dx<0?(W/2-ml)/(-dx):1e9));
+  const ky=(dy>0?(H/2-mb)/dy:(dy<0?(H/2-mt)/(-dy):1e9));
+  const k=Math.max(0,Math.min(kx,ky));
+  const ax=W/2+dx*k,ay=H/2+dy*k,a=Math.atan2(dy,dx);
+  const col=pod.stage===1?'#ffd84d':'#ff8ce0';
+  ctx.save();ctx.translate(ax,ay);ctx.rotate(a);
+  ctx.fillStyle=col;ctx.strokeStyle='rgba(4,3,12,.9)';ctx.lineWidth=3;ctx.globalAlpha=0.92;
+  ctx.beginPath();ctx.moveTo(15,0);ctx.lineTo(-10,-12);ctx.lineTo(-10,12);ctx.closePath();ctx.stroke();ctx.fill();
+  ctx.restore();ctx.globalAlpha=1;
+  const lx=Math.max(14,Math.min(W-14,ax-Math.cos(a)*26)),ly=Math.max(14,Math.min(H-14,ay-Math.sin(a)*26));
+  ctx.font=fnt(900,11);ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(6,5,18,.8)';ctx.beginPath();ctx.arc(lx,ly,8.5,0,TAU);ctx.fill();
+  ctx.strokeStyle=col;ctx.lineWidth=1;ctx.beginPath();ctx.arc(lx,ly,8.5,0,TAU);ctx.stroke();
+  ctx.fillStyle=col;ctx.fillText(String(pod.i+1),lx,ly+0.5);
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+}
+
+/* ---------- 그리기: 화면 HUD ---------- */
+function m2eHudDraw(){
+  if(!M2E.active||!G)return;
+  const s=W<560?0.88:1;
+  ctx.textBaseline='middle';
+  /* 물체 진행 칩 */
+  const n=M2E.pods.length;
+  const lab='물체 '+M2E.stop+' / 5';
+  const cw=25*s,ch=18*s,gap=5*s;
+  ctx.font=fnt(900,11*s);ctx.textAlign='left';
+  const lw=ctx.measureText(lab).width;
+  const total=lw+10*s+cw*n+gap*(n-1);
+  const x0=W/2-total/2,y0=W<560?168:106;
+  plate(x0-9,y0-ch/2-4,total+18,ch+8,10,'rgba(8,6,22,.55)','rgba(255,60,157,.26)');
+  ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillStyle='#ff9ecb';ctx.fillText(lab,x0,y0+0.5);
+  let cx=x0+lw+10*s;
+  for(let i=0;i<n;i++){
+    const pod=M2E.pods[i],st=pod?pod.stage:0;
+    const prog=pod?(st===0?pod.scan:(st===1?pod.abs:1)):0;
+    ctx.globalAlpha=(st<2&&prog>0)?(0.6+0.4*prog):1;
+    ctx.fillStyle=st===0?'rgba(255,90,168,.16)':(st===1?'#ffd84d':'#4df3ff');
+    roundRect(cx,y0-ch/2,cw,ch,5);ctx.fill();
+    ctx.strokeStyle=st===0?'rgba(255,120,190,.55)':(st===1?'#ffe89a':'#b6fbff');
+    ctx.lineWidth=1;roundRect(cx,y0-ch/2,cw,ch,5);ctx.stroke();
+    ctx.fillStyle=st===2?'#00181f':(st===1?'#241a00':'#ff8ce0');
+    ctx.font=fnt(900,10.5*s);ctx.textAlign='center';ctx.fillText(String(i+1),cx+cw/2,y0+0.5);
+    ctx.globalAlpha=1;
+    cx+=cw+gap;
+  }
+  /* 화면 밖 물체 화살표(상단 HUD·하단 버튼과 겹치지 않게 여백을 둔다) */
+  for(const pod of M2E.pods){
+    if(pod.stage>=2)continue;
+    try{m2eArrow(pod)}catch(e){}
+  }
+  /* 안내 토스트 */
+  if(M2E.toastT>0&&M2E.toast){
+    const a=Math.min(1,M2E.toastT*2);
+    ctx.globalAlpha=a;
+    ctx.font=fnt(900,13*s);ctx.textAlign='center';
+    const tw=ctx.measureText(M2E.toast).width;
+    const ty=H*0.64;
+    plate(W/2-tw/2-12,ty-13,tw+24,26,10,'rgba(8,6,22,.62)','rgba(255,216,77,.32)');
+    ctx.fillStyle=M2E.toastCol;ctx.fillText(M2E.toast,W/2,ty+0.5);
+    ctx.globalAlpha=1;
+  }
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+}
+
+/* ---------- 두 히어로 그리기(플레이어 + AI 동료) ---------- */
+function m2eDrawHeroes(){
+  const a=M2E.ally;
+  if(a){
+    if(a.down){
+      ctx.save();ctx.globalAlpha=0.35;
+      ctx.fillStyle='#1a1730';ctx.beginPath();ctx.arc(a.x,a.y,a.r,0,TAU);ctx.fill();
+      ctx.strokeStyle='#ff8c8c';ctx.lineWidth=2;ctx.beginPath();ctx.arc(a.x,a.y,a.r,0,TAU);ctx.stroke();
+      ctx.globalAlpha=1;ctx.textAlign='center';ctx.font=fnt(900,11);
+      ctx.fillStyle='#ffb0c0';ctx.fillText(Math.ceil(Math.max(0,a.revT))+'s',a.x,a.y-a.r-10);
+      ctx.textAlign='left';ctx.restore();
+    }else{
+      const sv=P;P=a;ctx.save();
+      drawPlayer();
+      ctx.restore();P=sv;
+    }
+  }
+  if(P&&P.down)ctx.globalAlpha=0.38+0.12*Math.sin((G&&G.t||0)*7);
+  drawPlayer();
+  ctx.globalAlpha=1;
+}
+
+/* ---------- 엔진 훅 래핑 ---------- */
+{
+  const _gu=gameUpdate;
+  gameUpdate=function(dt){_gu(dt);m2ePost(dt)};
+  const _sp=spawner;
+  spawner=function(dt){if(M2E.active){m2eSpawner(dt);return}_sp(dt)};
+  const _se=spawnEnemy;
+  spawnEnemy=function(type,x,y){
+    const e=_se(type,x,y);
+    if(M2E.active&&e&&type!=='boss'&&type!=='elite'){
+      const st=M2E.stop|0,ramp=Math.min(1,0.4+G.t/140);
+      const hm=1.14+0.09*st+0.26*ramp;
+      e.hp*=hm;e.maxHp*=hm;
+      e.dmg*=1.10+0.05*st;
+      e.spd*=1.08+0.02*st;
+    }
+    return e;
+  };
+  const _ogo=openGameOver;
+  openGameOver=function(){if(M2E.active){m2eFail();return}_ogo()};
+}
+
+/* ---------- 교대 버튼/키 · 일시정지 버튼을 스토리용으로 ---------- */
+try{
+  window.__storyMissionOn=function(){return M2E.active||(typeof MS!=='undefined'&&!!MS.on)};
+  window.__storyMissionCanSwap=function(){
+    if(M2E.active)return state==='play'&&!!(M2E.ally&&!M2E.ally.down);
+    try{return !!MS.on&&(MS.state==='run'||MS.state==='ready')&&!NET.online}catch(e){return false}
+  };
+  window.__storyMissionSwap=function(){return M2E.active?m2eSwap():(typeof misSwap==='function'?misSwap():false)};
+}catch(e){}
+
+addEventListener('keydown',function(e){
+  if(!M2E.active)return;
+  if(e.code!=='KeyQ'&&e.code!=='KeyC')return;
+  if(state!=='play')return;
+  e.stopPropagation();
+  if(e.repeat)return;
+  m2eSwap();
+},true);
+
+/* 일시정지 화면의 「다시 시작 · 타이틀로」를 스토리 흐름으로 */
+document.addEventListener('click',function(e){
+  if(!M2E.active)return;
+  const t=e.target&&e.target.closest?e.target.closest('#restartBtn,#toTitleBtn'):null;
+  if(!t)return;
+  e.preventDefault();e.stopPropagation();
+  const pv=$('pause');if(pv)pv.classList.remove('show');
+  if(t.id==='restartBtn'){window.__m2eStart()}else{m2eQuit()}
+},true);
+
+window.__m2e={active:()=>M2E.active,phase:()=>M2E.phase,stop:()=>M2E.stop,pods:()=>M2E.pods,swap:m2eSwap,start:()=>window.__m2eStart(),quit:m2eQuit};
+/* ============================================================
    두 번째 미션 · 이상한 물체 5개 멈추기
    ============================================================ */
 const M2={on:false,state:'ready',readyT:1.4,t:0,stop:0,clearT:0,ovShown:false,
@@ -6484,6 +7039,7 @@ function m2CloseLoop(poly){
 
 /* ---------- 시작 / 컷신 연결 ---------- */
 function mis2Start(){
+  if(window.__m2eStart&&window.__m2eStart())return;
   if(!$('storyMission'))return;
   if(C.open)cutClose();
   hideAll();state='title';
@@ -7632,7 +8188,38 @@ window.__story={isOpen:()=>C.open,scene:()=>SC[C.i].id,i:()=>C.i,t:()=>C.t,scene
     stage:(i,st)=>m2PodStage(M2.pods[i],st,true),
     addEnemy:(x,y,type)=>{m2AddEnemy({x:x,y:y,r:32},type);return M2.enemies.length},
     hurt:n=>m2Hurt(n||20),win:()=>m2Clear(),fail:()=>{if(MS.state==='run')m2Fail()},
-    netPod:d=>m2NetPod(d),clear:()=>M2.cleared}};
+    netPod:d=>m2NetPod(d),clear:()=>M2.cleared},
+  m2e:{on:()=>M2E.active,phase:()=>M2E.phase,stop:()=>M2E.stop,state:()=>state,
+    t:()=>(G?+G.t.toFixed(2):0),enemies:()=>enemies.length,kills:()=>(G?G.kills|0:0),lv:()=>(G?G.level|0:0),
+    hp:()=>(P?Math.round(P.hp):0),maxHp:()=>(P?P.maxHp:0),ctl:()=>(P?P.hero:''),
+    ai:()=>(M2E.ally?{hero:M2E.ally.hero,hp:Math.round(M2E.ally.hp),down:!!M2E.ally.down,
+      x:Math.round(M2E.ally.x),y:Math.round(M2E.ally.y)}:null),
+    pos:()=>({x:Math.round(P.x),y:Math.round(P.y)}),
+    pods:()=>M2E.pods.map(p=>({i:p.i,stage:p.stage,scan:+p.scan.toFixed(2),abs:+p.abs.toFixed(2),
+      x:Math.round(p.x),y:Math.round(p.y),r:+p.r.toFixed(1)})),
+    weapons:()=>Object.assign({},P.weapons),passives:()=>Object.assign({},P.passives),
+    gems:()=>gems.length,skCD:()=>Object.assign({},skCD),
+    projs:()=>projs.length,mines:()=>mines.length,zaps:()=>zaps.length,trail:()=>G.trail.length,
+    chg:()=>+(P.chgT||0).toFixed(2),mdCd:()=>+heroMdCd.toFixed(1),god:v=>{runGod=!!v;return runGod},
+    threat:rad=>{const R2=(rad||260)*(rad||260);let n=0,sx=0,sy=0,nd=1e9;
+      for(const e of enemies){if(e.dead)continue;const d=(e.x-P.x)*(e.x-P.x)+(e.y-P.y)*(e.y-P.y);if(d<R2){n++;sx+=e.x;sy+=e.y}if(d<nd)nd=d}
+      return {n:n,cx:n?sx/n:P.x,cy:n?sy/n:P.y,near:Math.round(Math.sqrt(nd))}},
+    hud:()=>({sk:getComputedStyle(document.getElementById('skBtns')).display,
+      md:getComputedStyle(document.getElementById('mdBtn')).display,
+      a:document.getElementById('skBtnA').style.display,
+      b:document.getElementById('skBtnB').style.display,
+      swap:getComputedStyle(document.getElementById('hxSwapBtn')).display,
+      pause:getComputedStyle(document.getElementById('pbtn')).display}),
+    skill:s=>{try{skPress(s,false);skRelease(s);return true}catch(e){return String(e)}},
+    swap:()=>m2eSwap(),toPod:i=>{const p=M2E.pods[i];if(!p)return false;
+      P.x=p.x+p.r+P.r+18;P.y=p.y;camX=P.x;camY=P.y;return true},
+    stage:(i,st)=>m2ePodStage(M2E.pods[i],st),
+    hurt:n=>{hurtPlayer(n||30);return Math.round(P.hp)},
+    addEnemies:n=>{for(let i=0;i<(n||6);i++){const p=M2E.pods[(Math.random()*M2E.pods.length)|0];
+      const a=Math.random()*TAU;spawnEnemy('grunt',p.x+Math.cos(a)*(p.r+40),p.y+Math.sin(a)*(p.r+40))}return enemies.length},
+    win:()=>{M2E.stop=4;for(const p of M2E.pods)m2ePodStage(p,2);return M2E.stop},
+    fail:()=>{P.hp=0;die()},
+    quit:()=>m2eQuit(),clear:()=>M2E.cleared}};
 try{storyRender()}catch(e){}
 })();
 </script>
