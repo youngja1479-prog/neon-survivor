@@ -171,15 +171,15 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 #cutSkip{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px;z-index:7;font:inherit;font-size:12px;font-weight:900;letter-spacing:.04em;color:#cfe2ff;background:rgba(9,9,24,.66);border:1px solid rgba(150,170,255,.45);border-radius:999px;padding:7px 14px;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #cutSkip b{color:#8ff6ff;font-size:11px;letter-spacing:.1em}
 #cutSkip:hover{border-color:#8ff6ff;color:#fff}
-#cutLoc{position:absolute;left:14px;top:max(14px,env(safe-area-inset-top));z-index:5;font-size:clamp(10px,2vw,12px);font-weight:900;letter-spacing:.22em;color:#9ff0ff;padding:5px 12px;border:1px solid rgba(77,243,255,.4);border-radius:6px;background:rgba(6,14,26,.6);opacity:0;transition:opacity .5s}
+#cutLoc{position:absolute;left:14px;top:max(14px,env(safe-area-inset-top));z-index:5;font-size:clamp(10px,2vw,12px);font-weight:900;letter-spacing:.22em;color:#9ff0ff;padding:5px 12px;border:1px solid rgba(77,243,255,.4);border-radius:6px;background:rgba(6,14,26,.6);opacity:0;transition:opacity .6s cubic-bezier(.22,.9,.28,1)}
 #cutLoc.on{opacity:.95}
-#cutCap{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:4;width:min(600px,88vw);text-align:center;font-size:clamp(15px,3vw,20px);font-weight:850;letter-spacing:.02em;color:#e7ecff;line-height:1.55;text-shadow:0 2px 22px rgba(0,0,0,.95),0 0 28px rgba(77,243,255,.25);opacity:0;transition:opacity .55s}
+#cutCap{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:4;width:min(600px,88vw);text-align:center;font-size:clamp(15px,3vw,20px);font-weight:850;letter-spacing:.02em;color:#e7ecff;line-height:1.55;text-shadow:0 2px 22px rgba(0,0,0,.95),0 0 28px rgba(77,243,255,.25);opacity:0;transition:opacity .7s cubic-bezier(.22,.9,.28,1)}
 #cutCap.on{opacity:1}
 #cutCap.big{font-size:clamp(24px,6vw,40px);font-weight:900;letter-spacing:.16em;color:#fff;text-shadow:0 0 28px rgba(120,230,255,.75),0 2px 20px #000}
 @keyframes capIn{from{opacity:0;letter-spacing:.4em;filter:blur(6px)}}
 #cutCap.big.on{animation:capIn .9s ease-out both}
-#cutDlg{position:absolute;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;width:min(640px,92vw);background:linear-gradient(180deg,rgba(10,12,30,.94),rgba(7,7,20,.94));border:1.5px solid rgba(122,150,255,.55);border-radius:14px;padding:11px 16px 9px;box-shadow:0 0 30px rgba(80,120,255,.28),inset 0 1px 0 rgba(255,255,255,.07);opacity:0;transition:opacity .22s;pointer-events:none}
-#cutDlg.on{opacity:1}
+#cutDlg{position:absolute;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:5;width:min(640px,92vw);background:linear-gradient(180deg,rgba(10,12,30,.94),rgba(7,7,20,.94));border:1.5px solid rgba(122,150,255,.55);border-radius:14px;padding:11px 16px 9px;box-shadow:0 0 30px rgba(80,120,255,.28),inset 0 1px 0 rgba(255,255,255,.07);opacity:0;transform:translate(-50%,10px);transition:opacity .42s cubic-bezier(.22,.9,.28,1),transform .46s cubic-bezier(.22,.9,.28,1);pointer-events:none}
+#cutDlg.on{opacity:1;transform:translate(-50%,0)}
 #cutSp{font-size:12.5px;font-weight:900;letter-spacing:.03em;color:#8ff6ff;margin-bottom:4px}
 #cutTx{font-size:clamp(13.5px,2.5vw,16px);font-weight:700;color:#fff;line-height:1.5;min-height:1.5em}
 #cutHint{margin-top:6px;text-align:right;font-size:10.5px;font-weight:800;color:#7f88b8;letter-spacing:.04em}
@@ -4858,7 +4858,8 @@ const FIELD_END=SC.length-1;
 /* 우주선 동선: 씬2에서 이 위치까지만 내려와 멈추고, 씬3(빔)·씬4(강산 하강)에서도 같은 좌표에 그대로 떠 있는다 */
 const SHIP_Y=0.34, SHIP_S=1.04;
 const shipY=()=>VH*SHIP_Y, shipSc=()=>Math.min(VW/900,VH/620)*SHIP_S;
-const C={open:false,i:0,t:0,last:0,raf:0,flash:0,parts:[],endT:0,landed:0,dlgAt:null,debris:0};
+const C={open:false,i:0,t:0,last:0,raf:0,flash:0,parts:[],endT:0,landed:0,dlgAt:null,debris:0,
+  tr:0,trDur:0.55,trOn:false,snap:null,rendered:0,blk:0,chargeS:null};
 let cv=null,g=null,DPR=1,VW=0,VH=0;
 
 /* 별·도시 데이터(한 번만 생성) */
@@ -5055,7 +5056,7 @@ function embers(t,alpha){
 function drawScene(s,t,dt){
   const W=VW,H=VH;
   g.setTransform(DPR,0,0,DPR,0,0);
-  if(s.id.charAt(0)==='f'&&s.id.length<4&&s.id!=='field'){fieldDraw(s,t);return}
+  if(s.id.charAt(0)==='f'&&s.id.length<4&&s.id!=='field'){fieldDraw(s,t,dt);return}
   if(s.id==='date'){
     skyTop('#120a26');stars(t,0.9);
     moonGlow(W*0.72,H*0.26,Math.min(W,H)*0.5,'rgba(120,200,255,ALPHA)',0.16);
@@ -5065,7 +5066,7 @@ function drawScene(s,t,dt){
   }
   if(s.id==='ship'){
     skyTop('#24103f');stars(t,0.8);
-    const p=Math.min(1,t/4.6),ease=1-Math.pow(1-p,3);
+    const p=Math.min(1,t/4.6),ease=p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
     const target=shipY(),cy=-VH*0.34+(target+VH*0.34)*ease; // 빔 쏘는 위치까지만 하강
     moonGlow(W*0.5,cy,Math.min(W,H)*0.75,'rgba(255,90,190,ALPHA)',0.16+0.14*p);
     city(H*0.92,t,0);
@@ -5075,7 +5076,7 @@ function drawScene(s,t,dt){
   }
   if(s.id==='beam'){
     skyTop('#2a0a24');stars(t,0.5);
-    const prog=Math.max(0,Math.min(1,(t-1.35)/2.4));
+    const bp=Math.max(0,Math.min(1,(t-1.35)/2.4)),prog=bp*bp*(3-2*bp);
     const sky2=g.createLinearGradient(0,H*0.28,0,H);
     sky2.addColorStop(0,'rgba(120,20,40,0)');
     sky2.addColorStop(0.6,'rgba(170,36,44,'+(0.26*prog).toFixed(3)+')');
@@ -5112,7 +5113,7 @@ function drawScene(s,t,dt){
     city(H*0.92,t,0.85);
     embers(t,0.75);
     const cy=shipY(), sc=shipSc(); // 씬3과 동일한 우주선 위치에서 강산 하강
-    const p=Math.max(0,Math.min(1,(t-0.5)/4.6)),ease=p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+    const p=Math.max(0,Math.min(1,(t-0.5)/4.6)),ease=p<0.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
     const yTop=cy+92*sc,yBot=H*0.81,ky=yTop+(yBot-yTop)*ease;
     const beamA=0.5*(1-0.4*ease);
     const gr=g.createLinearGradient(W*0.5,yTop,W*0.5,yBot);
@@ -5273,11 +5274,52 @@ function cutUI(){
   if(s.id==='title'){$('cutTitle').classList.add('on')}
 }
 function goScene(i){
-  C.i=Math.max(0,Math.min(FIELD_END,i));C.t=0;C.flash=0;C.parts=[];C.landed=0;C.debris=0;
+  const prevI=C.i,prevT=C.t;
+  const prevId=(SC[prevI]&&SC[prevI].id)||'';
+  C.i=Math.max(0,Math.min(FIELD_END,i));
+  C.t=0;C.flash=0;C.parts=[];C.landed=0;C.debris=0;
+  /* 같은 그림이 이어지는 씬(기지실·전장 대화 연속)은 배경을 겹치지 않고 대사만 페이드한다 */
+  if(C.open&&C.rendered&&prevT>0.12&&C.i!==prevI&&prevId!==SC[C.i].id){
+    const sn=cutSnap(cv);
+    if(sn){C.snap=sn;C.tr=0;C.trOn=true}
+  }else if(!C.open||!C.rendered){C.snap=null;C.trOn=false}
   cutUI();
   if(NET.on&&NET.host)netSend({t:'hx',k:'scene',i:C.i});
 }
 function nextScene(){if(C.i>=FIELD_END){mToMission();return}goScene(C.i+1)}
+/* 이전 씬의 마지막 프레임을 복사해 두고 새 씬 위에 겹쳐 지운다(크로스페이드) */
+function cutSnap(canvas){
+  if(!canvas)return null;
+  let s=C.snap;
+  if(!s)s=document.createElement('canvas');
+  const w=canvas.width,h=canvas.height;
+  if(!w||!h)return null;
+  if(s.width!==w||s.height!==h){s.width=w;s.height=h}
+  const x=s.getContext('2d');
+  x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,w,h);
+  try{x.drawImage(canvas,0,0)}catch(e){return null}
+  return s;
+}
+function cutTxDraw(dt){
+  if(C.blk>0.001){
+    C.blk=Math.max(0,C.blk-dt*1.7);
+    g.save();g.setTransform(1,0,0,1,0,0);
+    g.globalAlpha=Math.min(1,C.blk*C.blk*(3-2*Math.min(1,C.blk)));
+    g.fillStyle='#03020a';g.fillRect(0,0,cv.width,cv.height);
+    g.restore();
+  }
+  if(C.trOn&&C.snap){
+    C.tr+=dt;
+    const k=Math.max(0,Math.min(1,C.tr/C.trDur));
+    const e=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;   /* ease-in-out */
+    const a=1-e;
+    if(a>0.004){
+      g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=a;
+      g.drawImage(C.snap,0,0);g.restore();
+    }
+    if(k>=1){C.trOn=false;C.snap=null}
+  }
+}
 function mToMission(){if(NET.on&&NET.host)netSend({t:'hx',k:'mission'});if(C.open)cutClose();misStart()}
 function cutPlay(hero){
   if(hero&&SH[hero])selHero=hero;
@@ -5286,6 +5328,7 @@ function cutPlay(hero){
   hideAll();$('storyCut').classList.add('show');
   C.open=true;C.last=0;C.hold=false;
   fitCv();g=cv.getContext('2d');
+  C.snap=null;C.trOn=false;C.tr=0;C.rendered=0;C.blk=1;C.chargeS=null;
   goScene(0);
   cancelAnimationFrame(C.raf);
   C.raf=requestAnimationFrame(loop);
@@ -5295,11 +5338,12 @@ function cutClose(){
   $('storyCut').classList.remove('show');
   $('cutTitle').classList.remove('on');
   C.parts=[];C.flash=0;state='title';
+  C.snap=null;C.trOn=false;C.tr=0;C.rendered=0;C.blk=0;
 }
 function loop(now){
   if(!C.open)return;
   if(!C.last)C.last=now;
-  const dt=Math.min(0.05,Math.max(0.001,(now-C.last)/1000));C.last=now;
+  const dt=Math.min(0.033,Math.max(0.001,(now-C.last)/1000));C.last=now;
   C.t+=dt;
   if(C.flash>0)C.flash=Math.max(0,C.flash-dt*2.2);
   let s=SC[C.i];
@@ -5307,6 +5351,8 @@ function loop(now){
   if(C.dlgAt!=null&&C.t>=C.dlgAt&&!$('cutDlg').classList.contains('on')){setCap('',false,false);setDlg(s.sp,s.tx,s.col,true)}
   if(s.id==='beam'&&C.t>1.35&&C.t<1.8&&C.flash<0.05)C.flash=0.6;
   try{drawScene(s,C.t,dt)}catch(err){if(!C.err){C.err=1;console.error('[story] draw error',err)}}
+  C.rendered=1;
+  try{cutTxDraw(dt)}catch(err){}
   C.raf=requestAnimationFrame(loop);
 }
 /* ---------- 입력 ---------- */
@@ -5383,7 +5429,7 @@ window.__storyNetStart=storyNetStart;
 window.__storyNetOn=()=>NET.online;
 const MISS_LEN=60;
 const MS={on:false,raf:0,last:0,t:0,state:'ready',readyT:1.1,
-  warns:[],beams:[],shocks:[],parts:[],craters:[],texts:[],
+  warns:[],bombs:[],shocks:[],parts:[],craters:[],texts:[],
   shake:0,flash:0,hurt:0,spawnT:1.2,phase:0,msgT:0,charge:0,winT:0,ovShown:false,
   fade:1,hintT:0,hpShown:-1,timeShown:'',waveN:0};
 const MP={x:0,y:0,vx:0,vy:0,r:16,hp:100,maxHp:100,inv:0,fx:0,fy:1,walk:0,moving:false};
@@ -5520,10 +5566,13 @@ function mOrb(x,y,r,col,t,o){
   }
 }
 /* ---------- 컷신: 파괴된 네온시티 전장 대화 ---------- */
-function fieldDraw(s,t){
+function fieldDraw(s,t,dt){
   const m=fieldMetrics(),W=m.W,H=m.H;
   const li=parseInt(s.id.slice(1),10)||1;
-  const charge=li<=3?0:(li===4?0.34:(li===5?0.66:0.96));
+  const target=li<=3?0:(li===4?0.34:(li===5?0.66:0.96));
+  if(C.chargeS==null)C.chargeS=target;
+  C.chargeS+=(target-C.chargeS)*Math.min(1,(dt||0.016)*2.6);
+  const charge=C.chargeS;
   const danger=li>=4?(0.55+0.45*Math.sin(t*(3.4+li*0.5))):0;
   fieldScene(t,{charge:charge,danger:danger});
   const r=Math.max(15,Math.min(W,H)*0.036);
@@ -5542,7 +5591,7 @@ function fieldDraw(s,t){
     g.fillStyle=gr;g.fillRect(0,0,W,H);
   }
   if(li===6){const f=Math.max(0,Math.sin(t*9));g.fillStyle='rgba(255,180,240,'+(0.05*f).toFixed(3)+')';g.fillRect(0,0,W,H)}
-  if(t<0.45){g.fillStyle='rgba(3,2,10,'+(1-t/0.45).toFixed(3)+')';g.fillRect(0,0,W,H)}
+  if(t<0.3){const f=t/0.3;g.fillStyle='rgba(3,2,10,'+(1-f*f*(3-2*f)).toFixed(3)+')';g.fillRect(0,0,W,H)}
 }
 
 /* ============================================================
@@ -5569,7 +5618,7 @@ function misStart(){
   hideAll();state='title';
   $('storyMission').classList.add('show');
   MS.on=true;MS.state='ready';MS.readyT=1.1;MS.t=0;
-  MS.warns=[];MS.beams=[];MS.shocks=[];MS.parts=[];MS.craters=[];MS.texts=[];
+  MS.warns=[];MS.bombs=[];MS.shocks=[];MS.parts=[];MS.craters=[];MS.texts=[];
   MS.shake=0;MS.flash=0;MS.hurt=0;MS.spawnT=1.1;MS.phase=0;MS.msgT=0;MS.charge=0;
   MS.winT=0;MS.ovShown=false;MS.fade=1;MS.hintT=6;MS.hpShown=-1;MS.timeShown='';MS.waveN=0;
   mjoy=null;for(const k in MK)delete MK[k];
@@ -5613,7 +5662,7 @@ function mLoop(now){
   if(!MS.on)return;
   if(!MS.last)MS.last=now;
   let dt=(now-MS.last)/1000;MS.last=now;
-  dt=Math.min(0.05,Math.max(0.001,dt));
+  dt=Math.min(0.033,Math.max(0.001,dt));
   try{mUpdate(dt);mDraw(dt)}catch(e){console.error('[mission] frame error',e);MS.on=false;cancelAnimationFrame(MS.raf);const el=$('storyMission');if(el)el.classList.remove('show');try{toTitle()}catch(_){}return}
   MS.raf=requestAnimationFrame(mLoop);
 }
@@ -5634,6 +5683,7 @@ function mUpdate(dt){
         netSend({t:'hx',k:'pos',x:+(MP.x/MW).toFixed(4),y:+(MP.y/MH).toFixed(4),hp:Math.round(MP.hp),mv:MP.moving?1:0})}
       if(NET.host){NET.tSendT-=dt;if(NET.tSendT<=0){NET.tSendT=1;netSend({t:'hx',k:'t',t:+MS.t.toFixed(2)})}}
     }
+    mTickFx(dt);
   }else if(MS.state==='win'){
     MS.winT+=dt;
     if(MS.winT>0.9&&!MS.ovShown)mShowOver('win');
@@ -5659,8 +5709,8 @@ function mPhaseCheck(){
   const ph=MS.t<20?0:(MS.t<40?1:2);
   if(ph===MS.phase)return;
   MS.phase=ph;
-  if(ph===1){mMsg('PHASE 2 · 연속 폭격!','#ff9a3c');MS.shake=Math.max(MS.shake,5)}
-  else if(ph===2){mMsg('PHASE 3 · 고밀도 폭격!!','#ff4d6d');MS.shake=Math.max(MS.shake,7);MS.flash=Math.max(MS.flash,0.16)}
+  if(ph===1){mMsg('PHASE 2 · 연속 폭격!','#ff9a3c')}
+  else if(ph===2){mMsg('PHASE 3 · 고밀도 폭격!!','#ff4d6d');MS.flash=Math.max(MS.flash,0.08)}
 }
 /* ---------- 플레이어 ---------- */
 function mPlayerUpdate(dt){
@@ -5745,9 +5795,23 @@ window.__storyMissionSwap=misSwap;
 window.__storyMissionCanSwap=()=>MS.on&&(MS.state==='run'||MS.state==='ready')&&!NET.online;
 window.__storyMissionOn=()=>MS.on;
 /* ---------- 경고 장판 / 폭격 ---------- */
+function mStrikeFall(warn){return Math.min(0.98,Math.max(0.64,(+warn||1.3)*0.55))}
 function mAddStrike(x,y,r,warn,big){
-  MS.warns.push({x:x,y:y,r:r,warn:warn,t:0,big:!!big});
+  /* 경고 원이 먼저 뜨고, 마지막 fall 초 동안 탄두가 상공에서 실제로 떨어진다 */
+  MS.warns.push({x:x,y:y,r:r,warn:warn,t:0,big:!!big,fall:mStrikeFall(warn),drop:false});
   if(NET.on&&NET.host)netSend({t:'hx',k:'warn',x:+(x/MW).toFixed(4),y:+(y/MH).toFixed(4),r:+(r/Math.min(MW,MH)).toFixed(4),warn:warn,big:big?1:0});
+}
+/* 우주선 하부 폭탄창에서 탄두를 떨군다 — 화면 위쪽에서 착탄점으로 낙하 */
+function mDropBomb(w){
+  const m=fieldMetrics();
+  const bh=m.cy+52*m.s;
+  const spread=(Math.random()*2-1)*0.06;
+  const x0=w.x+(m.cx-w.x)*(0.16+spread);
+  const y0=-MH*(0.05+Math.random()*0.07);
+  MS.bombs.push({x0:x0,y0:y0,x:w.x,y:w.y,t:0,fall:w.fall,r:w.r,big:!!w.big,
+    spin:(Math.random()*2-1)*0.5,ph:Math.random()*TAU});
+  /* 폭탄창 섬광 */
+  MS.shocks.push({x:m.cx+(x0-m.cx)*0.5,y:bh,r:0,max:(46+26*Math.random())*m.s,t:0,dur:0.3,c:'#ffd6f6'});
 }
 function mNearPlayer(minD,maxD){
   const a=Math.random()*TAU,d=(minD+Math.random()*(maxD-minD))*MU;
@@ -5757,32 +5821,43 @@ function mAnywhere(){const b=mBounds();return {x:b.x0+Math.random()*(b.x1-b.x0),
 function mWarnsTick(dt){
   if(!MS.warns.length){MS.charge=Math.max(0,MS.charge-dt*1.9);return}
   let maxk=0,hit=null;
-  for(const w of MS.warns){w.t+=dt;maxk=Math.max(maxk,Math.min(1,w.t/w.warn));if(w.t>=w.warn&&!hit)hit=w}
+  for(const w of MS.warns){
+    if(w.fall==null)w.fall=mStrikeFall(w.warn);
+    w.t+=dt;maxk=Math.max(maxk,Math.min(1,w.t/w.warn));
+    if(!w.drop&&w.t>=w.warn-w.fall){w.drop=true;mDropBomb(w)}
+    if(w.t>=w.warn&&!hit)hit=w
+  }
   MS.charge=Math.max(MS.charge,Math.min(1,maxk));
   if(hit){
     MS.warns=MS.warns.filter(w=>w!==hit);
+    MS.bombs=MS.bombs.filter(b=>!(Math.abs(b.x-hit.x)<0.6&&Math.abs(b.y-hit.y)<0.6));
     mImpact(hit);
   }
+}
+function mBombsTick(dt){
+  if(!MS.bombs.length)return;
+  for(const b of MS.bombs)b.t+=dt;
+  MS.bombs=MS.bombs.filter(b=>b.t<b.fall+0.02);
 }
 function mSpawnTick(dt){
   MS.spawnT-=dt;
   if(MS.spawnT>0)return;
   const ph=MS.t<20?0:(MS.t<40?1:2);
   mWave(ph);
-  MS.spawnT=ph===0?(2.9+Math.random()*0.8):ph===1?(2.0+Math.random()*0.6):(1.65+Math.random()*0.5);
+  MS.spawnT=ph===0?(3.1+Math.random()*0.9):ph===1?(2.2+Math.random()*0.6):(1.9+Math.random()*0.5);
 }
 function mWave(ph){
   MS.waveN++;
   if(ph===0){
     if(MS.waveN%4===0){const p1=mNearPlayer(60,150),p2=mAnywhere();
-      mAddStrike(p1.x,p1.y,104*MU,1.32);mAddStrike(p2.x,p2.y,96*MU,1.4)}
-    else{const p=Math.random()<0.6?mNearPlayer(60,165):mAnywhere();mAddStrike(p.x,p.y,104*MU,1.3)}
+      mAddStrike(p1.x,p1.y,104*MU,1.8);mAddStrike(p2.x,p2.y,96*MU,1.85)}
+    else{const p=Math.random()<0.6?mNearPlayer(60,165):mAnywhere();mAddStrike(p.x,p.y,104*MU,1.75)}
   }else if(ph===1){
     const n=2+(Math.random()<0.45?1:0),near=mNearPlayer(60,175);
-    mAddStrike(near.x,near.y,96*MU,1.22);
-    for(let i=1;i<n;i++){const p=Math.random()<0.55?mNearPlayer(90,230):mAnywhere();mAddStrike(p.x,p.y,92*MU,1.24)}
+    mAddStrike(near.x,near.y,96*MU,1.7);
+    for(let i=1;i<n;i++){const p=Math.random()<0.55?mNearPlayer(90,230):mAnywhere();mAddStrike(p.x,p.y,92*MU,1.72)}
   }else{
-    const kind=MS.waveN%4,r=86*MU,warn=1.16;
+    const kind=MS.waveN%4,r=86*MU,warn=1.5;
     if(kind===0){
       const gap=(Math.random()*6)|0,R=132*MU;
       for(let i=0;i<6;i++){if(i===gap)continue;const a=i/6*TAU+0.2;
@@ -5790,34 +5865,41 @@ function mWave(ph){
     }else if(kind===1){
       const R=118*MU;
       for(const a of [0,Math.PI/2,Math.PI,Math.PI*1.5])mAddStrike(MP.x+Math.cos(a)*R,MP.y+Math.sin(a)*R,r,warn);
-      const p=mAnywhere();mAddStrike(p.x,p.y,90*MU,1.2);
+      const p=mAnywhere();mAddStrike(p.x,p.y,90*MU,1.55);
     }else if(kind===2){
       const p=mNearPlayer(40,120);
-      mAddStrike(p.x,p.y,168*MU,1.52,true);
+      mAddStrike(p.x,p.y,168*MU,1.78,true);
       for(let i=0;i<3;i++){const a=Math.random()*TAU,R=(210+Math.random()*90)*MU;
-        mAddStrike(p.x+Math.cos(a)*R,p.y+Math.sin(a)*R,84*MU,1.28)}
+        mAddStrike(p.x+Math.cos(a)*R,p.y+Math.sin(a)*R,84*MU,1.55)}
     }else{
       const a=Math.random()*TAU,dx=Math.cos(a),dy=Math.sin(a),base=mNearPlayer(80,170);
-      for(let i=-2;i<=2;i++){const off=i*98*MU;mAddStrike(base.x-dy*off,base.y+dx*off,84*MU,1.2)}
+      for(let i=-2;i<=2;i++){const off=i*98*MU;mAddStrike(base.x-dy*off,base.y+dx*off,84*MU,1.5)}
     }
-    MS.shake=Math.max(MS.shake,3);
   }
 }
 function mImpact(w){
   const big=w.big;
-  MS.shocks.push({x:w.x,y:w.y,r:0,max:w.r*(big?2.1:1.7),t:0,dur:big?0.55:0.42,c:'#ff5aa8'});
-  MS.shocks.push({x:w.x,y:w.y,r:0,max:w.r*(big?1.25:1.05),t:0,dur:0.26,c:'#fff3cf'});
-  MS.beams.push({x:w.x,y:w.y,t:0,dur:big?0.24:0.16,w:w.r*(big?0.34:0.22),big:!!big});
-  const n=big?34:18;
-  for(let i=0;i<n;i++){const a=Math.random()*TAU,sp=(70+Math.random()*430)*MU*(big?1.2:1);
-    MS.parts.push({x:w.x+(Math.random()-0.5)*w.r*0.5,y:w.y+(Math.random()-0.5)*w.r*0.3,
-      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.8-140*MU,life:0.4+Math.random()*0.9,max:1.3,
-      r:(1.4+Math.random()*3.2)*MU,c:Math.random()<0.35?'#fff3cf':(Math.random()<0.5?'#ff8ce0':'#ff5a3c')});
+  MS.shocks.push({x:w.x,y:w.y,r:0,max:w.r*(big?2.2:1.85),t:0,dur:big?0.62:0.5,c:'#ff5aa8'});
+  MS.shocks.push({x:w.x,y:w.y,r:0,max:w.r*(big?1.55:1.26),t:0,dur:big?0.46:0.4,c:'#ffb347',fill:1});
+  MS.shocks.push({x:w.x,y:w.y,r:0,max:w.r*0.52,t:0,dur:0.18,c:'#fffdf2',fill:1});
+  MS.shocks.push({x:w.x,y:w.y,r:0,max:w.r*0.9,t:0,dur:0.2,c:'#fff6da'});
+  const n=big?30:18;
+  for(let i=0;i<n;i++){const a=Math.random()*TAU,sp=(80+Math.random()*420)*MU*(big?1.25:1);
+    MS.parts.push({x:w.x+(Math.random()-0.5)*w.r*0.45,y:w.y+(Math.random()-0.5)*w.r*0.28,
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.75-190*MU,life:0.36+Math.random()*0.8,max:1.25,
+      r:(1.3+Math.random()*3.1)*MU,c:Math.random()<0.4?'#fff3cf':(Math.random()<0.55?'#ff8ce0':'#ff6a26')});
   }
-  MS.craters.push({x:w.x,y:w.y,r:w.r*(big?0.72:0.6),t:0});
+  const sn=big?10:6;
+  for(let i=0;i<sn;i++){const a=Math.random()*TAU,sp=(20+Math.random()*90)*MU;
+    MS.parts.push({smoke:1,x:w.x+(Math.random()-0.5)*w.r*0.8,y:w.y+(Math.random()-0.5)*w.r*0.5,
+      vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.5-40*MU,life:0.85+Math.random()*1.1,max:1.95,
+      r:(6+Math.random()*12)*MU,c:'#3a2a44'});
+  }
+  MS.craters.push({x:w.x,y:w.y,r:w.r*(big?0.74:0.62),t:0});
   if(MS.craters.length>22)MS.craters.shift();
-  MS.shake=Math.max(MS.shake,big?15:8.5);
-  MS.flash=Math.max(MS.flash,big?0.4:0.2);
+  /* 화면 흔들림은 거의 느껴지지 않을 수준(기존 8.5~15 → 0.45~1.2) */
+  MS.shake=Math.max(MS.shake,big?1.2:0.45);
+  MS.flash=Math.max(MS.flash,big?0.09:0.04);
   try{S.boom()}catch(e){}
   if(MS.state==='run'&&MP.inv<=0){
     const d=Math.hypot(MP.x-w.x,MP.y-w.y);
@@ -5826,7 +5908,7 @@ function mImpact(w){
 }
 function mHurt(d){
   if(MS.state!=='run')return;
-  MP.hp=Math.max(0,MP.hp-d);MP.inv=1.15;MS.hurt=0.55;MS.shake=Math.max(MS.shake,10);
+  MP.hp=Math.max(0,MP.hp-d);MP.inv=1.15;MS.hurt=0.55;MS.shake=Math.max(MS.shake,2.4);
   MS.texts.push({x:MP.x,y:MP.y-MP.r*2.1,v:'-'+d,c:'#ff5aa8',life:0.95,max:0.95});
   try{S.hurt()}catch(e){}
   if(MP.hp<=0)mFail();
@@ -5835,7 +5917,7 @@ function mFail(){
   if(MS.state!=='run')return;
   if(NET.online)netSend({t:'hx',k:'dead'});
   MS.state='fail';
-  MS.shake=Math.max(MS.shake,16);MS.flash=Math.max(MS.flash,0.3);
+  MS.shake=Math.max(MS.shake,4.5);MS.flash=Math.max(MS.flash,0.28);
   for(let i=0;i<26;i++){const a=Math.random()*TAU,sp=(90+Math.random()*420)*MU;
     MS.parts.push({x:MP.x,y:MP.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-120*MU,life:0.5+Math.random()*0.8,max:1.3,
       r:(1.6+Math.random()*3.4)*MU,c:i%3===0?'#8ff6ff':'#ff5aa8'})}
@@ -5846,7 +5928,7 @@ function mFail(){
 function mWin(){
   if(MS.state!=='run')return;
   MS.state='win';MS.warns=[];MS.charge=0;MS.winT=0;
-  MS.flash=Math.max(MS.flash,0.42);MS.shake=Math.max(MS.shake,9);
+  MS.flash=Math.max(MS.flash,0.34);MS.shake=Math.max(MS.shake,1.6);
   try{S.level()}catch(e){}
   mMsg('폭격이 멎었다!','#8ff6ff');
 }
@@ -5868,12 +5950,15 @@ function mShowOver(kind){
 }
 /* ---------- 이펙트 ---------- */
 function mTickFx(dt){
-  for(const p of MS.parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=980*MU*dt;p.vx*=0.985;p.life-=dt}
+  for(const p of MS.parts){
+    p.x+=p.vx*dt;p.y+=p.vy*dt;
+    if(p.smoke){p.r+=34*MU*dt;p.vy-=12*MU*dt;p.vx*=0.99;p.vy*=0.99}
+    else{p.vy+=980*MU*dt;p.vx*=0.985}
+    p.life-=dt}
   if(MS.parts.length)MS.parts=MS.parts.filter(p=>p.life>0);
   for(const s of MS.shocks)s.t+=dt;
   if(MS.shocks.length)MS.shocks=MS.shocks.filter(s=>s.t<s.dur);
-  for(const b of MS.beams)b.t+=dt;
-  if(MS.beams.length)MS.beams=MS.beams.filter(b=>b.t<b.dur);
+  mBombsTick(dt);
   for(const t of MS.texts){t.life-=dt;t.y-=46*MU*dt}
   if(MS.texts.length)MS.texts=MS.texts.filter(t=>t.life>0);
   for(const c of MS.craters)c.t+=dt;
@@ -5901,14 +5986,31 @@ function mShocksDraw(){
   for(const s of MS.shocks){
     const k=Math.max(0,Math.min(1,s.t/s.dur));
     g.save();g.globalCompositeOperation='lighter';
-    g.strokeStyle=s.c;g.globalAlpha=(1-k)*0.9;g.lineWidth=(1-k)*7*MU+1.4;
-    g.beginPath();g.arc(s.x,s.y,s.max*(0.18+0.82*Math.sqrt(k)),0,TAU);g.stroke();
+    if(s.fill){
+      const rr=s.max*(0.2+0.8*Math.sqrt(k));
+      const gr=g.createRadialGradient(s.x,s.y,0,s.x,s.y,Math.max(1,rr));
+      const a=Math.pow(1-k,0.8)*0.78;
+      gr.addColorStop(0,'rgba(255,250,235,'+(a*0.9).toFixed(3)+')');
+      gr.addColorStop(0.42,'rgba(255,150,60,'+(a*0.75).toFixed(3)+')');
+      gr.addColorStop(0.75,'rgba(255,70,110,'+(a*0.4).toFixed(3)+')');
+      gr.addColorStop(1,'rgba(120,20,60,0)');
+      g.fillStyle=gr;g.beginPath();g.arc(s.x,s.y,rr,0,TAU);g.fill();
+    }else{
+      g.strokeStyle=s.c;g.globalAlpha=(1-k)*0.9;g.lineWidth=(1-k)*7*MU+1.4;
+      g.beginPath();g.arc(s.x,s.y,s.max*(0.18+0.82*Math.sqrt(k)),0,TAU);g.stroke();
+    }
     g.restore();
   }
 }
 function mWarnsDraw(){
   for(const w of MS.warns){
     const k=Math.max(0,Math.min(1,w.t/w.warn));
+    /* 탄두가 가까워질수록 진해지고 좁아지는 착탄 그림자 */
+    const fd=Math.max(0,Math.min(1,(w.t-(w.warn-(w.fall||0.8)))/(w.fall||0.8)));
+    g.save();
+    g.fillStyle='rgba(5,1,12,'+(0.05+0.30*fd).toFixed(3)+')';
+    g.beginPath();g.ellipse(w.x,w.y,w.r*(1.10-0.52*fd),w.r*(0.46-0.22*fd),0,0,TAU);g.fill();
+    g.restore();
     g.save();
     g.beginPath();g.arc(w.x,w.y,w.r,0,TAU);g.clip();
     const gr=g.createRadialGradient(w.x,w.y,0,w.x,w.y,w.r);
@@ -5933,43 +6035,71 @@ function mWarnsDraw(){
     g.restore();
   }
 }
-function mFallsDraw(){
-  const m=fieldMetrics();
-  for(const w of MS.warns){
-    const left=w.warn-w.t;
-    if(left>0.34)continue;
-    const f=1-Math.max(0,left)/0.34,e=f*f;
-    const x0=m.cx+(w.x-m.cx)*0.05,y0=m.cy+46*m.s;
-    const hx=x0+(w.x-x0)*e,hy=y0+(w.y-y0)*e;
-    const te=Math.max(0,e-0.22),tx=x0+(w.x-x0)*te,ty=y0+(w.y-y0)*te;
-    g.save();g.globalCompositeOperation='lighter';g.lineCap='round';
-    const grd=g.createLinearGradient(tx,ty,hx,hy);
-    grd.addColorStop(0,'rgba(255,90,200,0)');
-    grd.addColorStop(0.55,'rgba(255,120,220,'+(0.32+0.4*f).toFixed(2)+')');
-    grd.addColorStop(1,'rgba(255,255,240,'+(0.8*f).toFixed(2)+')');
-    g.strokeStyle=grd;g.lineWidth=(1.6+3.2*f)*MU;
-    g.beginPath();g.moveTo(tx,ty);g.lineTo(hx,hy);g.stroke();
-    g.fillStyle='rgba(255,250,235,'+(0.7*f).toFixed(2)+')';
-    g.beginPath();g.arc(hx,hy,(2.6+3.6*f)*MU,0,TAU);g.fill();
-    g.restore();
-  }
+function mBombAt(b,p){
+  const e=Math.pow(p,1.32);
+  return {x:b.x0+(b.x-b.x0)*(0.26*p+0.74*e),y:b.y0+(b.y-b.y0)*e,
+    r:(4.6+9.4*Math.pow(p,1.08))*Math.max(0.92,MU)*(b.big?1.22:1)};
 }
-function mBeamsDraw(){
-  const m=fieldMetrics();
-  for(const b of MS.beams){
-    const k=Math.max(0,Math.min(1,b.t/b.dur)),a=1-k;
-    const x0=m.cx+(b.x-m.cx)*0.05,y0=m.cy+46*m.s;
+/* ---------- 상공에서 떨어지는 폭탄/탄두 ---------- */
+function mBombsDraw(){
+  if(!MS.bombs.length)return;
+  for(const b of MS.bombs){
+    const p=Math.max(0,Math.min(1,b.t/b.fall));
+    const c=mBombAt(b,p);
+    const bsc=Math.max(0.92,MU);
+    /* 1) 연기 기둥: 뒤로 갈수록 커지고 옅어지는 연기 덩어리 */
+    g.save();
+    for(let i=6;i>=1;i--){
+      const q=Math.max(0,p-0.038*i),pp=mBombAt(b,q);
+      const sa=0.20*(1-i/7.6)*(0.28+0.72*p);
+      g.fillStyle='rgba(74,56,88,'+sa.toFixed(3)+')';
+      g.beginPath();g.arc(pp.x,pp.y,(3.4+i*3.0)*bsc,0,TAU);g.fill();
+    }
+    g.restore();
+    /* 2) 배기 불꽃 꼬리 (짧고 뾰족하게) */
     g.save();g.globalCompositeOperation='lighter';g.lineCap='round';
-    g.strokeStyle='rgba(255,120,210,'+(0.45*a).toFixed(2)+')';g.lineWidth=b.w*1.55*a+1.4;
-    g.beginPath();g.moveTo(x0,y0);g.lineTo(b.x,b.y);g.stroke();
-    g.strokeStyle='rgba(255,250,240,'+(0.82*a).toFixed(2)+')';g.lineWidth=b.w*0.5*a+1;
-    g.beginPath();g.moveTo(x0,y0);g.lineTo(b.x,b.y);g.stroke();
-    const rr=b.w*2.2*a+5;
-    const gr=g.createRadialGradient(b.x,b.y,0,b.x,b.y,rr);
-    gr.addColorStop(0,'rgba(255,255,245,'+(0.9*a).toFixed(2)+')');
-    gr.addColorStop(0.35,'rgba(255,140,220,'+(0.5*a).toFixed(2)+')');
-    gr.addColorStop(1,'rgba(255,60,150,0)');
-    g.fillStyle=gr;g.beginPath();g.arc(b.x,b.y,rr,0,TAU);g.fill();
+    const t0=mBombAt(b,Math.max(0,p-0.13));
+    const grd=g.createLinearGradient(t0.x,t0.y,c.x,c.y);
+    grd.addColorStop(0,'rgba(255,90,60,0)');
+    grd.addColorStop(0.45,'rgba(255,120,80,'+(0.30+0.30*p).toFixed(2)+')');
+    grd.addColorStop(1,'rgba(255,246,226,'+(0.55+0.35*p).toFixed(2)+')');
+    g.strokeStyle=grd;g.lineWidth=(2.0+5.0*p)*bsc;
+    g.beginPath();g.moveTo(t0.x,t0.y);g.lineTo(c.x,c.y);g.stroke();
+    g.restore();
+    /* 3) 탄두 */
+    g.save();g.translate(c.x,c.y);g.rotate(Math.sin(b.ph+p*7)*0.10);
+    g.save();g.globalCompositeOperation='lighter';
+    const gr=g.createRadialGradient(0,0,0,0,0,c.r*2.6);
+    gr.addColorStop(0,'rgba(255,250,236,'+(0.42+0.3*p).toFixed(2)+')');
+    gr.addColorStop(0.42,'rgba(255,120,200,'+(0.24+0.22*p).toFixed(2)+')');
+    gr.addColorStop(1,'rgba(140,40,190,0)');
+    g.fillStyle=gr;g.beginPath();g.arc(0,0,c.r*2.6,0,TAU);g.fill();
+    g.restore();
+    const R=c.r;
+    /* 꼬리 날개 */
+    g.fillStyle='#43305c';g.strokeStyle='rgba(255,150,220,.65)';g.lineWidth=Math.max(0.9,R*0.14);
+    g.beginPath();g.moveTo(-R*0.42,-R*0.72);g.lineTo(-R*1.06,-R*1.34);g.lineTo(-R*0.34,-R*0.24);g.closePath();g.fill();g.stroke();
+    g.beginPath();g.moveTo(R*0.42,-R*0.72);g.lineTo(R*1.06,-R*1.34);g.lineTo(R*0.34,-R*0.24);g.closePath();g.fill();g.stroke();
+    /* 몸통 */
+    g.fillStyle='#2a1c3c';g.strokeStyle='#ff9ade';g.lineWidth=Math.max(1.2,R*0.30);
+    g.beginPath();g.moveTo(0,R*1.32);
+    g.quadraticCurveTo(-R*0.95,-R*0.2,-R*0.52,-R*1.0);
+    g.lineTo(R*0.52,-R*1.0);
+    g.quadraticCurveTo(R*0.95,-R*0.2,0,R*1.32);
+    g.closePath();g.fill();g.stroke();
+    /* 중앙 발광 스트라이프 */
+    g.fillStyle='rgba(255,214,242,.92)';g.fillRect(-R*0.10,-R*0.92,R*0.20,R*1.7);
+    /* 선단(아래쪽) 발광 */
+    g.fillStyle='rgba(255,255,246,'+(0.8+0.2*Math.sin(MS.t*40+b.ph)).toFixed(2)+')';
+    g.beginPath();g.arc(0,R*1.02,R*0.30,0,TAU);g.fill();
+    /* 후미 화염 */
+    g.save();g.globalCompositeOperation='lighter';
+    const fl=g.createRadialGradient(0,-R*1.15,0,0,-R*1.15,R*(1.1+0.35*Math.sin(MS.t*30+b.ph)));
+    fl.addColorStop(0,'rgba(255,240,210,.85)');
+    fl.addColorStop(0.45,'rgba(255,140,80,.5)');
+    fl.addColorStop(1,'rgba(255,60,90,0)');
+    g.fillStyle=fl;g.beginPath();g.arc(0,-R*1.15,R*(1.1+0.35*Math.sin(MS.t*30+b.ph)),0,TAU);g.fill();
+    g.restore();
     g.restore();
   }
 }
@@ -5984,8 +6114,12 @@ function mCharsDraw(){
     hp:Math.max(0,MP.hp/MP.maxHp),low:MP.hp/MP.maxHp<=0.3});
 }
 function mPartsDraw(){
+  g.save();
+  for(const p of MS.parts){if(!p.smoke)continue;const a=Math.max(0,Math.min(1,p.life/p.max));
+    g.globalAlpha=a*0.26;g.fillStyle=p.c;g.beginPath();g.arc(p.x,p.y,p.r,0,TAU);g.fill()}
+  g.restore();
   g.save();g.globalCompositeOperation='lighter';
-  for(const p of MS.parts){const a=Math.max(0,Math.min(1,p.life/p.max));
+  for(const p of MS.parts){if(p.smoke)continue;const a=Math.max(0,Math.min(1,p.life/p.max));
     g.globalAlpha=a;g.fillStyle=p.c;g.beginPath();g.arc(p.x,p.y,p.r*(0.5+a*0.8),0,TAU);g.fill()}
   g.restore();
 }
@@ -6031,8 +6165,7 @@ function mDraw(dt){
     const sh=MS.shake;
     if(sh>0.25)c.translate((Math.random()-0.5)*sh*1.5,(Math.random()-0.5)*sh*1.5);
     fieldScene(MS.t,{charge:MS.charge,danger:MS.state==='run'&&MS.t>40?1:0});
-    mCratersDraw();mShocksDraw();mWarnsDraw();mFallsDraw();mBeamsDraw();
-    mCharsDraw();mPartsDraw();mTextsDraw();mJoystickDraw();
+    mCratersDraw();mShocksDraw();mWarnsDraw();mCharsDraw();mPartsDraw();mBombsDraw();mTextsDraw();mJoystickDraw();
     c.restore();
   }finally{g=og;VW=ov1;VH=ov2}
   mOverlayFx();
@@ -6080,6 +6213,8 @@ window.__story={isOpen:()=>C.open,scene:()=>SC[C.i].id,i:()=>C.i,t:()=>C.t,scene
     dmg:n=>mHurt(n||15),fail:()=>{if(MS.state==='run')mFail()},win:()=>{if(MS.state==='run'){MS.t=MISS_LEN;mWin()}},
     pos:()=>({x:Math.round(MP.x),y:Math.round(MP.y)}),ai:()=>({x:Math.round(MA.x),y:Math.round(MA.y)}),
     charge:()=>+MS.charge.toFixed(2),hero:()=>SH[MP.hero||selHero].name,partner:()=>SH[MA.hero||partnerOf(selHero)].name,
+    fx:()=>({shake:+MS.shake.toFixed(2),flash:+MS.flash.toFixed(2),bombs:MS.bombs.length,warns:MS.warns.length,parts:MS.parts.length}),
+    bl:()=>MS.bombs.map(b=>{const p=b.t/b.fall,c=mBombAt(b,p);return {p:+p.toFixed(2),x:Math.round(c.x),y:Math.round(c.y),r:+c.r.toFixed(1)}}),
     sel:()=>SH[selHero].name,ctl:()=>MP.hero,aiHero:()=>MA.hero,hpAll:()=>[Math.round(MP.hp),Math.round(MA.hp)]}};
 try{storyRender()}catch(e){}
 })();
