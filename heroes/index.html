@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 서바이벌 - NEON SURVIVAL v2</title>
+<title>네온 서바이벌 - NEON SURVIVAL v4</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#07060f;color:#fff;
@@ -296,7 +296,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 
 <div class="ov show" id="title">
   <h1>네온 서바이벌</h1>
-  <div class="sub">Neon Survival · v2</div>
+  <div class="sub">Neon Survival · v4</div>
   <div class="box">
     <div class="hrow"><span class="ic"></span><span><b>이동</b> — <b class="m">WASD</b> / 방향키 · 모바일은 화면을 드래그</span></div>
     <div class="hrow k"><span class="ic"></span><span>영웅 <b class="y">네온 생존자</b>·<b class="y">네온 일렉트릭</b>의 기본 무기는 자동으로 발사됩니다. 움직이며 피하는 데 집중하세요.</span></div>
@@ -677,6 +677,34 @@ const enK=()=>{const _r=window.__raid&&window.__raid.R;return _r&&_r.endless?Mat
 const SUB_W=new Set(['mine','heroArrow','mayday','charge']); // 보조무기: 시작 무기 불가(레벨 업 카드로 획득) · v132부터 지뢰는 A/B 스킬로도 선택 가능
 function allowedWeapons(){return Object.keys(WEAPONS).filter(id=>!SUB_W.has(id)&&(gameMode!=='warrior'||!RANGED_W.has(id)))}
 function isAllowedWeapon(id){return !!WEAPONS[id]&&!SUB_W.has(id)&&(gameMode!=='warrior'||!RANGED_W.has(id))}
+// v4 랜덤 무기: 30초마다 주 무기만 교체(레벨 유지). 이 모드만 주 무기·보조무기·패시브 만렙 15.
+const RW_INT=30,RW_MAXLV=15,RW_HUD={name:'랜덤 무기',col:'#ff9a5d'};
+function isRandWep(){return !!(window.HX&&HX.randWep)&&state!=='raid'}
+function rwPool(){return Object.keys(WEAPONS).filter(id=>!SUB_W.has(id))}
+function rwMainId(p){p=p||P;if(!p||!p.wOrder)return null;for(const id of p.wOrder)if(WEAPONS[id]&&!SUB_W.has(id))return id;return null}
+function rwMaxLv(){return RW_MAXLV}
+function rwWCap(id){return isRandWep()?rwMaxLv():wMaxLv(id)}
+function rwPCap(id){return isRandWep()?rwMaxLv():pMaxLv(id)}
+function rwHud(){return isRandWep()?RW_HUD:((state==='raid'&&window.__raidMd)||MODES[gameMode]||MODES.normal)}
+function rwSwap(){
+  if(!P)return null;
+  const cur=rwMainId(P),pool=rwPool().filter(id=>id!==cur);
+  if(!pool.length)return cur;
+  const nid=pool[(Math.random()*pool.length)|0];
+  const lv=Math.max(1,cur?(P.weapons[cur]|0)||1:1);
+  const weapons={},order=[];let done=false;
+  for(const id of P.wOrder){
+    if(WEAPONS[id]&&!SUB_W.has(id)){if(!done){order.push(nid);done=true}}
+    else order.push(id);
+  }
+  if(!done)order.unshift(nid);
+  for(const id of order)weapons[id]=id===nid?Math.min(lv,WEAPONS[nid].lv.length):((P.weapons[id]|0)||1);
+  P.weapons=weapons;P.wOrder=order;
+  if(G){if(!G.timers)G.timers={};G.timers[nid]=0.2;G.rwNext=(G.rwNext||0)+RW_INT}
+  const Wd=WEAPONS[nid];if(Wd)showBanner(Wd.name,Wd.color||RW_HUD.col);
+  return nid;
+}
+function rwTick(){if(!isRandWep()||!G||state!=='play')return;if(G.rwNext==null)G.rwNext=RW_INT;while(G.t>=G.rwNext)rwSwap()}
 const PASSIVES={
   speed:{name:'신속의 장화',desc:'이동 속도 +8%'},
   heart:{name:'강철 심장',desc:'최대 체력 +20, 체력 20 회복'},
@@ -949,6 +977,7 @@ function newGame(){
     G.level=CRAZY_LV0;G.need=lvNeed(CRAZY_LV0);G.xp=0;G.pendingLv=0; // 레벨 값만 설정 (카드 일괄 지급 없음)
   }
   enemies=[];projs=[];ebullets=[];gems=[];pickups=[];mines=[];parts=[];texts=[];rings=[];zaps=[];beams=[];meteors=[];shake=0;quakeT=0;hurtFlash=0;banner=null;
+  if(isRandWep())G.rwNext=RW_INT;
   if(isTower()){tdInit();showBanner('중앙의 타워를 지켜라!','#7dff6b')}else showBanner(isCrazy()?'크레이지! 만렙 풀로드 · 보스 즉시 출현!':'살아남아라! 보석을 모아 레벨 업!',isCrazy()?'#ff00e5':'#4df3ff');
   if(tipSave.loops<5&&!isCrazy())queueTip('loop');
 }
@@ -1434,7 +1463,7 @@ function updateWeapons(dt){
 
 // ================== 업데이트 ==================
 function gameUpdate(dt){
-  G.t+=dt;G.dropCd-=dt;tickXpDie(dt);
+  G.t+=dt;G.dropCd-=dt;tickXpDie(dt);rwTick();
   // 플레이어 이동
   let mx=0,my=0;
   if(keys.ArrowLeft||keys.KeyA)mx--;if(keys.ArrowRight||keys.KeyD)mx++;if(keys.ArrowUp||keys.KeyW)my--;if(keys.ArrowDown||keys.KeyS)my++;
@@ -1840,7 +1869,7 @@ function drawHUD(){
   ctx.font=fnt(900,11.5*S);const lvw=ctx.measureText(lvT).width;const chipW=Math.round(lvw+16);
   plate(hx-2,ly-9,chipW,18,9,'rgba(24,18,52,.85)','rgba(255,216,77,.42)');
   ctx.textAlign='left';ctx.fillStyle='#ffd84d';ctx.fillText(lvT,hx+7,ly+0.5);
-  const Md=(state==='raid'&&window.__raidMd)||MODES[gameMode]||MODES.normal;
+  const Md=rwHud();
   ctx.font=fnt(800,10.5*S);ctx.fillStyle=Md.col;ctx.fillText(Md.name,hx+chipW+9,ly+0.5);
   window.__lvR=hx-2+chipW;
   // ---- 타이머
@@ -1849,6 +1878,11 @@ function drawHUD(){
   const tW=Math.max(ctx.measureText(tm).width,ctx.measureText('00:00').width);
   plate(W/2-tW/2-13,15,tW+26,tfs+13,11,'rgba(8,6,22,.55)');
   ctx.textAlign='center';ctx.fillStyle=G.t>=600?'#ffd84d':'#fff';ctx.fillText(tm,W/2,15+(tfs+13)/2+1);
+  let beatY=62;
+  if(isRandWep()&&G){const left=Math.max(0,(G.rwNext||RW_INT)-G.t);const cur=rwMainId();const nm=(cur&&WEAPONS[cur])?WEAPONS[cur].name:'무기';
+    const lab=nm+' 교체 '+Math.ceil(left)+'초';ctx.font=fnt(800,11*S);const lw=ctx.measureText(lab).width;
+    plate(W/2-lw/2-10,15+(tfs+13)+2,lw+20,18,8,'rgba(8,6,22,.62)','rgba(255,154,93,.4)');
+    ctx.textAlign='center';ctx.fillStyle='#ffc48a';ctx.fillText(lab,W/2,15+(tfs+13)+11);beatY=80}
   // ---- 처치 수
   const kT='처치 '+G.kills;ctx.font=fnt(900,11.5*S);const kw=ctx.measureText(kT).width;const kC=W<470?52:44;
   plate(W-72-kw-11,kC-10,kw+22,20,10,'rgba(8,6,22,.5)');
@@ -1856,7 +1890,7 @@ function drawHUD(){
   // ---- 비트 (4박)
   {const b=Math.floor(G.beatPh)%4;for(let i=0;i<4;i++){const on=i===b;
     ctx.fillStyle=on?(onBeat()?'#ffd84d':'#ff8cff'):'rgba(255,255,255,.16)';
-    const r=on?3.6+G.beatFlash*1.6:2.6;ctx.beginPath();ctx.arc(W/2-20+i*13.4,62,r,0,TAU);ctx.fill()}}
+    const r=on?3.6+G.beatFlash*1.6:2.6;ctx.beginPath();ctx.arc(W/2-20+i*13.4,beatY,r,0,TAU);ctx.fill()}}
   // ---- 이벤트 / 콤보
   ctx.textAlign='right';ctx.font=fnt(800,11.5*S);
   let ry=76;
@@ -1877,7 +1911,7 @@ function drawHUD(){
     ctx.drawImage(iconSprite(id,Math.round(IC)),x-IC/2,y-IC/2,IC,IC);
     const pw=(SZ-3)/ml;for(let i=0;i<ml;i++){ctx.fillStyle=i<lv?(lv>=ml?'#ffd84d':'#ffb03c'):'rgba(255,255,255,.16)';ctx.fillRect(x-h+1.5+i*pw,y+h+2.5,Math.max(1,pw-1.3),cz?2:2.6)}};
   plate(hx-7,slotTop-SZ/2-5,HXW*GAP+5,ROW+5,9,'rgba(8,6,22,.42)','rgba(255,60,157,.22)');
-  for(let i=0;i<HXW;i++){const id=P.wOrder[i];slot(hx+SZ/2-1+i*GAP,slotTop,id,id?(P.weapons[id]||1):0,'rgba(255,60,157,.55)',id?wMaxLv(id):HX_MAXLV)}
+  for(let i=0;i<HXW;i++){const id=P.wOrder[i];slot(hx+SZ/2-1+i*GAP,slotTop,id,id?(P.weapons[id]||1):0,'rgba(255,60,157,.55)',id?rwWCap(id):(isRandWep()?rwMaxLv():HX_MAXLV))}
   slotTop+=ROW;
   const group=(ids,getLv,col,mlf)=>{const n=ids.length;if(!n)return;
     const rows=Math.ceil(n/PER);
@@ -1885,7 +1919,7 @@ function drawHUD(){
     let ix=hx+SZ/2-1,cy=slotTop,c=0;
     for(const id of ids){slot(ix,cy,id,getLv(id),col,mlf(id));ix+=GAP;if(++c>=PER){c=0;ix=hx+SZ/2-1;cy+=ROW}}
     slotTop+=(rows-1)*ROW+ROW};
-  group(P.pOrder,id=>P.passives[id],'rgba(77,243,255,.5)',id=>pMaxLv(id));
+  group(P.pOrder,id=>P.passives[id],'rgba(77,243,255,.5)',id=>rwPCap(id));
   window.__slotB=slotTop-SZ/2;window.__slotR=hx-2+Math.min(PER,Math.max(P.wOrder.length,P.pOrder.length))*GAP; // v142 레이드 안내 문구가 무기 아이콘과 겹치지 않게
   // ---- 보스 / 엘리트 체력 (모바일은 스킬 버튼 위로)
   const bBot=W<520?126:40;
@@ -1920,11 +1954,11 @@ function renderTitleBg(){
 // ================== 레벨 업 ==================
 function upgradeOptions(){
   const opts=[];
-  for(const id of P.wOrder)if(P.weapons[id]<wMaxLv(id))opts.push({kind:'w',id,w:3}); // 네온 서바이벌: 히어로 전용 항목은 Lv.6까지
-  if(P.wOrder.length<hxMaxW())for(const id of allowedWeapons())if(!P.weapons[id])opts.push({kind:'w',id,w:G.level<6?4:2.5}); // 네온 생존자 7칸 · 일렉트릭 6칸
+  for(const id of P.wOrder)if(P.weapons[id]<rwWCap(id))opts.push({kind:'w',id,w:3}); // 네온 서바이벌: 일반은 히어로 전용 Lv.6, 랜덤 무기는 만렙 15
+  if(!isRandWep()&&P.wOrder.length<hxMaxW())for(const id of allowedWeapons())if(!P.weapons[id])opts.push({kind:'w',id,w:G.level<6?4:2.5}); // 네온 생존자 7칸 · 일렉트릭 6칸 · 랜덤 무기는 주 무기 1개만 교체
   // 네온 서바이벌: 지뢰는 B스킬로 고정 제공 (레벨업 카드 제외)
-  for(const id in PASSIVES)if(pl(id)<pMaxLv(id))opts.push({kind:'p',id,w:2}); // 네온 서바이벌: 히어로 전용 패시브는 Lv.6까지
-  const hxGrow=P.wOrder.some(id=>P.weapons[id]<wMaxLv(id))||Object.keys(PASSIVES).some(id=>pl(id)<pMaxLv(id))||(P.wOrder.length<hxMaxW()&&allowedWeapons().some(id=>!P.weapons[id]));
+  for(const id in PASSIVES)if(pl(id)<rwPCap(id))opts.push({kind:'p',id,w:2}); // 네온 서바이벌: 일반은 히어로 전용 Lv.6, 랜덤 무기는 만렙 15
+  const hxGrow=P.wOrder.some(id=>P.weapons[id]<rwWCap(id))||Object.keys(PASSIVES).some(id=>pl(id)<rwPCap(id))||(!isRandWep()&&P.wOrder.length<hxMaxW()&&allowedWeapons().some(id=>!P.weapons[id]));
   if(hxGrow)opts.push({kind:'b',id:'heal',ic:'food',w:1.4}); // 네온 서바이벌: 기본 체력 회복 카드
   else opts.push({kind:'b',id:'heal',ic:'food',w:1.2},{kind:'b',id:'maxhp',ic:'heart',w:1.1},{kind:'b',id:'power',ic:'power',w:1.0},{kind:'b',id:'speed',ic:'speed',w:0.9}); // 네온 서바이벌: 전부 만렙이면 회복·스탯 보너스
   const pick=[];while(pick.length<3&&opts.length){let s=0;for(const o of opts)s+=o.w;let r=Math.random()*s;let idx=0;for(;idx<opts.length;idx++){r-=opts[idx].w;if(r<=0)break}
@@ -1938,12 +1972,12 @@ function describe(o){
     if(o.id==='speed')return {name:'이동속도 강화',lv:'이동속도 +4%',ds:'이번 판 동안 이동속도가 4% 증가합니다.',tag:'p',tagT:'보너스'};
     return {name:'체력 회복',lv:'+40 HP',ds:'잃은 체력을 40 회복합니다.',tag:'n',tagT:'회복'}}
   if(o.kind==='g')return {name:'체력 회복',lv:'+40 HP',ds:'잃은 체력을 40 회복합니다.',tag:'n',tagT:'회복'};
-  if(o.kind==='p'){const l=pl(o.id);return {name:PASSIVES[o.id].name,lv:l?`Lv.${l} → ${l+1}${l+1===pMaxLv(o.id)?' (최대)':''}`:'새 능력!',ds:PASSIVES[o.id].desc,tag:l?'p':'n',tagT:'패시브'}}
+  if(o.kind==='p'){const l=pl(o.id);return {name:PASSIVES[o.id].name,lv:l?`Lv.${l} → ${l+1}${l+1===rwPCap(o.id)?' (최대)':''}`:'새 능력!',ds:PASSIVES[o.id].desc,tag:l?'p':'n',tagT:'패시브'}}
   const Wd=WEAPONS[o.id],l=P.weapons[o.id]||0;
   if(!l)return SUB_W.has(o.id)?{name:Wd.name,lv:'새 보조무기',ds:Wd.desc+' (획득하면 자동 설치)',tag:'n',tagT:'보조무기'}:{name:Wd.name,lv:'새 무기',ds:Wd.desc,tag:'n',tagT:'무기'};
   const a=Wd.lv[l-1],b=Wd.lv[l];const ch=[];
   for(const k in b)if(a[k]!==b[k]){if(k==='cd'||k==='tick')ch.push(`${STAT_LBL[k]} ${a[k]}초 → ${b[k]}초`);else if(k==='rad'||k==='len')ch.push(`${STAT_LBL[k]} +${Math.round((b[k]/a[k]-1)*100)}%`);else ch.push(`${STAT_LBL[k]} ${a[k]} → ${b[k]}`)}
-  return {name:Wd.name,lv:`Lv.${l} → ${l+1}${l+1===wMaxLv(o.id)?' (최대)':''}`,ds:ch.join('<br>'),tag:'w',tagT:SUB_W.has(o.id)?'보조무기':'무기'};
+  const cap=rwWCap(o.id);return {name:Wd.name,lv:`Lv.${l} → ${l+1}${l+1===cap?' (최대)':''}`,ds:ch.join('<br>'),tag:'w',tagT:SUB_W.has(o.id)?'보조무기':'무기'};
 }
 const PICKUP_LIFE=20,PICKUP_BLINK=5; // 자석·폭탄: 15초 뒤부터 깜빡이다 20초에 소멸 (보물 상자는 유지)
 let curOpts=[],lvOpenT=0;const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
@@ -2037,13 +2071,13 @@ function pickStartWeapon(id){
   startGame();
 }
 function startGame(){initAudio();hideAll();newGame();takeGod();camX=P.x;camY=P.y;state='play';$('pbtn').style.display='flex';
-  const wn=WEAPONS[P.wOrder[0]];const Md=MODES[gameMode]||MODES.normal;
+  const wn=WEAPONS[rwMainId()||P.wOrder[0]];const Md=rwHud();
   showBanner((wn?wn.name+' 장착 · ':'')+Md.name, Md.col)}
 function toTitle(){clearRunGod();hideAll();state='title';$('pbtn').style.display='none';$('bestTitle').textContent=bestText();$('title').classList.add('show')}
 function pauseGame(){if(state!=='play')return;state='paused';joy=null;
   const inv=$('inv');inv.innerHTML='';inv.insertAdjacentHTML('beforeend',`<div style="border-color:#4df3ff66;font-weight:900">캐릭터 Lv.${G.level} · 무기 슬롯 ${Math.min(hxMaxW(),P.wOrder.length)}/${hxMaxW()}</div>`);
-  for(let i=0;i<hxMaxW();i++){const id=P.wOrder[i];inv.insertAdjacentHTML('beforeend',id?`<div style="border-color:#ff3c9d55">${i+1}. ${WEAPONS[id].name} Lv.${P.weapons[id]}${P.weapons[id]>=wMaxLv(id)?' MAX':''}</div>`:`<div style="opacity:.45">${i+1}. 빈 슬롯</div>`)}
-  for(const id of P.pOrder)inv.insertAdjacentHTML('beforeend',`<div style="border-color:#2a7bff">${PASSIVES[id].name} Lv.${P.passives[id]}${P.passives[id]>=pMaxLv(id)?' (MAX)':''}</div>`);
+  for(let i=0;i<hxMaxW();i++){const id=P.wOrder[i];inv.insertAdjacentHTML('beforeend',id?`<div style="border-color:#ff3c9d55">${i+1}. ${WEAPONS[id].name} Lv.${P.weapons[id]}${P.weapons[id]>=rwWCap(id)?' MAX':''}</div>`:`<div style="opacity:.45">${i+1}. 빈 슬롯</div>`)}
+  for(const id of P.pOrder)inv.insertAdjacentHTML('beforeend',`<div style="border-color:#2a7bff">${PASSIVES[id].name} Lv.${P.passives[id]}${P.passives[id]>=rwPCap(id)?' (MAX)':''}</div>`);
   $('soundBtn').textContent='소리: '+(muted?'꺼짐':'켜짐');$('musicBtn').textContent='음악: '+(musicOn?'켜짐':'꺼짐');updSetBtns();$('errMsg').style.display='none';$('pause').classList.add('show')}
 function updSetBtns(){$('dmgBtn').textContent='데미지 숫자: '+(SET.dmgNum?'켜짐':'꺼짐');$('gfxBtn').textContent='그래픽: '+(SET.gfx==='low'?'낮음':'높음');
   const a=$('setGfxBtn'),b=$('setDmgBtn');if(a)a.textContent='그래픽: '+(SET.gfx==='low'?'낮음':'높음');if(b)b.textContent='데미지 숫자: '+(SET.dmgNum?'켜짐':'꺼짐')} // v132 타이틀 설정에도 같이 반영
@@ -2072,7 +2106,7 @@ function ranksHTML(){const L=ranksFor(gameMode).slice(0,innerHeight<500?3:5);if(
 // 일시정지 → 다시 시작/타이틀/빠른 재시작 시에도 그 판 기록 저장
 function saveRunIfAny(){if(G&&G.t>=1&&(state==='paused'||state==='play'||state==='victory'))recordBest()}
 function quickRestart(){saveRunIfAny();hideAll();startGame()}
-function statsHTML(){const Md=MODES[gameMode]||MODES.normal;return `모드: <span>${Md.name}</span><br>생존 시간: <span>${fmtTime(G.t)}</span><br>처치 수: <span>${G.kills}</span> · 도달 레벨: <span>${G.level}</span><br>🌀 올가미 <span>${G.loops}</span>회 (처치 ${G.loopKills}) · 퍼펙트 <span>${G.perfects}</span> · 최고 콤보 <span>${G.bestCombo}</span>`}
+function statsHTML(){const Md=rwHud();return `모드: <span>${Md.name}</span><br>생존 시간: <span>${fmtTime(G.t)}</span><br>처치 수: <span>${G.kills}</span> · 도달 레벨: <span>${G.level}</span><br>🌀 올가미 <span>${G.loops}</span>회 (처치 ${G.loopKills}) · 퍼펙트 <span>${G.perfects}</span> · 최고 콤보 <span>${G.bestCombo}</span>`}
 function openGameOver(){clearRunGod();state='over';$('over').querySelector('.big').textContent=(G&&G.tdFail)?'타워가 파괴되었습니다!':'게임 오버';$('pbtn').style.display='none';const isNew=recordBest()||runNewRec;$('overStats').innerHTML=statsHTML();
   $('overRec').innerHTML=(isNew?'<div class="newrec">신기록 달성</div>':'')+`<div class="best">${bestText()}</div>`+ranksHTML();$('over').classList.add('show')}
 function openVictory(){clearRunGod();state='victory';joy=null;recordBest();$('vicMsg').textContent=isTower()?'보스를 처치해 타워를 지켜냈습니다!':((isCrazy()?'30초 크레이지 보스':isHard()?'5분 하드 보스':'5분 보스')+'를 처치했습니다! 당신은 진정한 생존자!');$('vicStats').innerHTML=statsHTML()+(runNewRec?'<br><span class="newrec" style="color:#ffd84d">🎉 신기록 달성! 🎉</span>':'')+ranksHTML();$('victory').classList.add('show');S.level()}
@@ -4469,20 +4503,22 @@ window.HX=HX;window.HERO_LIST=HERO_LIST;
 function showOnly(id){hideAll();state='title';$(id).classList.add('show')}
 function cardHTML(o){return o}
 function mkCard(o){
-  const c=document.createElement('div');c.className='card';
+  const c=document.createElement('div');c.className='card'+(o.soon?' soon':'');
   if(o.icon){const ic=makeCanvas(144,144);const g=ic.getContext('2d');g.translate(72,72);drawIcon(g,o.icon,120);c.appendChild(ic)}
   const tag=document.createElement('span');tag.className='tag '+(o.tagCls||'n');tag.textContent=o.tag||'';c.appendChild(tag);
   const nm=document.createElement('div');nm.className='nm';nm.textContent=o.name;c.appendChild(nm);
   const lv=document.createElement('div');lv.className='lv';lv.style.color=o.col||'#ffd84d';lv.textContent=o.lv||'';c.appendChild(lv);
   const ds=document.createElement('div');ds.className='ds';ds.textContent=o.desc||'';c.appendChild(ds);
   const key=document.createElement('div');key.className='key';key.textContent=o.key||'';c.appendChild(key);
-  c.onclick=o.onclick;
+  if(o.soon){c.setAttribute('aria-disabled','true');c.style.pointerEvents='none'}
+  else c.onclick=o.onclick;
   return c;
 }
 
 // ---- 게임 모드 ----
 function heroOpenModes(){
   initAudio&&initAudio();
+  if(window.HX)HX.randWep=false;
   showOnly('heroModes');
   const box=$('heroModeCards');box.innerHTML='';
   box.appendChild(mkCard({icon:'meteor',tag:'STORY',tagCls:'w',name:'스토리 모드',lv:'챕터 1',col:'#ffd84d',
@@ -4491,9 +4527,19 @@ function heroOpenModes(){
   box.appendChild(mkCard({icon:'bolt',tag:'ENDLESS',tagCls:'p',name:'무한 모드',lv:'1~4인',col:'#8ff6ff',
     desc:'끝없이 몰려오는 적을 상대로 버티세요. 혼자, AI 동료와, 또는 온라인 친구와 함께.',key:'탭하여 시작',
     onclick:heroOpenCount}));
+  box.appendChild(mkCard({icon:'boom',tag:'SOLO',tagCls:'n',name:'랜덤 무기',lv:'30초 교체 · 만렙 15',col:'#ff9a5d',
+    desc:'30초마다 주 무기가 무작위로 바뀝니다. 무기·패시브 만렙 15, 레벨은 그대로 유지되고, 그 외는 일반 솔로와 같습니다.',key:'탭하여 시작',
+    onclick:heroOpenRandWep}));
+  box.appendChild(mkCard({icon:'orbit',tag:'🔒',tagCls:'n',name:'준비 중',lv:'잠금',col:'#8a8fc0',
+    desc:'새로운 모드가 준비 중입니다.',key:'아직 열리지 않음',soon:true}));
+}
+function heroOpenRandWep(){
+  HX.randWep=true;HX.mode='solo';HX.n=1;HX.ai=false;
+  heroOpenPick();
 }
 // ---- 인원 ----
 function heroOpenCount(){
+  if(window.HX)HX.randWep=false;
   showOnly('heroCount');
   const box=$('heroCountCards');box.innerHTML='';
   [[1,'solo'],[2,'duo'],[3,'tri'],[4,'quad']].forEach(([n,k])=>{
@@ -4521,8 +4567,13 @@ function heroOpenTeam(){
 // ---- 히어로 선택 ----
 function heroOpenPick(){
   showOnly('heroPick');
-  $('heroPickSub').textContent=(HX.mode==='coop'?(HX.n+'인 협동 · '):'')+'지금은 '+hxHero().name+' 한 명 · 캐릭터 설정에서 자세히 볼 수 있어요';
-  $('heroPickStart').textContent=hxHero().name+hxRo(hxHero().name)+' 시작';
+  if(HX.randWep){
+    $('heroPickSub').textContent='랜덤 무기 · 30초마다 주 무기가 바뀝니다 · 지금은 '+hxHero().name;
+    $('heroPickStart').textContent='랜덤 무기 시작';
+  }else{
+    $('heroPickSub').textContent=(HX.mode==='coop'?(HX.n+'인 협동 · '):'')+'지금은 '+hxHero().name+' 한 명 · 캐릭터 설정에서 자세히 볼 수 있어요';
+    $('heroPickStart').textContent=hxHero().name+hxRo(hxHero().name)+' 시작';
+  }
   const box=$('heroPickCard');box.innerHTML='';
   const c=document.createElement('div');c.className='card';
   const ic=makeCanvas(144,144);const g=ic.getContext('2d');g.translate(72,72);drawIcon(g,hxHero().icon||'bolt',120);c.appendChild(ic);
@@ -4640,7 +4691,7 @@ function heroQuit(){
   toTitle();
 }
 window.heroOpenModes=heroOpenModes;window.heroRetry=heroRetry;window.heroRestart=heroRestart;window.heroQuit=heroQuit;
-window.heroSoloStart=heroSoloStart;
+window.heroSoloStart=heroSoloStart;window.heroOpenRandWep=heroOpenRandWep;window.isRandWep=isRandWep;window.rwSwap=rwSwap;window.rwMainId=rwMainId;
 window.__hxLobbyBack=()=>{const wasStory=!!(window.__rsk&&window.__rsk.lobby&&window.__rsk.lobby.story);
   try{if(window.__heroesRaid&&window.__heroesRaid.backToMode)window.__heroesRaid.backToMode()}catch(e){}
   if(wasStory){try{window.__rsk.lobby.story=0}catch(e){};if(window.heroOpenStory)window.heroOpenStory();return}
@@ -4715,7 +4766,7 @@ $('heroModesBack').onclick=()=>{toTitle()};
 // 스토리 모드 화면(#heroStory)·컷신(#storyCut) 버튼은 아래 스토리 스크립트에서 연결한다
 $('heroCountBack').onclick=heroOpenModes;
 $('heroTeamBack').onclick=heroOpenCount;
-$('heroPickBack').onclick=()=>{if(HX.mode==='coop')heroOpenTeam();else heroOpenCount()};
+$('heroPickBack').onclick=()=>{if(HX.randWep){heroOpenModes()}else if(HX.mode==='coop')heroOpenTeam();else heroOpenCount()};
 $('heroPickStart').onclick=heroPickStart;
 $('heroPickChar').onclick=()=>heroOpenChar('pick');
 $('heroCharBtn').onclick=()=>heroOpenChar('title');
