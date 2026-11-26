@@ -4517,7 +4517,7 @@ function mkIco(id,size){const c=makeCanvas(size,size);const g=c.getContext('2d')
 function chapCard(n,name,desc,foot,col,on,click){
   const c=document.createElement('div');c.className='card'+(on?' sel':' soon');
   c.appendChild(mkIco(on?'meteor':'orbit',144));
-  c.insertAdjacentHTML('beforeend','<span class="tag '+(on?'w':'n')+'">'+(on?'CHAPTER '+n:'COMING SOON')+'</span>'
+  c.insertAdjacentHTML('beforeend','<span class="tag '+(on?'w':'n')+'">'+(on?'CHAPTER '+n:'NEXT')+'</span>'
     +'<div class="nm">'+name+'</div><div class="lv" style="color:'+col+'">'+foot+'</div>'
     +'<div class="ds">'+desc+'</div><div class="key">'+(on?'탭하여 오프닝 시작':'준비 중')+'</div>');
   if(on&&click)c.onclick=click;
@@ -4535,7 +4535,7 @@ function heroCard(id){
 }
 function storyRender(){
   const cy=$('storyChapters');if(!cy)return;cy.innerHTML='';
-  cy.appendChild(chapCard(1,'챕터 1: 새로운 재앙','2054년 4월 4일 · 네온시티 상공에 거대한 외계 우주선이 나타났다.','보스 : 강산','#ffd84d',true,()=>cutPlay(selHero)));
+  cy.appendChild(chapCard(1,'챕터 1: 새로운 재앙','2054년 4월 4일<br>네온시티 상공에 거대한 외계 우주선이 나타났다.','보스 : 강산','#ffd84d',true,()=>cutPlay(selHero)));
   cy.appendChild(chapCard(2,'챕터 2','강산을 넘어, 우주선의 진짜 대장이 기다린다.','다음 업데이트','#9aa2d8',false));
   const hy=$('storyHeroes');hy.innerHTML='';
   for(const id of SH_ORDER)hy.appendChild(heroCard(id));
@@ -4557,6 +4557,9 @@ const SC=[
   {id:'title', dur:0}
 ];
 const TITLE_I=SC.length-1;
+/* 우주선 동선: 씬2에서 이 위치까지만 내려와 멈추고, 씬3(빔)·씬4(강산 하강)에서도 같은 좌표에 그대로 떠 있는다 */
+const SHIP_Y=0.34, SHIP_S=1.04;
+const shipY=()=>VH*SHIP_Y, shipSc=()=>Math.min(VW/900,VH/620)*SHIP_S;
 const C={open:false,i:0,t:0,last:0,raf:0,flash:0,parts:[],endT:0,landed:0,dlgAt:null,debris:0};
 let cv=null,g=null,DPR=1,VW=0,VH=0;
 
@@ -4764,10 +4767,10 @@ function drawScene(s,t,dt){
   if(s.id==='ship'){
     skyTop('#24103f');stars(t,0.8);
     const p=Math.min(1,t/4.6),ease=1-Math.pow(1-p,3);
-    const cy=-H*0.28+ease*(H*0.46+H*0.28);
+    const target=shipY(),cy=-VH*0.34+(target+VH*0.34)*ease; // 빔 쏘는 위치까지만 하강
     moonGlow(W*0.5,cy,Math.min(W,H)*0.75,'rgba(255,90,190,ALPHA)',0.16+0.14*p);
     city(H*0.92,t,0);
-    shipDrawn(W*0.5,cy,Math.min(W/900,H/620)*(0.62+0.42*ease),t,0);
+    shipDrawn(W*0.5,cy,shipSc()*(0.62+0.38*ease),t,0);
     g.fillStyle='rgba(6,3,16,.26)';g.fillRect(0,0,W,H);
     return;
   }
@@ -4786,7 +4789,7 @@ function drawScene(s,t,dt){
       gr.addColorStop(0.72,'rgba(170,30,70,'+(0.1*prog).toFixed(3)+')');
       gr.addColorStop(1,'rgba(60,0,30,0)');
       g.fillStyle=gr;g.fillRect(0,0,W,H)}
-    const cy=H*0.27, sc=Math.min(W/900,H/620)*1.08;
+    const cy=shipY(), sc=shipSc(); // 씬2에서 멈춘 그 자리에서 빔 발사
     shipDrawn(W*0.5,cy,sc,t,t>0.7?1:0.25);
     if(t<1.35){
       const ch=Math.min(1,t/1.8);
@@ -4809,10 +4812,9 @@ function drawScene(s,t,dt){
     skyTop('#20081e');stars(t,0.3);
     city(H*0.92,t,0.85);
     embers(t,0.75);
-    const cy=H*0.19, sc=Math.min(W/900,H/620)*1.1;
-    shipDrawn(W*0.5,cy,sc,t,0.45);
+    const cy=shipY(), sc=shipSc(); // 씬3과 동일한 우주선 위치에서 강산 하강
     const p=Math.max(0,Math.min(1,(t-0.5)/4.6)),ease=p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
-    const yTop=cy+96*sc,yBot=H*0.81,ky=yTop+(yBot-yTop)*ease;
+    const yTop=cy+92*sc,yBot=H*0.81,ky=yTop+(yBot-yTop)*ease;
     const beamA=0.5*(1-0.4*ease);
     const gr=g.createLinearGradient(W*0.5,yTop,W*0.5,yBot);
     gr.addColorStop(0,'rgba(200,255,255,'+(beamA*0.9).toFixed(2)+')');gr.addColorStop(1,'rgba(120,200,255,'+(beamA*0.2).toFixed(2)+')');
@@ -4821,6 +4823,7 @@ function drawScene(s,t,dt){
     g.beginPath();g.ellipse(W*0.5,yBot+2,60+90*ease,14+22*ease,0,0,TAU);g.stroke();
     moonGlow(W*0.5,ky,170,'rgba(255,140,70,ALPHA)',0.34);
     overlordAt(W*0.5,ky,Math.min(VW/260,VH/700)*(0.34+0.44*ease),1,t);
+    shipDrawn(W*0.5,cy,sc,t,0.45); // 우주선은 강산 앞(위)에 그려 하부에서 나오는 것처럼 보이게
     if(ease>0.96&&!C.landed){C.landed=1;spawnBurst(W*0.5,H*0.81,18,0.6);
       g.fillStyle='rgba(255,220,180,.35)';g.beginPath();g.ellipse(W*0.5,H*0.815,120,18,0,0,TAU);g.fill()}
     partsTick(dt);partsDraw();
