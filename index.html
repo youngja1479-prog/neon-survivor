@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#07060f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="네온 생존자">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <title>네온 생존자 - NEON SURVIVOR v143</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -87,6 +95,10 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 .btnrow .btn{margin-top:0;width:100%;padding:11px 8px}
 .btn:disabled{opacity:.45;filter:grayscale(.7);cursor:default;box-shadow:none} /* v133: 못 누르는 버튼(다시 뽑기 사용 완료 등)은 흐리게 */
 .footrow{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:12px}
+/* PWA: 홈 화면에 설치 가능할 때만 타이틀 화면에 작게 보이는 설치 버튼 */
+.pwa-install{display:none;margin-top:12px;padding:7px 16px;font-size:12.5px;font-weight:800;letter-spacing:.02em}
+.pwa-install.on{display:inline-flex;align-items:center;gap:6px}
+.pwa-install .arw{color:var(--cyan);font-weight:900;line-height:1;text-shadow:0 0 10px rgba(77,243,255,.8)}
 .inp{font:inherit;font-size:13px;width:132px;padding:7px 10px;border-radius:10px;border:1px solid rgba(160,148,255,.3);
  background:rgba(10,8,26,.85);color:#fff;letter-spacing:.08em}
 .inp::placeholder{color:#7078a8;letter-spacing:0}
@@ -210,6 +222,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
     <button class="btn sec" id="raidMenuBtn">멀티플레이</button>
     <button class="btn sec" id="shopBtn">상점</button>
   </div>
+  <button class="btn sec pwa-install" id="pwaInstallBtn" type="button"><span class="arw" aria-hidden="true">↓</span>앱 설치</button>
   <div class="footrow">
     <div id="cryTitle">◆ 크리스탈 0</div>
     <input class="inp" id="codeIn" type="password" placeholder="코드 입력" autocomplete="off">
@@ -3906,6 +3919,35 @@ function rvOffer(){if(rvUsed||state!=='dying'||!RV_MODES.includes(gameMode))retu
 window.__rv={offer:rvOffer};
 window.__cry={ownsSk,add,eq:()=>clean(PF.eq),clean,drawGem};window.__md={host:hostMd,fx:mdFx,start:mdStart,busy:()=>MDE.length>0,resetLocal:()=>{mdUsed=false}};
 refresh();
+})();
+</script>
+<script>
+/* PWA: 앱 매니페스트·서비스 워커 연결 + 홈 화면 설치 버튼 (게임 로직과 분리된 별도 블록) */
+(function(){
+  var btn=document.getElementById('pwaInstallBtn'), deferred=null, installed=false;
+  try{
+    installed=window.matchMedia('(display-mode: standalone)').matches||
+              window.matchMedia('(display-mode: fullscreen)').matches||
+              window.matchMedia('(display-mode: minimal-ui)').matches||
+              navigator.standalone===true;
+  }catch(e){}
+  function show(){if(btn&&!installed)btn.classList.add('on')}
+  function hide(){if(btn)btn.classList.remove('on')}
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();deferred=e;show();
+  });
+  window.addEventListener('appinstalled',function(){deferred=null;hide()});
+  if(btn)btn.addEventListener('click',function(){
+    if(!deferred){hide();return}
+    var p=deferred;deferred=null;hide();
+    try{p.prompt();if(p.userChoice&&p.userChoice.then)p.userChoice.then(function(){},function(){})}catch(e){}
+  });
+  if(installed)hide();
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    });
+  }
 })();
 </script>
 </body>
