@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 서바이벌 - NEON SURVIVAL v3</title>
+<title>네온 서바이벌 - NEON SURVIVAL v4</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#07060f;color:#fff;
@@ -140,7 +140,6 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 /* ---------- 네온 서바이벌 화면 ---------- */
 .hxsub{color:#b9c0ee;font-size:clamp(11.5px,2vw,13.5px);font-weight:700;margin-bottom:4px;line-height:1.6}
 .hxcards{display:grid;gap:14px;justify-content:center;margin-top:14px;grid-template-columns:repeat(2,minmax(0,260px));max-width:640px}
-#heroModeCards.hxcards .card:last-child:nth-child(odd){grid-column:1/-1;max-width:min(260px,100%);justify-self:center}
 .hxcards.hx4{grid-template-columns:repeat(4,minmax(0,170px));max-width:760px}
 .hxcards.hx2{grid-template-columns:repeat(2,minmax(0,285px));max-width:660px}
 .hxcards .card{width:100%;min-height:0}
@@ -297,7 +296,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 
 <div class="ov show" id="title">
   <h1>네온 서바이벌</h1>
-  <div class="sub">Neon Survival · v3</div>
+  <div class="sub">Neon Survival · v4</div>
   <div class="box">
     <div class="hrow"><span class="ic"></span><span><b>이동</b> — <b class="m">WASD</b> / 방향키 · 모바일은 화면을 드래그</span></div>
     <div class="hrow k"><span class="ic"></span><span>영웅 <b class="y">네온 생존자</b>·<b class="y">네온 일렉트릭</b>의 기본 무기는 자동으로 발사됩니다. 움직이며 피하는 데 집중하세요.</span></div>
@@ -599,12 +598,14 @@ const enK=()=>{const _r=window.__raid&&window.__raid.R;return _r&&_r.endless?Mat
 const SUB_W=new Set(['mine','heroArrow','mayday','charge']); // 보조무기: 시작 무기 불가(레벨 업 카드로 획득) · v132부터 지뢰는 A/B 스킬로도 선택 가능
 function allowedWeapons(){return Object.keys(WEAPONS).filter(id=>!SUB_W.has(id)&&(gameMode!=='warrior'||!RANGED_W.has(id)))}
 function isAllowedWeapon(id){return !!WEAPONS[id]&&!SUB_W.has(id)&&(gameMode!=='warrior'||!RANGED_W.has(id))}
-// v3 랜덤 무기: 30초마다 주 무기만 교체(레벨 유지). 보조무기·히어로 스킬은 그대로. 전투 수치는 일반 솔로와 동일.
-const RW_INT=30,RW_HUD={name:'랜덤 무기',col:'#ff9a5d'};
+// v4 랜덤 무기: 30초마다 주 무기만 교체(레벨 유지). 이 모드만 주 무기·보조무기·패시브 만렙 15.
+const RW_INT=30,RW_MAXLV=15,RW_HUD={name:'랜덤 무기',col:'#ff9a5d'};
 function isRandWep(){return !!(window.HX&&HX.randWep)&&state!=='raid'}
 function rwPool(){return Object.keys(WEAPONS).filter(id=>!SUB_W.has(id))}
 function rwMainId(p){p=p||P;if(!p||!p.wOrder)return null;for(const id of p.wOrder)if(WEAPONS[id]&&!SUB_W.has(id))return id;return null}
-function rwMaxLv(){return HX_LV6_MAX}
+function rwMaxLv(){return RW_MAXLV}
+function rwWCap(id){return isRandWep()?rwMaxLv():wMaxLv(id)}
+function rwPCap(id){return isRandWep()?rwMaxLv():pMaxLv(id)}
 function rwHud(){return isRandWep()?RW_HUD:((state==='raid'&&window.__raidMd)||MODES[gameMode]||MODES.normal)}
 function rwSwap(){
   if(!P)return null;
@@ -1830,7 +1831,7 @@ function drawHUD(){
     ctx.drawImage(iconSprite(id,Math.round(IC)),x-IC/2,y-IC/2,IC,IC);
     const pw=(SZ-3)/ml;for(let i=0;i<ml;i++){ctx.fillStyle=i<lv?(lv>=ml?'#ffd84d':'#ffb03c'):'rgba(255,255,255,.16)';ctx.fillRect(x-h+1.5+i*pw,y+h+2.5,Math.max(1,pw-1.3),cz?2:2.6)}};
   plate(hx-7,slotTop-SZ/2-5,HXW*GAP+5,ROW+5,9,'rgba(8,6,22,.42)','rgba(255,60,157,.22)');
-  for(let i=0;i<HXW;i++){const id=P.wOrder[i];slot(hx+SZ/2-1+i*GAP,slotTop,id,id?(P.weapons[id]||1):0,'rgba(255,60,157,.55)',id?wMaxLv(id):HX_MAXLV)}
+  for(let i=0;i<HXW;i++){const id=P.wOrder[i];slot(hx+SZ/2-1+i*GAP,slotTop,id,id?(P.weapons[id]||1):0,'rgba(255,60,157,.55)',id?rwWCap(id):(isRandWep()?rwMaxLv():HX_MAXLV))}
   slotTop+=ROW;
   const group=(ids,getLv,col,mlf)=>{const n=ids.length;if(!n)return;
     const rows=Math.ceil(n/PER);
@@ -1838,7 +1839,7 @@ function drawHUD(){
     let ix=hx+SZ/2-1,cy=slotTop,c=0;
     for(const id of ids){slot(ix,cy,id,getLv(id),col,mlf(id));ix+=GAP;if(++c>=PER){c=0;ix=hx+SZ/2-1;cy+=ROW}}
     slotTop+=(rows-1)*ROW+ROW};
-  group(P.pOrder,id=>P.passives[id],'rgba(77,243,255,.5)',id=>pMaxLv(id));
+  group(P.pOrder,id=>P.passives[id],'rgba(77,243,255,.5)',id=>rwPCap(id));
   window.__slotB=slotTop-SZ/2;window.__slotR=hx-2+Math.min(PER,Math.max(P.wOrder.length,P.pOrder.length))*GAP; // v142 레이드 안내 문구가 무기 아이콘과 겹치지 않게
   // ---- 보스 / 엘리트 체력 (모바일은 스킬 버튼 위로)
   const bBot=W<520?126:40;
@@ -1873,12 +1874,11 @@ function renderTitleBg(){
 // ================== 레벨 업 ==================
 function upgradeOptions(){
   const opts=[];
-  const wCap=id=>isRandWep()&&!SUB_W.has(id)?rwMaxLv():wMaxLv(id);
-  for(const id of P.wOrder)if(P.weapons[id]<wCap(id))opts.push({kind:'w',id,w:3}); // 네온 서바이벌: 히어로 전용 항목은 Lv.6까지
+  for(const id of P.wOrder)if(P.weapons[id]<rwWCap(id))opts.push({kind:'w',id,w:3}); // 네온 서바이벌: 일반은 히어로 전용 Lv.6, 랜덤 무기는 만렙 15
   if(!isRandWep()&&P.wOrder.length<hxMaxW())for(const id of allowedWeapons())if(!P.weapons[id])opts.push({kind:'w',id,w:G.level<6?4:2.5}); // 네온 생존자 7칸 · 일렉트릭 6칸 · 랜덤 무기는 주 무기 1개만 교체
   // 네온 서바이벌: 지뢰는 B스킬로 고정 제공 (레벨업 카드 제외)
-  for(const id in PASSIVES)if(pl(id)<pMaxLv(id))opts.push({kind:'p',id,w:2}); // 네온 서바이벌: 히어로 전용 패시브는 Lv.6까지
-  const hxGrow=P.wOrder.some(id=>P.weapons[id]<wCap(id))||Object.keys(PASSIVES).some(id=>pl(id)<pMaxLv(id))||(!isRandWep()&&P.wOrder.length<hxMaxW()&&allowedWeapons().some(id=>!P.weapons[id]));
+  for(const id in PASSIVES)if(pl(id)<rwPCap(id))opts.push({kind:'p',id,w:2}); // 네온 서바이벌: 일반은 히어로 전용 Lv.6, 랜덤 무기는 만렙 15
+  const hxGrow=P.wOrder.some(id=>P.weapons[id]<rwWCap(id))||Object.keys(PASSIVES).some(id=>pl(id)<rwPCap(id))||(!isRandWep()&&P.wOrder.length<hxMaxW()&&allowedWeapons().some(id=>!P.weapons[id]));
   if(hxGrow)opts.push({kind:'b',id:'heal',ic:'food',w:1.4}); // 네온 서바이벌: 기본 체력 회복 카드
   else opts.push({kind:'b',id:'heal',ic:'food',w:1.2},{kind:'b',id:'maxhp',ic:'heart',w:1.1},{kind:'b',id:'power',ic:'power',w:1.0},{kind:'b',id:'speed',ic:'speed',w:0.9}); // 네온 서바이벌: 전부 만렙이면 회복·스탯 보너스
   const pick=[];while(pick.length<3&&opts.length){let s=0;for(const o of opts)s+=o.w;let r=Math.random()*s;let idx=0;for(;idx<opts.length;idx++){r-=opts[idx].w;if(r<=0)break}
@@ -1892,12 +1892,12 @@ function describe(o){
     if(o.id==='speed')return {name:'이동속도 강화',lv:'이동속도 +4%',ds:'이번 판 동안 이동속도가 4% 증가합니다.',tag:'p',tagT:'보너스'};
     return {name:'체력 회복',lv:'+40 HP',ds:'잃은 체력을 40 회복합니다.',tag:'n',tagT:'회복'}}
   if(o.kind==='g')return {name:'체력 회복',lv:'+40 HP',ds:'잃은 체력을 40 회복합니다.',tag:'n',tagT:'회복'};
-  if(o.kind==='p'){const l=pl(o.id);return {name:PASSIVES[o.id].name,lv:l?`Lv.${l} → ${l+1}${l+1===pMaxLv(o.id)?' (최대)':''}`:'새 능력!',ds:PASSIVES[o.id].desc,tag:l?'p':'n',tagT:'패시브'}}
+  if(o.kind==='p'){const l=pl(o.id);return {name:PASSIVES[o.id].name,lv:l?`Lv.${l} → ${l+1}${l+1===rwPCap(o.id)?' (최대)':''}`:'새 능력!',ds:PASSIVES[o.id].desc,tag:l?'p':'n',tagT:'패시브'}}
   const Wd=WEAPONS[o.id],l=P.weapons[o.id]||0;
   if(!l)return SUB_W.has(o.id)?{name:Wd.name,lv:'새 보조무기',ds:Wd.desc+' (획득하면 자동 설치)',tag:'n',tagT:'보조무기'}:{name:Wd.name,lv:'새 무기',ds:Wd.desc,tag:'n',tagT:'무기'};
   const a=Wd.lv[l-1],b=Wd.lv[l];const ch=[];
   for(const k in b)if(a[k]!==b[k]){if(k==='cd'||k==='tick')ch.push(`${STAT_LBL[k]} ${a[k]}초 → ${b[k]}초`);else if(k==='rad'||k==='len')ch.push(`${STAT_LBL[k]} +${Math.round((b[k]/a[k]-1)*100)}%`);else ch.push(`${STAT_LBL[k]} ${a[k]} → ${b[k]}`)}
-  const cap=isRandWep()&&!SUB_W.has(o.id)?rwMaxLv():wMaxLv(o.id);return {name:Wd.name,lv:`Lv.${l} → ${l+1}${l+1===cap?' (최대)':''}`,ds:ch.join('<br>'),tag:'w',tagT:SUB_W.has(o.id)?'보조무기':'무기'};
+  const cap=rwWCap(o.id);return {name:Wd.name,lv:`Lv.${l} → ${l+1}${l+1===cap?' (최대)':''}`,ds:ch.join('<br>'),tag:'w',tagT:SUB_W.has(o.id)?'보조무기':'무기'};
 }
 const PICKUP_LIFE=20,PICKUP_BLINK=5; // 자석·폭탄: 15초 뒤부터 깜빡이다 20초에 소멸 (보물 상자는 유지)
 let curOpts=[],lvOpenT=0;const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
@@ -1996,8 +1996,8 @@ function startGame(){initAudio();hideAll();newGame();takeGod();camX=P.x;camY=P.y
 function toTitle(){clearRunGod();hideAll();state='title';$('pbtn').style.display='none';$('bestTitle').textContent=bestText();$('title').classList.add('show')}
 function pauseGame(){if(state!=='play')return;state='paused';joy=null;
   const inv=$('inv');inv.innerHTML='';inv.insertAdjacentHTML('beforeend',`<div style="border-color:#4df3ff66;font-weight:900">캐릭터 Lv.${G.level} · 무기 슬롯 ${Math.min(hxMaxW(),P.wOrder.length)}/${hxMaxW()}</div>`);
-  for(let i=0;i<hxMaxW();i++){const id=P.wOrder[i];inv.insertAdjacentHTML('beforeend',id?`<div style="border-color:#ff3c9d55">${i+1}. ${WEAPONS[id].name} Lv.${P.weapons[id]}${P.weapons[id]>=wMaxLv(id)?' MAX':''}</div>`:`<div style="opacity:.45">${i+1}. 빈 슬롯</div>`)}
-  for(const id of P.pOrder)inv.insertAdjacentHTML('beforeend',`<div style="border-color:#2a7bff">${PASSIVES[id].name} Lv.${P.passives[id]}${P.passives[id]>=pMaxLv(id)?' (MAX)':''}</div>`);
+  for(let i=0;i<hxMaxW();i++){const id=P.wOrder[i];inv.insertAdjacentHTML('beforeend',id?`<div style="border-color:#ff3c9d55">${i+1}. ${WEAPONS[id].name} Lv.${P.weapons[id]}${P.weapons[id]>=rwWCap(id)?' MAX':''}</div>`:`<div style="opacity:.45">${i+1}. 빈 슬롯</div>`)}
+  for(const id of P.pOrder)inv.insertAdjacentHTML('beforeend',`<div style="border-color:#2a7bff">${PASSIVES[id].name} Lv.${P.passives[id]}${P.passives[id]>=rwPCap(id)?' (MAX)':''}</div>`);
   $('soundBtn').textContent='소리: '+(muted?'꺼짐':'켜짐');$('musicBtn').textContent='음악: '+(musicOn?'켜짐':'꺼짐');updSetBtns();$('errMsg').style.display='none';$('pause').classList.add('show')}
 function updSetBtns(){$('dmgBtn').textContent='데미지 숫자: '+(SET.dmgNum?'켜짐':'꺼짐');$('gfxBtn').textContent='그래픽: '+(SET.gfx==='low'?'낮음':'높음');
   const a=$('setGfxBtn'),b=$('setDmgBtn');if(a)a.textContent='그래픽: '+(SET.gfx==='low'?'낮음':'높음');if(b)b.textContent='데미지 숫자: '+(SET.dmgNum?'켜짐':'꺼짐')} // v132 타이틀 설정에도 같이 반영
@@ -4333,14 +4333,15 @@ window.HX=HX;window.HERO_LIST=HERO_LIST;
 function showOnly(id){hideAll();state='title';$(id).classList.add('show')}
 function cardHTML(o){return o}
 function mkCard(o){
-  const c=document.createElement('div');c.className='card';
+  const c=document.createElement('div');c.className='card'+(o.soon?' soon':'');
   if(o.icon){const ic=makeCanvas(144,144);const g=ic.getContext('2d');g.translate(72,72);drawIcon(g,o.icon,120);c.appendChild(ic)}
   const tag=document.createElement('span');tag.className='tag '+(o.tagCls||'n');tag.textContent=o.tag||'';c.appendChild(tag);
   const nm=document.createElement('div');nm.className='nm';nm.textContent=o.name;c.appendChild(nm);
   const lv=document.createElement('div');lv.className='lv';lv.style.color=o.col||'#ffd84d';lv.textContent=o.lv||'';c.appendChild(lv);
   const ds=document.createElement('div');ds.className='ds';ds.textContent=o.desc||'';c.appendChild(ds);
   const key=document.createElement('div');key.className='key';key.textContent=o.key||'';c.appendChild(key);
-  c.onclick=o.onclick;
+  if(o.soon){c.setAttribute('aria-disabled','true');c.style.pointerEvents='none'}
+  else c.onclick=o.onclick;
   return c;
 }
 
@@ -4356,9 +4357,11 @@ function heroOpenModes(){
   box.appendChild(mkCard({icon:'bolt',tag:'ENDLESS',tagCls:'p',name:'무한 모드',lv:'1~4인',col:'#8ff6ff',
     desc:'끝없이 몰려오는 적을 상대로 버티세요. 혼자, AI 동료와, 또는 온라인 친구와 함께.',key:'탭하여 시작',
     onclick:heroOpenCount}));
-  box.appendChild(mkCard({icon:'boom',tag:'SOLO',tagCls:'n',name:'랜덤 무기',lv:'30초 교체',col:'#ff9a5d',
-    desc:'30초마다 주 무기가 무작위로 바뀝니다. 무기 레벨은 그대로 유지되고, 그 외는 일반 솔로와 같습니다.',key:'탭하여 시작',
+  box.appendChild(mkCard({icon:'boom',tag:'SOLO',tagCls:'n',name:'랜덤 무기',lv:'30초 교체 · 만렙 15',col:'#ff9a5d',
+    desc:'30초마다 주 무기가 무작위로 바뀝니다. 무기·패시브 만렙 15, 레벨은 그대로 유지되고, 그 외는 일반 솔로와 같습니다.',key:'탭하여 시작',
     onclick:heroOpenRandWep}));
+  box.appendChild(mkCard({icon:'orbit',tag:'🔒',tagCls:'n',name:'준비 중',lv:'잠금',col:'#8a8fc0',
+    desc:'새로운 모드가 준비 중입니다.',key:'아직 열리지 않음',soon:true}));
 }
 function heroOpenRandWep(){
   HX.randWep=true;HX.mode='solo';HX.n=1;HX.ai=false;
