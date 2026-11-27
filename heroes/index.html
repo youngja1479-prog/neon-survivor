@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>네온 서바이벌 - NEON SURVIVAL v4</title>
+<title>네온 서바이벌 - NEON SURVIVAL v5</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#07060f;color:#fff;
@@ -296,7 +296,7 @@ h1{font-size:clamp(34px,6.4vw,62px);font-weight:900;letter-spacing:-.01em;line-h
 
 <div class="ov show" id="title">
   <h1>네온 서바이벌</h1>
-  <div class="sub">Neon Survival · v4</div>
+  <div class="sub">Neon Survival · v5</div>
   <div class="box">
     <div class="hrow"><span class="ic"></span><span><b>이동</b> — <b class="m">WASD</b> / 방향키 · 모바일은 화면을 드래그</span></div>
     <div class="hrow k"><span class="ic"></span><span>영웅 <b class="y">네온 생존자</b>·<b class="y">네온 일렉트릭</b>의 기본 무기는 자동으로 발사됩니다. 움직이며 피하는 데 집중하세요.</span></div>
@@ -711,13 +711,13 @@ const PASSIVES={
   magnet:{name:'자석',desc:'보석 획득 범위 +30%'},
   haste:{name:'시간 가속',desc:'모든 무기 쿨타임 -7%'},
   power:{name:'파괴의 힘',desc:'모든 피해량 +10%'},
-  regen:{name:'재생의 반지',desc:'초당 체력 +0.2 회복'},
+  regen:{name:'재생의 반지',desc:'초당 체력 +0.4 회복'},
   area:{name:'확장의 룬',desc:'무기 공격 범위 +10%'},
   trail:{name:'네온 잉크',desc:'궤적 길이 +15%, 올가미 피해 +20%'},
   armor:{name:'방어의 갑옷',desc:'받는 피해 -7%'},
 };
-// v139: 재생의 반지 너프 — 레벨당 초당 0.2 회복(5레벨 만렙 1.0/s). 설명 문구와 반드시 같은 값을 쓸 것
-const REGEN_PS=0.2,
+// v139: 재생의 반지 너프 — 레벨당 초당 0.4 회복(5레벨 만렙 2.0/s). 설명 문구와 반드시 같은 값을 쓸 것
+const REGEN_PS=0.4,
   MAXLV=5, MAX_WEAPONS=6, CRAZY_ITEM_MAX=10, ITEM_TBL_MAX=15;window.LV_GOLD=10;const LV_GOLD=window.LV_GOLD;
 // 네온 서바이벌: 히어로별 시작 장비 · 전용 Lv.6 한계돌파 · 히어로별 무기 슬롯 수
 const HX_MAXLV=5,HX_LV6_MAX=6;window.HX_MAXLV=HX_MAXLV;window.HX_LV6_MAX=HX_LV6_MAX;
